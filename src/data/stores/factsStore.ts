@@ -134,35 +134,56 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   },
 
   addFact: async (data) => {
-    const created = await client.post<ApiFact>('/facts', data);
-    const fact = mapFactDto(created);
-    const currentUserId = useAuthStore.getState().user?.id;
-    set((state) => ({
-      facts: [fact, ...state.facts],
-      // If the author is the logged-in user, show it in "My Facts" right away
-      ...(currentUserId && fact.author.id === currentUserId
-        ? { userFacts: [fact, ...state.userFacts] }
-        : {}),
-    }));
-    return fact;
+    try {
+      const created = await client.post<ApiFact>('/facts', data);
+      const fact = mapFactDto(created);
+      const currentUserId = useAuthStore.getState().user?.id;
+      set((state) => ({
+        facts: [fact, ...state.facts],
+        // If the author is the logged-in user, show it in "My Facts" right away
+        ...(currentUserId && fact.author.id === currentUserId
+          ? { userFacts: [fact, ...state.userFacts] }
+          : {}),
+      }));
+      return fact;
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error) {
+        useUIStore.getState().setError(error as import('@/types').AppError);
+      }
+      throw error;
+    }
   },
 
   updateFact: async (factId: string, data: { title?: string; content?: string }) => {
-    const updated = await client.patch<ApiFact>(`/facts/${factId}`, data);
-    const fact = mapFactDto(updated);
-    set((state) => ({
-      facts: state.facts.map((f) => (f.id === factId ? fact : f)),
-      userFacts: state.userFacts.map((f) => (f.id === factId ? fact : f)),
-    }));
-    return fact;
+    try {
+      const updated = await client.patch<ApiFact>(`/facts/${factId}`, data);
+      const fact = mapFactDto(updated);
+      set((state) => ({
+        facts: state.facts.map((f) => (f.id === factId ? fact : f)),
+        userFacts: state.userFacts.map((f) => (f.id === factId ? fact : f)),
+      }));
+      return fact;
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error) {
+        useUIStore.getState().setError(error as import('@/types').AppError);
+      }
+      throw error;
+    }
   },
 
   deleteFact: async (factId: string) => {
-    await client.del(`/facts/${factId}`);
-    set((state) => ({
-      facts: state.facts.filter((f) => f.id !== factId),
-      userFacts: state.userFacts.filter((f) => f.id !== factId),
-    }));
+    try {
+      await client.del(`/facts/${factId}`);
+      set((state) => ({
+        facts: state.facts.filter((f) => f.id !== factId),
+        userFacts: state.userFacts.filter((f) => f.id !== factId),
+      }));
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error) {
+        useUIStore.getState().setError(error as import('@/types').AppError);
+      }
+      throw error;
+    }
   },
 
   reset: () => {

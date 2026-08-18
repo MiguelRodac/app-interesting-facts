@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Author } from '@/types';
 import * as authService from '../auth/authService';
+import { setUnauthorizedHandler } from '../api/client';
 import { useUIStore } from './uiStore';
 import { useFactsStore } from './factsStore';
 import { useSearchStore } from './searchStore';
@@ -105,3 +106,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, token: null, isAuthenticated: false });
   },
 }));
+
+// Backend rejected a request with 401 outside the auth flow —
+// clear the session in a controlled way and tell the user why.
+setUnauthorizedHandler(() => {
+  useAuthStore.getState().clearAuth();
+  useUIStore.getState().showToast('Your session has expired. Please sign in again.', 'warning');
+});

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, type GestureResponderEvent } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -29,8 +29,11 @@ export function LikeButton({ liked, likesCount, onPress, disabled = false }: Lik
     transform: [{ scale: scale.value }],
   }));
 
-  const handlePress = () => {
+  const handlePress = (e: GestureResponderEvent) => {
     if (disabled) return;
+    // The button can be embedded in a tappable card — stop the event from
+    // bubbling to the card's onPress (matters on web where events bubble).
+    e.stopPropagation();
     // Bounce animation: scale down then up using sequence
     scale.value = withSequence(
       withSpring(0.8, SPRING_CONFIG),

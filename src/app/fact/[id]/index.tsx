@@ -75,6 +75,15 @@ export default function FactDetailScreen() {
 
   const isOwner = fact && user?.id === fact.author.id;
 
+  const handleAuthorPress = useCallback(() => {
+    if (!fact) return;
+    if (user && fact.author.id === user.id) {
+      router.push('/(tabs)/profile');
+    } else {
+      router.push({ pathname: '/(tabs)/users/[username]', params: { username: fact.author.username } });
+    }
+  }, [user, fact, router]);
+
   const handleLike = useCallback(() => {
     if (fact) {
       toggleLike(fact.id);
@@ -149,7 +158,7 @@ export default function FactDetailScreen() {
         {/* Fact detail card */}
         <ThemedView type="backgroundElement" style={[styles.card, Shadows.md]}>
           {/* Author */}
-          <View style={styles.authorRow}>
+          <Pressable onPress={handleAuthorPress} style={styles.authorRow} hitSlop={8}>
             <UserAvatar user={fact.author} size={44} />
             <View style={styles.authorInfo}>
               <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
@@ -157,7 +166,7 @@ export default function FactDetailScreen() {
                 @{fact.author.username}
               </ThemedText>
             </View>
-          </View>
+          </Pressable>
 
           {/* Title */}
           {fact.title ? (

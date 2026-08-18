@@ -9,7 +9,7 @@ import {
   Pressable,
   FlatList,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { CharCounter } from '@/components/CharCounter';
@@ -18,6 +18,7 @@ import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
 import { Radii, Spacing, MaxContentWidth, Shadows } from '@/constants/theme';
 import { useFactsStore } from '@/data/stores/factsStore';
+import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
@@ -33,6 +34,9 @@ export default function EditFactScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const theme = useTheme();
+  const segments = useSegments();
+  const { isAuthenticated, isLoading } = useAuth();
+  const hasCheckedAuth = useRef(false);
 
   const facts = useFactsStore((s) => s.facts);
   const userFacts = useFactsStore((s) => s.userFacts);
@@ -82,6 +86,18 @@ export default function EditFactScreen() {
       if (hashtagTimeoutRef.current) clearTimeout(hashtagTimeoutRef.current);
     };
   }, []);
+
+  // Redirect to login when the session is gone (e.g. expired token)
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading) {
+      if (!hasCheckedAuth.current) {
+        hasCheckedAuth.current = true;
+        router.replace('/auth/login');
+      }
+    } else if (isAuthenticated) {
+      hasCheckedAuth.current = false;
+    }
+  }, [isAuthenticated, isLoading, router, segments]);
 
   const searchMentions = useCallback((query: string) => {
     latestMentionQueryRef.current = query;
@@ -244,7 +260,7 @@ export default function EditFactScreen() {
     }
   }, [router, fact]);
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <ThemedView style={styles.centered}>
         <ActivityIndicator size="large" color={theme.primary} />

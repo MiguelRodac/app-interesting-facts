@@ -17,10 +17,11 @@ interface UserProfileState {
   factsLoading: boolean;
   fetchProfile: (username: string) => Promise<void>;
   fetchUserFacts: (authorId: string) => Promise<void>;
+  toggleLike: (factId: string) => Promise<void>;
   clearProfile: () => void;
 }
 
-export const useUserProfileStore = create<UserProfileState>((set) => ({
+export const useUserProfileStore = create<UserProfileState>((set, get) => ({
   profile: null,
   facts: [],
   isLoading: false,
@@ -56,6 +57,33 @@ export const useUserProfileStore = create<UserProfileState>((set) => ({
       set({ facts, factsLoading: false });
     } catch (error) {
       set({ factsLoading: false, facts: [] });
+      if (error && typeof error === 'object' && 'code' in error) {
+        useUIStore.getState().setError(error as import('@/types').AppError);
+      }
+    }
+  },
+
+  toggleLike: async (factId: string) => {
+    const { facts } = get();
+    const fact = facts.find((f) => f.id === factId);
+    if (!fact) return;
+
+    const wasLiked = fact.liked;
+    const nextFacts = facts.map((f) =>
+      f.id === factId
+        ? { ...f, liked: !wasLiked, likesCount: f.likesCount + (wasLiked ? -1 : 1) }
+        : f,
+    );
+    set({ facts: nextFacts });
+
+    try {
+      if (wasLiked) {
+        await client.del(`/facts/${factId}/likes`);
+      } else {
+        await client.post(`/facts/${factId}/likes`);
+      }
+    } catch (error) {
+      set({ facts });
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }

@@ -9,6 +9,9 @@ import {
   browserLocalPersistence,
   type User,
 } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+import { initializeAuth as initializeAuthNative, getReactNativePersistence } from '@firebase/auth';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -21,14 +24,23 @@ const firebaseConfig = {
 
 // Initialize Firebase (prevent re-initialization)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-export const auth = getAuth(app);
 
-// Explicitly set persistence so sessions survive app restarts.
-// browserLocalPersistence is the web default, but setting it explicitly
-// ensures it's configured before any auth operation.
-setPersistence(auth, browserLocalPersistence).catch(() => {
-  // Non-fatal — falls back to in-memory persistence (e.g. native without AsyncStorage polyfill)
-});
+// On native, browserLocalPersistence is unavailable (no localStorage under the
+// hood), so sessions died every time the app was relaunched. Use real native
+// persistence via AsyncStorage so the session survives app restarts.
+export const auth =
+  Platform.OS === 'web'
+    ? getAuth(app)
+    : initializeAuthNative(app, {
+        persistence: getReactNativePersistence(AsyncStorage),
+      });
+
+// Explicitly set persistence so sessions survive app restarts (web only).
+if (Platform.OS === 'web') {
+  setPersistence(auth, browserLocalPersistence).catch(() => {
+    // Non-fatal — falls back to in-memory persistence
+  });
+}
 
 export {
   signInWithEmailAndPassword,

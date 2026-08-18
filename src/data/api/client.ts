@@ -14,6 +14,16 @@ interface RequestOptions {
   getToken: () => Promise<string | null>;
 }
 
+/**
+ * Called when the backend rejects a request with 401 on a NON-auth endpoint.
+ * Registered by authStore to clear the session in a controlled way.
+ */
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: () => void): void {
+  unauthorizedHandler = handler;
+}
+
 async function request<T>(options: RequestOptions): Promise<T> {
   const { method, path, body, params, getToken } = options;
 
@@ -48,6 +58,12 @@ async function request<T>(options: RequestOptions): Promise<T> {
     const responseBody = await response.json().catch(() => null);
 
     if (!response.ok) {
+      // A 401 outside the auth flow means the session is gone/broken —
+      // notify the app so it can clear auth state in a controlled way
+      // (the screen shows a "session expired" message instead of a crash).
+      if (response.status === 401 && !path.startsWith('/auth/')) {
+        unauthorizedHandler?.();
+      }
       throw mapApiError(response.status, responseBody);
     }
 

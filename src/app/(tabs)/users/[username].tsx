@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
 import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useUserProfile } from '@/data/hooks/useUserProfile';
+import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import type { Fact } from '@/types';
 
@@ -30,8 +31,10 @@ export default function UserProfileScreen() {
     factsLoading,
     fetchProfile,
     fetchUserFacts,
+    toggleLike,
     clearProfile,
   } = useUserProfile();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (!username) return;
@@ -56,6 +59,15 @@ export default function UserProfileScreen() {
       router.push(`/fact/${fact.id}?from=user`);
     },
     [router],
+  );
+
+  const handleLike = useCallback(
+    (factId: string) => {
+      if (isAuthenticated) {
+        toggleLike(factId);
+      }
+    },
+    [isAuthenticated, toggleLike],
   );
 
   const handleBack = useCallback(() => {
@@ -150,6 +162,7 @@ export default function UserProfileScreen() {
             fact={item}
             variant="preview"
             onPress={() => handleFactPress(item)}
+            onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
           />
         )}
         contentContainerStyle={styles.list}
