@@ -21,6 +21,7 @@ import { BottomTabInset, Radii, Spacing, MaxContentWidth, Shadows } from '@/cons
 import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
 import { useCreateScreenGuard } from '@/data/stores/createScreenGuard';
@@ -30,7 +31,7 @@ import type { ApiUserSearchResult, ApiHashtag, ApiSearchResponse, ApiUser } from
 const client = createApiClient(getIdToken);
 
 const MIN_LENGTH = 10;
-const MAX_LENGTH = 200;
+const MAX_LENGTH = 1000;
 
 const DROPDOWN_BG = '#26262E';
 const DROPDOWN_BORDER = '#3A3A46';
@@ -65,6 +66,7 @@ export default function CreateFactScreen() {
   const contentInputRef = useRef<TextInput>(null);
   const { setHasUnsavedChanges, clearGuard, formResetCount, hasUnsavedChanges, triggerFormReset } = useCreateScreenGuard();
   const showToast = useUIStore((s) => s.showToast);
+  const topInset = useTopInset();
 
   // Clear the form when the user confirms leaving via the tab guard modal
   useEffect(() => {
@@ -100,6 +102,9 @@ export default function CreateFactScreen() {
       }
       if (hashtagTimeoutRef.current) {
         clearTimeout(hashtagTimeoutRef.current);
+      }
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
       }
       setShowMentions(false);
       setMentionResults([]);
@@ -284,6 +289,22 @@ export default function CreateFactScreen() {
     cursorPositionRef.current = event.nativeEvent.selection.start;
   }, []);
 
+  // Close the autocomplete dropdowns when the input loses focus. The small
+  // delay lets a tap on a suggestion row register first (the rows use
+  // keyboardShouldPersistTaps="handled").
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleContentBlur = useCallback(() => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+    }
+    blurTimeoutRef.current = setTimeout(() => {
+      setShowMentions(false);
+      setMentionResults([]);
+      setShowHashtags(false);
+      setHashtagResults([]);
+    }, 150);
+  }, []);
+
   const handleSelectMention = useCallback((user: ApiUserSearchResult) => {
     const lastAtIndex = content.lastIndexOf('@', cursorPositionRef.current);
     if (lastAtIndex === -1) return;
@@ -375,7 +396,7 @@ export default function CreateFactScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
       <ThemedView style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: topInset }]}>
           <ThemedText type="subtitle">Create Fact</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             Share something interesting with the world
@@ -431,6 +452,7 @@ export default function CreateFactScreen() {
                 value={content}
                 onChangeText={handleContentChange}
                 onSelectionChange={handleSelectionChange}
+                onBlur={handleContentBlur}
                 maxLength={MAX_LENGTH}
                 multiline
                 numberOfLines={4}

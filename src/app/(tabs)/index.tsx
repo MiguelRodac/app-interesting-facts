@@ -11,6 +11,7 @@ import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/the
 import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
 export default function FeedScreen() {
@@ -18,6 +19,7 @@ export default function FeedScreen() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const theme = useTheme();
+  const topInset = useTopInset();
 
   // Initial fetch
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function FeedScreen() {
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: topInset }]}>
         <ThemedText type="subtitle">Interesting Facts</ThemedText>
         {!isAuthenticated ? (
           <View style={styles.authButtons}>

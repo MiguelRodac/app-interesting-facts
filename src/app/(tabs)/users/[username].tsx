@@ -13,6 +13,7 @@ import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useUserProfile } from '@/data/hooks/useUserProfile';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
 function formatJoinDate(iso: string): string {
@@ -24,6 +25,7 @@ export default function UserProfileScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const router = useRouter();
   const theme = useTheme();
+  const topInset = useTopInset();
   const {
     profile,
     facts,
@@ -145,7 +147,7 @@ export default function UserProfileScreen() {
           data={[]}
           renderItem={null}
           ListHeaderComponent={renderHeader}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingTop: topInset }]}
         />
       </ThemedView>
     );
@@ -165,7 +167,7 @@ export default function UserProfileScreen() {
             onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
           />
         )}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingTop: topInset }]}
       />
     </ThemedView>
   );

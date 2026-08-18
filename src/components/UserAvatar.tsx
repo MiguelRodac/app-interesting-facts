@@ -5,6 +5,10 @@ import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import type { Author } from '@/types';
 
+// Fallback when a user has neither an avatar image nor a stored color —
+// otherwise the circle renders transparent over the card background.
+const FALLBACK_COLOR = '#64B5F6';
+
 interface UserAvatarProps {
   user: Pick<Author, 'displayName'> & {
     avatarColor?: string | null;
@@ -36,6 +40,7 @@ export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
   }, [user.avatarUrl]);
   const initials = getInitials(user?.displayName ?? '?');
   const fontSize = Math.round(size * 0.38);
+  const backgroundColor = user.avatarColor ?? (hasImage ? 'transparent' : FALLBACK_COLOR);
 
   return (
     <View
@@ -45,7 +50,7 @@ export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: user.avatarColor ?? undefined,
+          backgroundColor,
         },
       ]}>
       {hasImage && (

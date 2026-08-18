@@ -15,6 +15,7 @@ import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
 export default function FactDetailScreen() {
@@ -23,6 +24,7 @@ export default function FactDetailScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const theme = useTheme();
+  const topInset = useTopInset();
   const [fact, setFact] = useState<Fact | null>(null);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const handleConfirmDelete = useCallback(async () => {
@@ -149,7 +151,7 @@ export default function FactDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: topInset }]}>
         {/* Back button */}
         <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />

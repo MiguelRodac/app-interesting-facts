@@ -15,6 +15,7 @@ import { useLikedFacts } from '@/data/hooks/useLikedFacts';
 import { useFactsStore } from '@/data/stores/factsStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useThemeContext } from '@/hooks/theme-provider';
+import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
 type ProfileTab = 'mine' | 'liked';
@@ -32,6 +33,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { colorScheme, toggleDarkMode } = useThemeContext();
+  const topInset = useTopInset();
 
   // Fetch fresh user facts every time the profile gains focus (create/edit/delete happen elsewhere)
   useFocusEffect(
@@ -131,7 +133,7 @@ export default function ProfileScreen() {
   return (
     <ThemedView style={styles.container}>
       {/* Profile header */}
-      <View style={styles.profileHeader}>
+      <View style={[styles.profileHeader, { paddingTop: topInset }]}>
         <View style={styles.avatarSection}>
           <UserAvatar user={user} size={80} />
           <View style={styles.userInfo}>

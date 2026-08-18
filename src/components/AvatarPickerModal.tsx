@@ -25,7 +25,6 @@ interface AvatarPickerModalProps {
   currentColor: string | null;
   currentAvatarUrl?: string | null;
   onClose: () => void;
-  onSelectColor: (color: string | null) => void;
   onSelectAvatarOption: (color: string | null, url: string | null) => void;
 }
 
@@ -34,12 +33,15 @@ export function AvatarPickerModal({
   currentColor,
   currentAvatarUrl,
   onClose,
-  onSelectColor,
   onSelectAvatarOption,
 }: AvatarPickerModalProps) {
   const theme = useTheme();
   const [avatarOptions, setAvatarOptions] = useState<ApiAvatarOption[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+
+  // Pending selection — only applied to the profile when the user taps Done
+  const [pendingColor, setPendingColor] = useState<string | null>(null);
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
 
   const fetchAvatarOptions = useCallback(async () => {
     setIsLoadingOptions(true);
@@ -55,13 +57,30 @@ export function AvatarPickerModal({
 
   useEffect(() => {
     if (visible) {
+      setPendingColor(currentColor);
+      setPendingUrl(currentAvatarUrl ?? null);
       fetchAvatarOptions();
     }
-  }, [visible, fetchAvatarOptions]);
+  }, [visible, currentColor, currentAvatarUrl, fetchAvatarOptions]);
 
-  const handleSelectAvatarOption = (option: ApiAvatarOption) => {
-    // Delegate to the parent — it knows how to merge color/url correctly
-    onSelectAvatarOption(option.color, option.url);
+  const handlePickColor = (color: string) => {
+    setPendingColor(color);
+  };
+
+  const handlePickAvatar = (option: ApiAvatarOption) => {
+    setPendingUrl(option.url);
+    if (option.color) {
+      setPendingColor(option.color);
+    }
+  };
+
+  const handlePickNoAvatar = () => {
+    setPendingUrl(null);
+    setPendingColor(null);
+  };
+
+  const handleDone = () => {
+    onSelectAvatarOption(pendingColor, pendingUrl);
     onClose();
   };
 
@@ -84,7 +103,7 @@ export function AvatarPickerModal({
             Change Avatar
           </ThemedText>
 
-          <ScrollView contentContainerStyle={styles.content}>
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             {/* Avatar options from API */}
             {isLoadingOptions ? (
               <View style={styles.loadingContainer}>
@@ -100,18 +119,15 @@ export function AvatarPickerModal({
                     </ThemedText>
                     <View style={styles.colorGrid}>
                       {colorOptions.map((option) => {
-                        const isSelected = currentColor === option.color;
+                        const isSelected = pendingColor === option.color;
                         return (
                           <Pressable
                             key={option.id}
-                            onPress={() => {
-                              onSelectColor(option.color);
-                              onClose();
-                            }}
+                            onPress={() => handlePickColor(option.color!)}
                             style={[
                               styles.colorCircle,
                               { backgroundColor: option.color! },
-                              isSelected && styles.colorCircleSelected,
+                              isSelected && styles.optionSelected,
                             ]}
                           />
                         );
@@ -128,26 +144,23 @@ export function AvatarPickerModal({
                     </ThemedText>
                     <View style={styles.avatarGrid}>
                       <Pressable
-                        onPress={() => {
-                          onSelectAvatarOption(null, null);
-                          onClose();
-                        }}
+                        onPress={handlePickNoAvatar}
                         style={[
                           styles.noAvatarOption,
-                          !currentAvatarUrl && !currentColor && styles.avatarOptionSelected,
+                          !pendingUrl && !pendingColor && styles.optionSelected,
                         ]}>
                         <Ionicons name="person-outline" size={28} color="#FFFFFF" />
                       </Pressable>
                       {avatarOptionsWithUrl.map((option) => {
-                        const isSelected = currentAvatarUrl === option.url;
+                        const isSelected = pendingUrl === option.url;
                         return (
                           <Pressable
                             key={option.id}
-                            onPress={() => handleSelectAvatarOption(option)}
+                            onPress={() => handlePickAvatar(option)}
                             style={[
                               styles.avatarOption,
                               { backgroundColor: option.color ?? '#E0E0E0' },
-                              isSelected && styles.avatarOptionSelected,
+                              isSelected && styles.optionSelected,
                             ]}>
                             <Image
                               source={{ uri: option.url! }}
@@ -164,11 +177,23 @@ export function AvatarPickerModal({
             )}
           </ScrollView>
 
-          <Pressable onPress={onClose} style={styles.closeButton} hitSlop={{ top: 6, bottom: 6 }}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Cancel
-            </ThemedText>
-          </Pressable>
+          {/* Actions — Cancel discards the pending selection, Done applies it */}
+          <View style={styles.actions}>
+            <Pressable
+              onPress={onClose}
+              style={[styles.actionButton, styles.cancelButton, { borderColor: theme.border }]}>
+              <ThemedText type="smallBold" style={styles.cancelText}>
+                Cancel
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={handleDone}
+              style={[styles.actionButton, { backgroundColor: theme.primary }]}>
+              <ThemedText type="smallBold" style={styles.doneText}>
+                Done
+              </ThemedText>
+            </Pressable>
+          </View>
         </ThemedView>
       </View>
     </Modal>
@@ -223,12 +248,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     overflow: 'hidden',
   },
-  avatarOptionSelected: {
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-    elevation: 4,
-  },
   avatarOptionImage: {
     width: '100%',
     height: '100%',
@@ -252,17 +271,32 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 999,
   },
-  colorCircleSelected: {
+  optionSelected: {
     borderWidth: 3,
     borderColor: '#FFFFFF',
     boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
     elevation: 4,
   },
-  closeButton: {
-    alignSelf: 'stretch',
+  actions: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: Spacing.two + 1,
+    borderRadius: Radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Spacing.one,
-    paddingVertical: Spacing.one + 2,
+  },
+  cancelButton: {
+    borderWidth: 1,
+  },
+  cancelText: {
+    opacity: 0.7,
+  },
+  doneText: {
+    color: '#FFFFFF',
   },
 });

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { StyleSheet, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -14,6 +15,9 @@ export function ErrorBanner() {
   const error = useUIStore((s) => s.error);
   const clearError = useUIStore((s) => s.clearError);
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  // Below the status bar/notch on native, with breathing room on web
+  const topOffset = Math.max(Spacing.four, insets.top + Spacing.three);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-24)).current;
 
@@ -35,7 +39,7 @@ export function ErrorBanner() {
     <Animated.View
       style={[
         styles.container,
-        { opacity, transform: [{ translateY }] },
+        { top: topOffset, opacity, transform: [{ translateY }] },
       ]}>
       <ThemedView style={[styles.card, { borderColor: theme.destructive }, Shadows.lg]}>
         <Ionicons name="alert-circle" size={22} color={theme.destructive} />

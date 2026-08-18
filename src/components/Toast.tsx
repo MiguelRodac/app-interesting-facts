@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { StyleSheet, Animated, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -19,7 +20,11 @@ const TYPE_ICONS: Record<ToastType, keyof typeof Ionicons.glyphMap> = {
 export function Toast() {
   const toast = useUIStore((s) => s.toast);
   const clearToast = useUIStore((s) => s.clearToast);
+  const error = useUIStore((s) => s.error);
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  // Below the status bar/notch on native, with breathing room on web
+  const baseTop = Math.max(Spacing.four, insets.top + Spacing.three);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-24)).current;
 
@@ -40,11 +45,14 @@ export function Toast() {
   const accentColor =
     toast.type === 'success' ? theme.success : toast.type === 'warning' ? theme.warning : theme.primary;
 
+  // Stack below the error banner when both are visible
+  const topOffset = error ? baseTop + 56 : baseTop;
+
   return (
     <Animated.View
       style={[
         styles.container,
-        { opacity, transform: [{ translateY }] },
+        { top: topOffset, opacity, transform: [{ translateY }] },
       ]}>
       <ThemedView style={[styles.card, { borderColor: accentColor }, Shadows.lg]}>
         <Ionicons name={TYPE_ICONS[toast.type]} size={22} color={accentColor} />

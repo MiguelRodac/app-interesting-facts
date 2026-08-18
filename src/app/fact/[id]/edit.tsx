@@ -20,6 +20,7 @@ import { Radii, Spacing, MaxContentWidth, Shadows } from '@/constants/theme';
 import { useFactsStore } from '@/data/stores/factsStore';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
 import type { ApiUserSearchResult, ApiHashtag } from '@/data/api/types';
@@ -28,12 +29,13 @@ import type { Fact } from '@/types';
 const client = createApiClient(getIdToken);
 
 const MIN_LENGTH = 10;
-const MAX_LENGTH = 200;
+const MAX_LENGTH = 1000;
 
 export default function EditFactScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const theme = useTheme();
+  const topInset = useTopInset();
   const segments = useSegments();
   const { isAuthenticated, isLoading } = useAuth();
   const hasCheckedAuth = useRef(false);
@@ -84,6 +86,7 @@ export default function EditFactScreen() {
     return () => {
       if (mentionTimeoutRef.current) clearTimeout(mentionTimeoutRef.current);
       if (hashtagTimeoutRef.current) clearTimeout(hashtagTimeoutRef.current);
+      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
     };
   }, []);
 
@@ -208,6 +211,22 @@ export default function EditFactScreen() {
     cursorPositionRef.current = event.nativeEvent.selection.start;
   }, []);
 
+  // Close the autocomplete dropdowns when the input loses focus. The small
+  // delay lets a tap on a suggestion row register first (the rows use
+  // keyboardShouldPersistTaps="handled").
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleContentBlur = useCallback(() => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+    }
+    blurTimeoutRef.current = setTimeout(() => {
+      setShowMentions(false);
+      setMentionResults([]);
+      setShowHashtags(false);
+      setHashtagResults([]);
+    }, 150);
+  }, []);
+
   const handleSelectMention = useCallback((user: ApiUserSearchResult) => {
     const lastAtIndex = content.lastIndexOf('@', cursorPositionRef.current);
     if (lastAtIndex === -1) return;
@@ -285,7 +304,7 @@ export default function EditFactScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
       <ThemedView style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: topInset }]}>
           <Pressable onPress={handleCancel} hitSlop={8} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </Pressable>
@@ -346,6 +365,7 @@ export default function EditFactScreen() {
                 value={content}
                 onChangeText={handleContentChange}
                 onSelectionChange={handleSelectionChange}
+                onBlur={handleContentBlur}
                 maxLength={MAX_LENGTH}
                 multiline
                 numberOfLines={4}

@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
 import { isValidEmail, isValidUsername, USERNAME_ERROR_MESSAGE } from '@/utils/validation';
@@ -26,6 +27,7 @@ export default function RegisterScreen() {
   const { register } = useAuth();
   const router = useRouter();
   const theme = useTheme();
+  const topInset = useTopInset();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const checkUsername = useCallback(async (value: string) => {
@@ -143,7 +145,7 @@ export default function RegisterScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { paddingTop: topInset }]}>
         {/* Close button - go back to previous screen */}
         <Pressable
           onPress={() => {
@@ -185,6 +187,7 @@ export default function RegisterScreen() {
               placeholderTextColor={theme.muted}
               value={displayName}
               onChangeText={setDisplayName}
+              maxLength={50}
               autoCorrect={false}
               editable={!isSubmitting}
             />
@@ -209,6 +212,7 @@ export default function RegisterScreen() {
                 placeholderTextColor={theme.muted}
                 value={username}
                 onChangeText={setUsername}
+                maxLength={30}
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!isSubmitting}
@@ -250,6 +254,7 @@ export default function RegisterScreen() {
               placeholderTextColor={theme.muted}
               value={email}
               onChangeText={setEmail}
+              maxLength={254}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}

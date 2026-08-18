@@ -21,6 +21,7 @@ import { BottomTabInset, Radii, Spacing } from '@/constants/theme';
 import { useSearch } from '@/data/hooks/useSearch';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
 import type { Author, Fact, Hashtag } from '@/types';
 
 type SearchTabKey = 'people' | 'posts' | 'hashtags';
@@ -47,6 +48,7 @@ export default function SearchScreen() {
 
   const theme = useTheme();
   const router = useRouter();
+  const topInset = useTopInset();
   const params = useLocalSearchParams<{ q?: string }>();
   const segments = useSegments();
   const [inputValue, setInputValue] = useState(query);
@@ -275,7 +277,7 @@ export default function SearchScreen() {
   return (
     <ThemedView style={styles.container}>
       {/* Search bar */}
-      <View style={styles.searchBarContainer}>
+      <View style={[styles.searchBarContainer, { paddingTop: topInset }]}>
         <View
           style={[
             styles.searchBar,

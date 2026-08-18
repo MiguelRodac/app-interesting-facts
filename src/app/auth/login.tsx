@@ -8,6 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
 import { isValidEmail } from '@/utils/validation';
 
 export default function LoginScreen() {
@@ -17,6 +18,7 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const router = useRouter();
   const theme = useTheme();
+  const topInset = useTopInset();
 
   const isValid = isValidEmail(email) && password.length > 0;
 
@@ -43,7 +45,7 @@ export default function LoginScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { paddingTop: topInset }]}>
         {/* Close button - go back to previous screen */}
         <Pressable
           onPress={() => {

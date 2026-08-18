@@ -20,6 +20,7 @@ import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
 import { isValidEmail } from '@/utils/validation';
 
 export default function EditProfileScreen() {
@@ -27,6 +28,7 @@ export default function EditProfileScreen() {
   const showToast = useUIStore((s) => s.showToast);
   const router = useRouter();
   const theme = useTheme();
+  const topInset = useTopInset();
 
   // Pending changes — only sent to backend on "Done"
   const [pendingDisplayName, setPendingDisplayName] = useState(user?.displayName ?? '');
@@ -94,11 +96,6 @@ export default function EditProfileScreen() {
     setIsEditingEmail(false);
   }, [editEmailValue, pendingEmail]);
 
-  const handleSelectColor = useCallback((color: string | null) => {
-    // Only changes the color — keeps the URL if the user has one
-    setPendingAvatarColor(color);
-  }, []);
-
   const handleSelectAvatarOption = useCallback((color: string | null, url: string | null) => {
     if (url) {
       // Option with an image — override the image, keep color as fallback
@@ -164,7 +161,7 @@ export default function EditProfileScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
       <ThemedView style={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: topInset }]}>
           <Pressable onPress={handleCancel} hitSlop={8} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </Pressable>
@@ -279,7 +276,7 @@ export default function EditProfileScreen() {
                   ]}
                   value={editEmailValue}
                   onChangeText={setEditEmailValue}
-                  maxLength={100}
+                  maxLength={254}
                   autoFocus
                   autoCapitalize="none"
                   keyboardType="email-address"
@@ -315,7 +312,6 @@ export default function EditProfileScreen() {
           currentColor={pendingAvatarColor}
           currentAvatarUrl={pendingAvatarUrl}
           onClose={() => setIsAvatarModalVisible(false)}
-          onSelectColor={handleSelectColor}
           onSelectAvatarOption={handleSelectAvatarOption}
         />
       </ThemedView>
