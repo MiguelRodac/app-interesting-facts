@@ -1,14 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  StyleSheet,
-  TextInput,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Pressable,
-  FlatList,
-} from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, FlatList } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -41,8 +33,9 @@ export default function EditFactScreen() {
   const { isAuthenticated, isLoading } = useAuth();
   const hasCheckedAuth = useRef(false);
 
-  const facts = useFactsStore((s) => s.facts);
+const facts = useFactsStore((s) => s.facts);
   const userFacts = useFactsStore((s) => s.userFacts);
+  const fetchFactById = useFactsStore((s) => s.fetchFactById);
   const updateFact = useFactsStore((s) => s.updateFact);
 
   const [fact, setFact] = useState<Fact | null>(null);
@@ -70,7 +63,8 @@ export default function EditFactScreen() {
   const latestHashtagQueryRef = useRef('');
   const contentInputRef = useRef<TextInput>(null);
 
-  // Find fact from store
+// Find fact from store; on cold start / F5 the store is empty, so fetch
+  // the fact by ID instead of showing "Fact not found".
   useEffect(() => {
     if (!id) return;
     const found = facts.find((f) => f.id === id) ?? userFacts.find((f) => f.id === id);
@@ -78,9 +72,29 @@ export default function EditFactScreen() {
       setFact(found);
       setTitle(found.title ?? '');
       setContent(found.content);
+      setLoading(false);
+      return;
     }
-    setLoading(false);
-  }, [id, facts, userFacts]);
+    let active = true;
+    setLoading(true);
+    fetchFactById(id)
+      .then((fetched) => {
+        if (active) {
+          setFact(fetched);
+          setTitle(fetched.title ?? '');
+          setContent(fetched.content);
+        }
+      })
+      .catch(() => {
+        if (active) setFact(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id, facts, userFacts, fetchFactById]);
 
   // Cleanup debounce timeouts on unmount
   useEffect(() => {
@@ -306,9 +320,9 @@ export default function EditFactScreen() {
       <ThemedView style={styles.container}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: topInset }]}>
-          <Pressable onPress={handleCancel} hitSlop={8} style={styles.backButton}>
+          <AppPressable onPress={handleCancel} hitSlop={8} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
-          </Pressable>
+          </AppPressable>
           <View style={styles.headerContent}>
             <ThemedText type="subtitle">Edit Fact</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -394,7 +408,7 @@ export default function EditFactScreen() {
                       keyExtractor={(item) => item.username}
                       keyboardShouldPersistTaps="handled"
                       renderItem={({ item, index }) => (
-                        <Pressable
+                        <AppPressable
                           style={[
                             styles.autocompleteItem,
                             index === selectedMentionIndex && { backgroundColor: theme.backgroundSelected },
@@ -413,7 +427,7 @@ export default function EditFactScreen() {
                               {item.displayName}
                             </ThemedText>
                           </View>
-                        </Pressable>
+                        </AppPressable>
                       )}
                     />
                   )}
@@ -437,7 +451,7 @@ export default function EditFactScreen() {
                       keyExtractor={(item) => item.id}
                       keyboardShouldPersistTaps="handled"
                       renderItem={({ item, index }) => (
-                        <Pressable
+                        <AppPressable
                           style={[
                             styles.autocompleteItem,
                             index === selectedHashtagIndex && { backgroundColor: theme.backgroundSelected },
@@ -452,7 +466,7 @@ export default function EditFactScreen() {
                               {item.tag}
                             </ThemedText>
                           </View>
-                        </Pressable>
+                        </AppPressable>
                       )}
                     />
                   )}
@@ -461,22 +475,20 @@ export default function EditFactScreen() {
             </View>
           </View>
 
-          {/* Buttons */}
+{/* Buttons */}
           <View style={styles.buttons}>
-            <View
+            <AppPressable
               style={[
                 styles.button,
                 styles.cancelButton,
                 { borderColor: theme.border },
-              ]}>
-              <ThemedText
-                type="smallBold"
-                style={styles.cancelText}
-                onPress={handleCancel}>
+              ]}
+              onPress={handleCancel}>
+              <ThemedText type="smallBold" style={styles.cancelText}>
                 Cancel
               </ThemedText>
-            </View>
-            <View
+            </AppPressable>
+            <AppPressable
               style={[
                 styles.button,
                 styles.submitButton,
@@ -485,16 +497,13 @@ export default function EditFactScreen() {
                     isValid && hasChanges && !isSubmitting ? theme.primary : theme.muted,
                   opacity: isSubmitting ? 0.7 : 1,
                 },
-              ]}>
-              <ThemedText
-                type="smallBold"
-                style={styles.submitText}
-                onPress={
-                  isValid && hasChanges && !isSubmitting ? handleSubmit : undefined
-                }>
+              ]}
+              onPress={isValid && hasChanges && !isSubmitting ? handleSubmit : undefined}
+              disabled={!isValid || !hasChanges || isSubmitting}>
+              <ThemedText type="smallBold" style={styles.submitText}>
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </ThemedText>
-            </View>
+            </AppPressable>
           </View>
         </View>
       </ThemedView>
@@ -562,13 +571,13 @@ const styles = StyleSheet.create({
   contentContainer: {
     position: 'relative',
   },
-  autocompleteDropdown: {
+autocompleteDropdown: {
     position: 'absolute',
-    top: '100%',
+    bottom: '100%',
     left: 0,
     right: 0,
     maxHeight: 220,
-    marginTop: Spacing.one,
+    marginBottom: Spacing.one,
     borderRadius: Radii.lg,
     zIndex: 1000,
     overflow: 'hidden',

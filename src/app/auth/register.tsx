@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, TextInput, View, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -153,7 +154,7 @@ export default function RegisterScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
       <ThemedView style={[styles.container, { paddingTop: topInset }]}>
         {/* Close button - go back to previous screen */}
-        <Pressable
+        <AppPressable
           onPress={() => {
             if (router.canGoBack()) {
               router.back();
@@ -164,7 +165,7 @@ export default function RegisterScreen() {
           style={styles.closeButton}
           hitSlop={8}>
           <Ionicons name="close" size={28} color={theme.text} />
-        </Pressable>
+        </AppPressable>
 
         {/* Header */}
         <View style={styles.header}>
@@ -199,21 +200,24 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <View style={styles.field}>
+<View style={styles.field}>
             <ThemedText type="smallBold" themeColor="textSecondary">
               Username
             </ThemedText>
-            <View style={styles.usernameRow}>
+            <View
+              style={[
+                styles.usernameInputShell,
+                {
+                  backgroundColor: theme.backgroundElement,
+                  borderColor: getUsernameBorderColor(),
+                },
+              ]}>
+              {/* Visual @ prefix — the stored username has no @ */}
+              <ThemedText type="smallBold" style={[styles.usernamePrefix, { color: theme.text }]}>
+                @
+              </ThemedText>
               <TextInput
-                style={[
-                  styles.input,
-                  styles.usernameInput,
-                  {
-                    backgroundColor: theme.backgroundElement,
-                    color: theme.text,
-                    borderColor: getUsernameBorderColor(),
-                  },
-                ]}
+                style={[styles.usernameField, { color: theme.text }]}
                 placeholder="your_username"
                 placeholderTextColor={theme.muted}
                 value={username}
@@ -281,7 +285,7 @@ export default function RegisterScreen() {
             showStrength
           />
 
-          <Pressable
+          <AppPressable
             onPress={isValid && !isSubmitting ? handleSubmit : undefined}
             style={[
               styles.submitButton,
@@ -293,16 +297,16 @@ export default function RegisterScreen() {
             <ThemedText type="smallBold" style={styles.submitText}>
               {isSubmitting ? 'Creating account...' : 'Create Account'}
             </ThemedText>
-          </Pressable>
+          </AppPressable>
 
-          <Pressable onPress={goToLogin} style={styles.linkButton}>
+          <AppPressable onPress={goToLogin} style={styles.linkButton}>
             <ThemedText type="small" themeColor="textSecondary">
               Already have an account?{' '}
             </ThemedText>
             <ThemedText type="smallBold" style={{ color: theme.primary }}>
               Sign In
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         </View>
       </ThemedView>
     </KeyboardAvoidingView>
@@ -343,12 +347,22 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     fontSize: 16,
   },
-  usernameRow: {
+usernameInputShell: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: Radii.md,
   },
-  usernameInput: {
+  usernamePrefix: {
+    paddingLeft: Spacing.three,
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  usernameField: {
     flex: 1,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
+    fontSize: 16,
   },
   usernameIndicator: {
     position: 'absolute',
