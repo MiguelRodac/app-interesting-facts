@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
-import { useRouter, useSegments } from 'expo-router';
-import { StyleSheet, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Platform, StyleSheet } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { LANDING_ENABLED } from '@/config/landing';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -18,6 +20,13 @@ export default function HomeScreen() {
   useEffect(() => {
     if (isAuthenticated) {
       router.replace('/(tabs)');
+      return;
+    }
+
+    // Web only: the landing page is ALWAYS the home for anonymous visitors
+    // when EXPO_PUBLIC_LANDING_ENABLED=true. Never affects the APK build.
+    if (Platform.OS === 'web' && LANDING_ENABLED) {
+      router.replace('/landing');
     }
   }, [isAuthenticated, router]);
 
@@ -39,21 +48,21 @@ export default function HomeScreen() {
         </ThemedView>
 
         <ThemedView style={styles.buttons}>
-          <Pressable
+          <AppPressable
             style={[styles.ctaButton, { backgroundColor: theme.primary }]}
             onPress={() => router.push('/auth/login')}>
             <ThemedText type="default" style={styles.ctaText}>
               Get Started
             </ThemedText>
-          </Pressable>
+          </AppPressable>
 
-          <Pressable
+          <AppPressable
             style={[styles.ghostButton, { borderColor: theme.border }]}
             onPress={() => router.replace('/(tabs)')}>
             <ThemedText type="default" style={{ color: theme.text }}>
               Browse without signing in
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         </ThemedView>
       </SafeAreaView>
     </ThemedView>

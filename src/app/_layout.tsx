@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { DarkTheme, DefaultTheme, ThemeProvider as ExpoThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { Toast } from '@/components/Toast';
@@ -27,6 +27,10 @@ function RootLayoutInner() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [ready, setReady] = useState(false);
+  // Phone frame only applies to desktop browsers — narrow viewports
+  // (real phones opening the web app) render full-screen, edge to edge.
+  const { width } = useWindowDimensions();
+  const isDesktop = width > 480;
 
   // Hydrate auth state on mount
   useEffect(() => {
@@ -60,55 +64,87 @@ function RootLayoutInner() {
   }
 
   const theme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  // The landing page is a normal (frame-less) website; everything else
+  // renders inside the phone frame on desktop web.
+  const isLanding = Platform.OS === 'web' && segments[0] === 'landing';
+  const screenBackground = Colors[colorScheme === 'dark' ? 'dark' : 'light'].background;
+
+  const appStack = (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: screenBackground },
+      }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="landing" />
+      <Stack.Screen
+        name="(tabs)"
+        options={{
+          // Don't show as a modal when redirected from tabs
+        }}
+      />
+      <Stack.Screen
+        name="auth/login"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="auth/register"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="fact/[id]"
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="edit-profile"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+    </Stack>
+  );
 
   return (
     <ExpoThemeProvider value={theme}>
-      <View style={styles.root}>
-        <ErrorBanner />
-        <Toast />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: {
-              backgroundColor: Colors[colorScheme === 'dark' ? 'dark' : 'light'].background,
-            },
-          }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen
-            name="(tabs)"
-            options={{
-              // Don't show as a modal when redirected from tabs
-            }}
-          />
-          <Stack.Screen
-            name="auth/login"
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-          <Stack.Screen
-            name="auth/register"
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-          <Stack.Screen
-            name="fact/[id]"
-            options={{
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen
-            name="edit-profile"
-            options={{
-              presentation: 'modal',
-              animation: 'slide_from_bottom',
-            }}
-          />
-        </Stack>
-      </View>
+      {Platform.OS === 'web' && !isLanding ? (
+        <>
+          {/* Web app: on desktop it renders inside a phone-sized frame so it
+              always looks like an app; phone-sized viewports are full-screen.
+              Native builds ignore this entirely. */}
+          <View style={[styles.rootWeb, isDesktop && styles.rootWebDesktop]}>
+            <View
+              style={[
+                styles.phoneFrame,
+                isDesktop && styles.phoneFrameDesktop,
+                { backgroundColor: screenBackground },
+              ]}>
+              <View style={styles.root}>
+                <ErrorBanner />
+                <Toast />
+                {appStack}
+              </View>
+            </View>
+          </View>
+        </>
+      ) : (
+        <>
+          {/* Native app or web landing page — plain full-screen layout */}
+          <View style={styles.root}>
+            <ErrorBanner />
+            <Toast />
+            {appStack}
+          </View>
+        </>
+      )}
     </ExpoThemeProvider>
   );
 }
@@ -116,5 +152,24 @@ function RootLayoutInner() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  rootWeb: {
+    flex: 1,
+    backgroundColor: '#141518',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rootWebDesktop: {
+    paddingVertical: 24,
+  },
+  phoneFrame: {
+    flex: 1,
+    width: '100%',
+  },
+  phoneFrameDesktop: {
+    maxWidth: 430,
+    borderRadius: 28,
+    overflow: 'hidden',
+    boxShadow: '0 0 48px rgba(0, 0, 0, 0.55)',
   },
 });
