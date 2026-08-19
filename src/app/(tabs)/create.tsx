@@ -1,16 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  StyleSheet,
-  TextInput,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Pressable,
-  FlatList,
-  BackHandler,
-  Modal,
-} from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, FlatList, BackHandler } from 'react-native';
+import { AppModal } from '@/components/ui/app-modal';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter, useSegments } from 'expo-router';
 
 import { CharCounter } from '@/components/CharCounter';
@@ -481,7 +472,7 @@ export default function CreateFactScreen() {
                       keyExtractor={(item) => item.username}
                       keyboardShouldPersistTaps="handled"
                       renderItem={({ item, index }) => (
-                        <Pressable
+                        <AppPressable
                           style={[
                             styles.autocompleteItem,
                             index === selectedMentionIndex && styles.autocompleteItemSelected,
@@ -500,7 +491,7 @@ export default function CreateFactScreen() {
                               {item.displayName}
                             </ThemedText>
                           </View>
-                        </Pressable>
+                        </AppPressable>
                       )}
                     />
                   )}
@@ -524,7 +515,7 @@ export default function CreateFactScreen() {
                       keyExtractor={(item) => item.id}
                       keyboardShouldPersistTaps="handled"
                       renderItem={({ item, index }) => (
-                        <Pressable
+                        <AppPressable
                           style={[
                             styles.autocompleteItem,
                             index === selectedHashtagIndex && styles.autocompleteItemSelected,
@@ -539,7 +530,7 @@ export default function CreateFactScreen() {
                               {item.tag}
                             </ThemedText>
                           </View>
-                        </Pressable>
+                        </AppPressable>
                       )}
                     />
                   )}
@@ -550,7 +541,7 @@ export default function CreateFactScreen() {
 
           {/* Buttons */}
           <View style={styles.buttons}>
-            <Pressable
+            <AppPressable
               onPress={handleCancel}
               disabled={isSubmitting}
               hitSlop={6}
@@ -562,8 +553,8 @@ export default function CreateFactScreen() {
               <ThemedText type="smallBold" style={styles.cancelText}>
                 Cancel
               </ThemedText>
-            </Pressable>
-            <Pressable
+            </AppPressable>
+            <AppPressable
               onPress={isValid && !isSubmitting ? handleSubmit : undefined}
               disabled={!isValid || isSubmitting}
               hitSlop={6}
@@ -578,13 +569,13 @@ export default function CreateFactScreen() {
               <ThemedText type="smallBold" style={styles.submitText}>
                 {isSubmitting ? 'Sharing...' : 'Share Fact'}
               </ThemedText>
-            </Pressable>
+            </AppPressable>
           </View>
         </View>
       </ThemedView>
 
       {/* Unsaved changes confirmation modal (Android hardware back) */}
-      <Modal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
+      <AppModal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
         <View style={styles.modalOverlay}>
           <ThemedView type="backgroundElement" style={styles.modalContent}>
             <ThemedText type="subtitle" style={styles.modalTitle}>
@@ -594,24 +585,24 @@ export default function CreateFactScreen() {
               Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?
             </ThemedText>
             <View style={styles.modalButtons}>
-              <Pressable
+              <AppPressable
                 onPress={handleCancelLeave}
                 style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
                 <ThemedText type="smallBold" style={styles.cancelModalText}>
                   Cancelar
                 </ThemedText>
-              </Pressable>
-              <Pressable
+              </AppPressable>
+              <AppPressable
                 onPress={handleConfirmLeave}
                 style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
                 <ThemedText type="smallBold" style={styles.confirmModalText}>
                   Salir
                 </ThemedText>
-              </Pressable>
+              </AppPressable>
             </View>
           </ThemedView>
         </View>
-      </Modal>
+</AppModal>
     </KeyboardAvoidingView>
   );
 }

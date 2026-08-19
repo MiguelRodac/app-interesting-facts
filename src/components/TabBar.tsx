@@ -1,4 +1,5 @@
-import { StyleSheet, View, Pressable } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
@@ -42,7 +43,7 @@ export function TabBar({ activeTab, onTabPress }: TabBarProps) {
         const color = isActive ? theme.primary : theme.muted;
 
         return (
-          <Pressable
+          <AppPressable
             key={tab.name}
             onPress={() => onTabPress(tab.name)}
             style={styles.tab}>
@@ -52,7 +53,7 @@ export function TabBar({ activeTab, onTabPress }: TabBarProps) {
               style={[styles.label, { color }]}>
               {tab.label}
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         );
       })}
     </View>

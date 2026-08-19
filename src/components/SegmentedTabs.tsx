@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,7 +26,7 @@ export function SegmentedTabs({ tabs, activeKey, onChange }: SegmentedTabsProps)
       {tabs.map((tab) => {
         const isActive = tab.key === activeKey;
         return (
-          <Pressable
+          <AppPressable
             key={tab.key}
             onPress={() => onChange(tab.key)}
             style={[
@@ -42,7 +43,7 @@ export function SegmentedTabs({ tabs, activeKey, onChange }: SegmentedTabsProps)
               {tab.label}
               {tab.count !== undefined ? ` (${tab.count})` : ''}
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         );
       })}
     </View>

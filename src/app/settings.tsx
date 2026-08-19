@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { StyleSheet, View, Pressable, ScrollView, Modal } from 'react-native';
+import { StyleSheet, View, ScrollView } from 'react-native';
+import { AppModal } from '@/components/ui/app-modal';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -48,7 +50,7 @@ export default function SettingsScreen() {
     <ThemedView style={[styles.container, { paddingTop: topInset }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable
+        <AppPressable
           onPress={() => {
             if (router.canGoBack()) {
               router.back();
@@ -59,7 +61,7 @@ export default function SettingsScreen() {
           style={styles.backButton}
           hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </Pressable>
+        </AppPressable>
         <ThemedText type="subtitle">Settings</ThemedText>
         <View style={styles.backButton} />
       </View>
@@ -77,7 +79,7 @@ export default function SettingsScreen() {
               const isSelected = preference === option.value;
               const iconName = isSelected ? option.iconFocused : option.icon;
               return (
-                <Pressable
+                <AppPressable
                   key={option.value}
                   onPress={() => setPreference(option.value)}
                   style={[
@@ -94,7 +96,7 @@ export default function SettingsScreen() {
                     size={20}
                     color={isSelected ? theme.primary : theme.muted}
                   />
-                </Pressable>
+                </AppPressable>
               );
             })}
           </ThemedView>
@@ -106,22 +108,22 @@ export default function SettingsScreen() {
             Account
           </ThemedText>
           <ThemedView type="backgroundElement" style={styles.card}>
-            <Pressable
+            <AppPressable
               onPress={handleOpenPassword}
               style={[styles.row, { borderBottomWidth: 1, borderBottomColor: theme.border }]}>
               <Ionicons name="key-outline" size={20} color={theme.textSecondary} />
               <ThemedText type="default">Change Password</ThemedText>
               <View style={styles.flexSpacer} />
               <Ionicons name="chevron-forward" size={18} color={theme.muted} />
-            </Pressable>
+            </AppPressable>
             {user && (
-              <Pressable onPress={() => setLogoutModalVisible(true)} style={styles.row}>
+              <AppPressable onPress={() => setLogoutModalVisible(true)} style={styles.row}>
                 <Ionicons name="log-out-outline" size={20} color={theme.destructive} />
                 <ThemedText type="default" style={{ color: theme.destructive }}>
                   Logout
                 </ThemedText>
                 <View style={styles.flexSpacer} />
-              </Pressable>
+              </AppPressable>
             )}
           </ThemedView>
           {!user && (
@@ -133,7 +135,7 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* Logout confirmation modal */}
-      <Modal visible={logoutModalVisible} transparent animationType="fade" onRequestClose={() => setLogoutModalVisible(false)}>
+      <AppModal visible={logoutModalVisible} transparent animationType="fade" onRequestClose={() => setLogoutModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <ThemedView type="backgroundElement" style={styles.modalCard}>
             <ThemedText type="subtitle" style={styles.modalTitle}>
@@ -143,24 +145,24 @@ export default function SettingsScreen() {
               Are you sure you want to log out?
             </ThemedText>
             <View style={styles.modalActions}>
-              <Pressable
+              <AppPressable
                 onPress={() => setLogoutModalVisible(false)}
                 style={[styles.modalButton, { borderColor: theme.border }]}>
                 <ThemedText type="smallBold" themeColor="textSecondary">
                   Cancel
                 </ThemedText>
-              </Pressable>
-              <Pressable
+              </AppPressable>
+              <AppPressable
                 onPress={handleLogout}
                 style={[styles.modalButton, { backgroundColor: theme.destructive }]}>
                 <ThemedText type="smallBold" style={styles.modalButtonText}>
                   Log Out
                 </ThemedText>
-              </Pressable>
+              </AppPressable>
             </View>
           </ThemedView>
         </View>
-      </Modal>
+</AppModal>
     </ThemedView>
   );
 }

@@ -1,4 +1,5 @@
-import { Text, Pressable, type StyleProp, type TextStyle } from 'react-native';
+import { Text, type StyleProp, type TextStyle } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 
 import { parseContent } from '@/utils/parseContent';

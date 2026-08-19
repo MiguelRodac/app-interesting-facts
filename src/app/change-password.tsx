@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { StyleSheet, View, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { StyleSheet, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -65,7 +66,7 @@ export default function ChangePasswordScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
       <ThemedView style={[styles.container, { paddingTop: topInset }]}>
         {/* Close button - go back to previous screen */}
-        <Pressable
+        <AppPressable
           onPress={() => {
             if (router.canGoBack()) {
               router.back();
@@ -76,7 +77,7 @@ export default function ChangePasswordScreen() {
           style={styles.closeButton}
           hitSlop={8}>
           <Ionicons name="close" size={28} color={theme.text} />
-        </Pressable>
+        </AppPressable>
 
         {/* Header */}
         <View style={styles.header}>
@@ -128,7 +129,7 @@ export default function ChangePasswordScreen() {
             </ThemedText>
           )}
 
-          <Pressable
+          <AppPressable
             onPress={isValid ? handleSubmit : undefined}
             style={[
               styles.submitButton,
@@ -140,7 +141,7 @@ export default function ChangePasswordScreen() {
             <ThemedText type="smallBold" style={styles.submitText}>
               {isSubmitting ? 'Updating...' : 'Update Password'}
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         </ScrollView>
       </ThemedView>
     </KeyboardAvoidingView>

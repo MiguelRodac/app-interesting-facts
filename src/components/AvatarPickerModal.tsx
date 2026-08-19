@@ -1,13 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Modal,
-  StyleSheet,
-  View,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
+import { StyleSheet, View, ScrollView, ActivityIndicator, Image } from 'react-native';
+import { AppModal } from '@/components/ui/app-modal';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
@@ -91,13 +85,13 @@ export function AvatarPickerModal({
   const avatarOptionsWithUrl = avatarOptions.filter((option) => option.url);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         {/* Tap outside to dismiss — like Cancel */}
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <AppPressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <ThemedView type="backgroundElement" style={styles.sheet}>
           {/* Blocks the dismiss layer — taps inside the sheet do not close */}
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
+          <AppPressable style={StyleSheet.absoluteFill} onPress={() => {}} />
           <View style={styles.handle} />
           <ThemedText type="subtitle" style={styles.title}>
             Change Avatar
@@ -121,7 +115,7 @@ export function AvatarPickerModal({
                       {colorOptions.map((option) => {
                         const isSelected = pendingColor === option.color;
                         return (
-                          <Pressable
+                          <AppPressable
                             key={option.id}
                             onPress={() => handlePickColor(option.color!)}
                             style={[
@@ -143,18 +137,18 @@ export function AvatarPickerModal({
                       Choose an avatar
                     </ThemedText>
                     <View style={styles.avatarGrid}>
-                      <Pressable
+                      <AppPressable
                         onPress={handlePickNoAvatar}
                         style={[
                           styles.noAvatarOption,
                           !pendingUrl && !pendingColor && styles.optionSelected,
                         ]}>
                         <Ionicons name="person-outline" size={28} color="#FFFFFF" />
-                      </Pressable>
+                      </AppPressable>
                       {avatarOptionsWithUrl.map((option) => {
                         const isSelected = pendingUrl === option.url;
                         return (
-                          <Pressable
+                          <AppPressable
                             key={option.id}
                             onPress={() => handlePickAvatar(option)}
                             style={[
@@ -167,7 +161,7 @@ export function AvatarPickerModal({
                               style={styles.avatarOptionImage}
                               resizeMode="cover"
                             />
-                          </Pressable>
+                          </AppPressable>
                         );
                       })}
                     </View>
@@ -179,24 +173,24 @@ export function AvatarPickerModal({
 
           {/* Actions — Cancel discards the pending selection, Done applies it */}
           <View style={styles.actions}>
-            <Pressable
+            <AppPressable
               onPress={onClose}
               style={[styles.actionButton, styles.cancelButton, { borderColor: theme.border }]}>
               <ThemedText type="smallBold" style={styles.cancelText}>
                 Cancel
               </ThemedText>
-            </Pressable>
-            <Pressable
+            </AppPressable>
+            <AppPressable
               onPress={handleDone}
               style={[styles.actionButton, { backgroundColor: theme.primary }]}>
               <ThemedText type="smallBold" style={styles.doneText}>
                 Done
               </ThemedText>
-            </Pressable>
+            </AppPressable>
           </View>
         </ThemedView>
       </View>
-    </Modal>
+</AppModal>
   );
 }
 

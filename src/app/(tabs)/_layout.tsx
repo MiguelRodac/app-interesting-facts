@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
 import { Tabs, usePathname, useRouter } from 'expo-router';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { AppModal } from '@/components/ui/app-modal';
+import { AppPressable } from '@/components/ui/app-pressable';
 
 import { TabBar } from '@/components/TabBar';
 import { ThemedText } from '@/components/themed-text';
@@ -93,7 +95,7 @@ export default function TabsLayout() {
       </Tabs>
 
       {/* Unsaved changes confirmation modal */}
-      <Modal visible={pendingTab !== null} transparent animationType="fade">
+      <AppModal visible={pendingTab !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <ThemedView type="backgroundElement" style={styles.modalContent}>
             <ThemedText type="subtitle" style={styles.modalTitle}>
@@ -103,24 +105,24 @@ export default function TabsLayout() {
               Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?
             </ThemedText>
             <View style={styles.modalButtons}>
-              <Pressable
+              <AppPressable
                 onPress={handleCancelLeave}
                 style={[styles.modalButton, styles.cancelButton, { borderColor: theme.border }]}>
                 <ThemedText type="smallBold" style={styles.cancelButtonText}>
                   Cancelar
                 </ThemedText>
-              </Pressable>
-              <Pressable
+              </AppPressable>
+              <AppPressable
                 onPress={handleConfirmLeave}
                 style={[styles.modalButton, styles.confirmButton, { backgroundColor: theme.destructive }]}>
                 <ThemedText type="smallBold" style={styles.confirmButtonText}>
                   Salir
                 </ThemedText>
-              </Pressable>
+              </AppPressable>
             </View>
           </ThemedView>
         </View>
-      </Modal>
+</AppModal>
     </View>
   );
 }

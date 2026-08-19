@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, View, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -54,7 +55,7 @@ export default function LoginScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
       <ThemedView style={[styles.container, { paddingTop: topInset }]}>
         {/* Close button - go back to previous screen */}
-        <Pressable
+        <AppPressable
           onPress={() => {
             if (router.canGoBack()) {
               router.back();
@@ -65,7 +66,7 @@ export default function LoginScreen() {
           style={styles.closeButton}
           hitSlop={8}>
           <Ionicons name="close" size={28} color={theme.text} />
-        </Pressable>
+        </AppPressable>
 
         {/* Header */}
         <View style={styles.header}>
@@ -114,16 +115,16 @@ export default function LoginScreen() {
             editable={!isSubmitting}
           />
 
-          <Pressable
+          <AppPressable
             onPress={goToForgotPassword}
             style={styles.forgotButton}
             hitSlop={6}>
             <ThemedText type="small" style={{ color: theme.primary }}>
               Forgot password?
             </ThemedText>
-          </Pressable>
+          </AppPressable>
 
-          <Pressable
+          <AppPressable
             onPress={isValid && !isSubmitting ? handleSubmit : undefined}
             style={[
               styles.submitButton,
@@ -135,16 +136,16 @@ export default function LoginScreen() {
             <ThemedText type="smallBold" style={styles.submitText}>
               {isSubmitting ? 'Signing in...' : 'Sign In'}
             </ThemedText>
-          </Pressable>
+          </AppPressable>
 
-          <Pressable onPress={goToRegister} style={styles.linkButton}>
+          <AppPressable onPress={goToRegister} style={styles.linkButton}>
             <ThemedText type="small" themeColor="textSecondary">
               Don't have an account?{' '}
             </ThemedText>
             <ThemedText type="smallBold" style={{ color: theme.primary }}>
               Sign Up
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         </View>
       </ThemedView>
     </KeyboardAvoidingView>

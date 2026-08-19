@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, View, Pressable } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
@@ -67,7 +68,7 @@ export function PasswordField({
           autoCorrect={false}
           editable={editable}
         />
-        <Pressable
+        <AppPressable
           onPress={() => setShowPassword((current) => !current)}
           hitSlop={8}
           style={styles.eyeButton}>
@@ -76,7 +77,7 @@ export function PasswordField({
             size={22}
             color={theme.muted}
           />
-        </Pressable>
+        </AppPressable>
       </View>
       {tooShort && (
         <ThemedText type="small" style={{ color: theme.destructive }}>

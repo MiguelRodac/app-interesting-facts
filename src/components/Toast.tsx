@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Animated, Pressable } from 'react-native';
+import { StyleSheet, Animated } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -56,9 +57,9 @@ export function Toast() {
         <ThemedText type="small" style={[styles.message, { color: colors.text }]} numberOfLines={3}>
           {toast.message}
         </ThemedText>
-        <Pressable onPress={clearToast} hitSlop={8} style={styles.dismiss}>
+        <AppPressable onPress={clearToast} hitSlop={8} style={styles.dismiss}>
           <Ionicons name="close" size={18} color={colors.text} />
-        </Pressable>
+        </AppPressable>
       </ThemedView>
     </Animated.View>
   );

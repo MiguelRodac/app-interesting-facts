@@ -1,4 +1,6 @@
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { AppModal } from '@/components/ui/app-modal';
+import { AppPressable } from '@/components/ui/app-pressable';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -29,7 +31,7 @@ export function ConfirmDialog({
   const theme = useTheme();
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
+<AppModal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
         <ThemedView type="backgroundElement" style={styles.card}>
           <ThemedText type="subtitle" style={styles.title}>
@@ -39,14 +41,14 @@ export function ConfirmDialog({
             {message}
           </ThemedText>
           <View style={styles.buttons}>
-            <Pressable
+            <AppPressable
               onPress={onCancel}
               style={[styles.button, styles.cancelButton, { borderColor: theme.border }]}>
               <ThemedText type="smallBold" style={styles.cancelText}>
                 {cancelLabel}
               </ThemedText>
-            </Pressable>
-            <Pressable
+            </AppPressable>
+            <AppPressable
               onPress={onConfirm}
               style={[
                 styles.button,
@@ -56,11 +58,11 @@ export function ConfirmDialog({
               <ThemedText type="smallBold" style={styles.confirmText}>
                 {confirmLabel}
               </ThemedText>
-            </Pressable>
+            </AppPressable>
           </View>
         </ThemedView>
       </View>
-    </Modal>
+</AppModal> 
   );
 }
 

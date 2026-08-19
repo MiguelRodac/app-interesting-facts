@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Pressable, Animated } from 'react-native';
+import { StyleSheet, Animated } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -46,9 +47,9 @@ export function ErrorBanner() {
         <ThemedText type="small" style={[styles.message, { color: colors.text }]} numberOfLines={3}>
           {error.userMessage}
         </ThemedText>
-        <Pressable onPress={clearError} hitSlop={8} style={styles.dismiss}>
+        <AppPressable onPress={clearError} hitSlop={8} style={styles.dismiss}>
           <Ionicons name="close" size={18} color={colors.text} />
-        </Pressable>
+        </AppPressable>
       </ThemedView>
     </Animated.View>
   );

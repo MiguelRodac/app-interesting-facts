@@ -1,19 +1,12 @@
 import { useState } from 'react';
-import {
-  StyleSheet,
-  TextInput,
-  View,
-  Pressable,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
-import { checkEmailExists } from '@/data/auth/authService';
 import { sendPasswordReset } from '@/data/auth/firebaseAuth';
 import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
@@ -37,15 +30,7 @@ export default function ForgotPasswordScreen() {
 
     setIsSending(true);
     try {
-      // Pre-check with the backend (when the endpoint exists) so we don't
-      // call Firebase for emails that aren't registered anywhere.
-      const emailAvailable = await checkEmailExists(emailValue);
-      if (emailAvailable === true) {
-        router.back();
-        uiStore.showToast('No account found with this email.', 'info');
-        return;
-      }
-
+      // Firebase sends the reset email directly — no backend involved.
       await sendPasswordReset(emailValue);
       router.back();
       uiStore.showToast('If an account exists for this email, a reset link was sent.', 'success');
@@ -76,7 +61,7 @@ export default function ForgotPasswordScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
       <ThemedView style={[styles.container, { paddingTop: topInset }]}>
         {/* Close button - go back to previous screen */}
-        <Pressable
+        <AppPressable
           onPress={() => {
             if (router.canGoBack()) {
               router.back();
@@ -87,7 +72,7 @@ export default function ForgotPasswordScreen() {
           style={styles.closeButton}
           hitSlop={8}>
           <Ionicons name="close" size={28} color={theme.text} />
-        </Pressable>
+        </AppPressable>
 
         {/* Header */}
         <View style={styles.header}>
@@ -129,7 +114,7 @@ export default function ForgotPasswordScreen() {
             )}
           </View>
 
-          <Pressable
+          <AppPressable
             onPress={isValid ? handleSend : undefined}
             style={[
               styles.submitButton,
@@ -141,7 +126,7 @@ export default function ForgotPasswordScreen() {
             <ThemedText type="smallBold" style={styles.submitText}>
               {isSending ? 'Sending...' : 'Send Reset Link'}
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         </View>
       </ThemedView>
     </KeyboardAvoidingView>
