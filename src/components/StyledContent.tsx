@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 
 import { parseContent } from '@/utils/parseContent';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/data/hooks/useAuth';
 
 interface StyledContentProps {
   content: string;
@@ -19,6 +20,7 @@ interface StyledContentProps {
 export function StyledContent({ content, style, numberOfLines }: StyledContentProps) {
   const theme = useTheme();
   const router = useRouter();
+  const { user } = useAuth();
   const segments = parseContent(content);
 
   const handleHashtagPress = (tag: string) => {
@@ -30,7 +32,12 @@ export function StyledContent({ content, style, numberOfLines }: StyledContentPr
   const handleMentionPress = (mention: string) => {
     // Remove the @ prefix to get username
     const username = mention.slice(1);
-    router.push(`/(tabs)/users/${username}`);
+    // If it's the current user, go to their own profile
+    if (user && user.username === username) {
+      router.push('/(tabs)/profile');
+    } else {
+      router.push(`/(tabs)/users/${username}`);
+    }
   };
 
   return (
