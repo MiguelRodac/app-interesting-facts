@@ -46,8 +46,8 @@ export default function SearchScreen() {
   const topInset = useTopInset();
   const params = useLocalSearchParams<{ q?: string }>();
   const segments = useSegments();
-const [inputValue, setInputValue] = useState(query);
-  const initialSearchDone = useRef(false);
+  const [inputValue, setInputValue] = useState(query);
+  const previousQ = useRef<string | undefined>(params.q);
   const latestTextRef = useRef(query);
   const hasCheckedAuth = useRef(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -101,8 +101,8 @@ const [inputValue, setInputValue] = useState(query);
 
   // Handle initial search from route params (e.g., from hashtag press)
   useEffect(() => {
-    if (params.q && !initialSearchDone.current) {
-      initialSearchDone.current = true;
+    if (params.q && params.q !== previousQ.current) {
+      previousQ.current = params.q;
       const decodedQuery = decodeURIComponent(params.q);
       setInputValue(decodedQuery);
       latestTextRef.current = decodedQuery;
