@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
 import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
+import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -27,6 +28,8 @@ export default function FactDetailScreen() {
   const topInset = useTopInset();
   const [fact, setFact] = useState<Fact | null>(null);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const isCollapsible = fact ? fact.content.length > COLLAPSE_THRESHOLD : false;
   const handleConfirmDelete = useCallback(async () => {
     if (!fact) return;
     setConfirmDeleteVisible(false);
@@ -181,8 +184,18 @@ export default function FactDetailScreen() {
           {/* Content */}
           <StyledContent
             content={fact.content}
+            numberOfLines={isCollapsible && !expanded ? COLLAPSE_LINES : undefined}
             style={styles.content}
           />
+
+          {/* Expand/collapse toggle for long facts */}
+          {isCollapsible && (
+            <Pressable onPress={() => setExpanded((current) => !current)} hitSlop={6} style={styles.seeMore}>
+              <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                {expanded ? 'See less' : 'See more'}
+              </ThemedText>
+            </Pressable>
+          )}
 
           {/* Meta */}
           <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
@@ -212,8 +225,14 @@ export default function FactDetailScreen() {
 
             {isOwner ? (
               <View style={styles.ownerActions}>
-                <Pressable onPress={handleEdit} style={styles.actionBtn} hitSlop={8}>
-                  <Ionicons name="create-outline" size={24} color={theme.primary} />
+                <Pressable
+                  onPress={handleEdit}
+                  style={[styles.editButton, { borderColor: theme.primary }]}
+                  hitSlop={8}>
+                  <Ionicons name="create-outline" size={18} color={theme.primary} />
+                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                    Edit
+                  </ThemedText>
                 </Pressable>
                 <Pressable onPress={handleDelete} style={styles.actionBtn} hitSlop={8}>
                   <Ionicons name="trash-outline" size={24} color={theme.destructive} />
@@ -280,6 +299,11 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     marginBottom: Spacing.three,
   },
+  seeMore: {
+    alignSelf: 'flex-start',
+    marginTop: -Spacing.two,
+    marginBottom: Spacing.three,
+  },
   meta: {
     marginBottom: Spacing.three,
   },
@@ -295,6 +319,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.one,
     padding: Spacing.one,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: Radii.md,
+    borderWidth: 1,
   },
   ownerActions: {
     flexDirection: 'row',

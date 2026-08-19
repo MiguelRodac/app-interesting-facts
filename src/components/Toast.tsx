@@ -5,9 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radii, Shadows, Spacing } from '@/constants/theme';
+import { AlertColors, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useUIStore, type ToastType } from '@/data/stores/uiStore';
-import { useTheme } from '@/hooks/use-theme';
 
 const AUTO_DISMISS_MS = 3500;
 
@@ -21,7 +20,6 @@ export function Toast() {
   const toast = useUIStore((s) => s.toast);
   const clearToast = useUIStore((s) => s.clearToast);
   const error = useUIStore((s) => s.error);
-  const theme = useTheme();
   const insets = useSafeAreaInsets();
   // Below the status bar/notch on native, with breathing room on web
   const baseTop = Math.max(Spacing.four, insets.top + Spacing.three);
@@ -42,8 +40,7 @@ export function Toast() {
 
   if (!toast) return null;
 
-  const accentColor =
-    toast.type === 'success' ? theme.success : toast.type === 'warning' ? theme.warning : theme.primary;
+  const colors = AlertColors[toast.type];
 
   // Stack below the error banner when both are visible
   const topOffset = error ? baseTop + 56 : baseTop;
@@ -54,13 +51,13 @@ export function Toast() {
         styles.container,
         { top: topOffset, opacity, transform: [{ translateY }] },
       ]}>
-      <ThemedView style={[styles.card, { borderColor: accentColor }, Shadows.lg]}>
-        <Ionicons name={TYPE_ICONS[toast.type]} size={22} color={accentColor} />
-        <ThemedText type="small" style={styles.message} numberOfLines={3}>
+      <ThemedView style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }, Shadows.lg]}>
+        <Ionicons name={TYPE_ICONS[toast.type]} size={22} color={colors.icon} />
+        <ThemedText type="small" style={[styles.message, { color: colors.text }]} numberOfLines={3}>
           {toast.message}
         </ThemedText>
         <Pressable onPress={clearToast} hitSlop={8} style={styles.dismiss}>
-          <Ionicons name="close" size={18} color={theme.muted} />
+          <Ionicons name="close" size={18} color={colors.text} />
         </Pressable>
       </ThemedView>
     </Animated.View>

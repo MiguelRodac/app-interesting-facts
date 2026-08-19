@@ -38,6 +38,14 @@ export const Colors = {
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
+/** Light-palette alert surfaces — same in light and dark mode for readability. */
+export const AlertColors = {
+  success: { background: '#D8F3DE', text: '#1B5E20', border: '#81C784', icon: '#2E7D32' },
+  warning: { background: '#FFF3E0', text: '#B25000', border: '#FFCC80', icon: '#E65100' },
+  info: { background: '#DDEBFF', text: '#0D47A1', border: '#8FC3F8', icon: '#1565C0' },
+  error: { background: '#FDE7EC', text: '#B71C1C', border: '#EF9A9A', icon: '#C62828' },
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

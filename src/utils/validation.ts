@@ -15,10 +15,33 @@ export const USERNAME_ERROR_MESSAGE =
 
 export const EMAIL_ERROR_MESSAGE = 'Email is invalid';
 
+/** Firebase Auth requires at least 6 characters; 16 is our product max */
+export const MIN_PASSWORD_LENGTH = 6;
+
+export const MAX_PASSWORD_LENGTH = 16;
+
+export const PASSWORD_ERROR_MESSAGE = `Password must be ${MIN_PASSWORD_LENGTH}-${MAX_PASSWORD_LENGTH} characters`;
+
+export const PASSWORD_STRENGTH_LABELS = ['Weak', 'Weak', 'Fair', 'Good', 'Strong', 'Strong'] as const;
+
 export function isValidEmail(value: string): boolean {
   return EMAIL_REGEX.test(value.trim());
 }
 
 export function isValidUsername(value: string): boolean {
   return USERNAME_REGEX.test(value.trim());
+}
+
+/**
+ * Scores a password 0-5: length >= 8, lowercase, uppercase, digit, special char.
+ * Firebase only enforces the 6-char minimum — this is a UX guide, not a gate.
+ */
+export function getPasswordStrength(password: string): number {
+  let score = 0;
+  if (password.length >= 8) score += 1;
+  if (/[a-z]/.test(password)) score += 1;
+  if (/[A-Z]/.test(password)) score += 1;
+  if (/\d/.test(password)) score += 1;
+  if (/[^A-Za-z0-9]/.test(password)) score += 1;
+  return score;
 }

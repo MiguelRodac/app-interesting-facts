@@ -32,6 +32,7 @@ const client = createApiClient(getIdToken);
 
 const MIN_LENGTH = 10;
 const MAX_LENGTH = 1000;
+const TITLE_MAX_LENGTH = 50;
 
 const DROPDOWN_BG = '#26262E';
 const DROPDOWN_BORDER = '#3A3A46';
@@ -407,9 +408,12 @@ export default function CreateFactScreen() {
         <View style={styles.form}>
           {/* Title field */}
           <View style={styles.field}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Title (optional)
-            </ThemedText>
+            <View style={styles.fieldHeader}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Title (optional)
+              </ThemedText>
+              <CharCounter current={title.length} min={0} max={TITLE_MAX_LENGTH} />
+            </View>
             <TextInput
               style={[
                 styles.input,
@@ -423,7 +427,7 @@ export default function CreateFactScreen() {
               placeholderTextColor={theme.muted}
               value={title}
               onChangeText={setTitle}
-              maxLength={100}
+              maxLength={TITLE_MAX_LENGTH}
               editable={!isSubmitting}
             />
           </View>

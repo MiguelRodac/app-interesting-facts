@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import type { Author } from '@/types';
+import type { Author, AppError } from '@/types';
 import * as authService from '../auth/authService';
+import { isFirebaseAuthError, mapFirebaseError } from '../auth/firebaseErrors';
 import { setUnauthorizedHandler } from '../api/client';
 import { useUIStore } from './uiStore';
 import { useFactsStore } from './factsStore';
@@ -38,8 +39,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user, token, isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
-      if (error && typeof error === 'object' && 'code' in error) {
-        useUIStore.getState().setError(error as import('@/types').AppError);
+      const appError = isFirebaseAuthError(error) ? mapFirebaseError(error) : error;
+      if (appError && typeof appError === 'object' && 'code' in appError) {
+        useUIStore.getState().setError(appError as AppError);
       }
       throw error;
     }
@@ -52,8 +54,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user, token, isAuthenticated: true, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
-      if (error && typeof error === 'object' && 'code' in error) {
-        useUIStore.getState().setError(error as import('@/types').AppError);
+      const appError = isFirebaseAuthError(error) ? mapFirebaseError(error) : error;
+      if (appError && typeof appError === 'object' && 'code' in appError) {
+        useUIStore.getState().setError(appError as AppError);
       }
       throw error;
     }

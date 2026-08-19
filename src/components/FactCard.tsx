@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { StyledContent } from '@/components/StyledContent';
 import { UserAvatar } from '@/components/UserAvatar';
 import { LikeButton } from '@/components/LikeButton';
 import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
+import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import type { Fact } from '@/types';
@@ -42,6 +43,9 @@ export function FactCard({
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
+  const [expanded, setExpanded] = useState(false);
+
+  const isCollapsible = fact.content.length > COLLAPSE_THRESHOLD;
 
   const handleAuthorPress = useCallback(() => {
     if (user && fact.author.id === user.id) {
@@ -51,10 +55,10 @@ export function FactCard({
     }
   }, [user, fact.author.id, fact.author.username, router]);
 
-  const content =
-    variant === 'anon' && fact.content.length > 150
-      ? fact.content.slice(0, 150) + '...'
-      : fact.content;
+  const handleToggleExpand = useCallback((e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
+    setExpanded((current) => !current);
+  }, []);
 
   return (
     <Pressable onPress={onPress} disabled={!onPress}>
@@ -91,9 +95,19 @@ export function FactCard({
 
         {/* Content */}
         <StyledContent
-          content={content}
+          content={fact.content}
+          numberOfLines={isCollapsible && !expanded ? COLLAPSE_LINES : undefined}
           style={[styles.defaultText, styles.content]}
         />
+
+        {/* Expand/collapse toggle for long facts */}
+        {isCollapsible && (
+          <Pressable onPress={handleToggleExpand} hitSlop={6} style={styles.seeMore}>
+            <ThemedText type="smallBold" style={{ color: theme.primary }}>
+              {expanded ? 'See less' : 'See more'}
+            </ThemedText>
+          </Pressable>
+        )}
 
         {/* Actions row */}
         {variant !== 'anon' && (
@@ -163,6 +177,11 @@ const styles = StyleSheet.create({
   content: {
     marginBottom: Spacing.two,
     lineHeight: 22,
+  },
+  seeMore: {
+    alignSelf: 'flex-start',
+    marginTop: -Spacing.one,
+    marginBottom: Spacing.one,
   },
   actionsRow: {
     flexDirection: 'row',

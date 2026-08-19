@@ -30,6 +30,7 @@ const client = createApiClient(getIdToken);
 
 const MIN_LENGTH = 10;
 const MAX_LENGTH = 1000;
+const TITLE_MAX_LENGTH = 50;
 
 export default function EditFactScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -320,9 +321,12 @@ export default function EditFactScreen() {
         <View style={styles.form}>
           {/* Title field */}
           <View style={styles.field}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Title (optional)
-            </ThemedText>
+            <View style={styles.fieldHeader}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Title (optional)
+              </ThemedText>
+              <CharCounter current={title.length} min={0} max={TITLE_MAX_LENGTH} />
+            </View>
             <TextInput
               style={[
                 styles.input,
@@ -336,7 +340,7 @@ export default function EditFactScreen() {
               placeholderTextColor={theme.muted}
               value={title}
               onChangeText={setTitle}
-              maxLength={100}
+              maxLength={TITLE_MAX_LENGTH}
               editable={!isSubmitting}
             />
           </View>

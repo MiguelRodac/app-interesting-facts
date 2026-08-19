@@ -9,9 +9,15 @@ import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
+import { PasswordField } from '@/components/PasswordField';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
-import { isValidEmail, isValidUsername, USERNAME_ERROR_MESSAGE } from '@/utils/validation';
+import {
+  isValidEmail,
+  isValidUsername,
+  MIN_PASSWORD_LENGTH,
+  USERNAME_ERROR_MESSAGE,
+} from '@/utils/validation';
 import type { ApiUsernameCheck } from '@/data/api/types';
 
 const client = createApiClient(getIdToken);
@@ -93,7 +99,7 @@ export default function RegisterScreen() {
 
   const isValid =
     isValidEmail(email) &&
-    password.length > 0 &&
+    password.length >= MIN_PASSWORD_LENGTH &&
     displayName.trim().length > 0 &&
     isValidUsername(username) &&
     usernameStatus !== 'taken' &&
@@ -267,27 +273,13 @@ export default function RegisterScreen() {
             )}
           </View>
 
-          <View style={styles.field}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Password
-            </ThemedText>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder="Choose a password"
-              placeholderTextColor={theme.muted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              editable={!isSubmitting}
-            />
-          </View>
+          <PasswordField
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Choose a password"
+            editable={!isSubmitting}
+            showStrength
+          />
 
           <Pressable
             onPress={isValid && !isSubmitting ? handleSubmit : undefined}

@@ -4,6 +4,10 @@ import {
   createUserWithEmailAndPassword,
   firebaseSignOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword,
   type User,
 } from '@/lib/firebase';
 
@@ -117,4 +121,28 @@ export async function signUp(
 export async function signOut(): Promise<void> {
   await firebaseSignOut(getAuth());
   cachedUser = null;
+}
+
+/** Send a password reset email via Firebase. */
+export async function sendPasswordReset(email: string): Promise<void> {
+  await sendPasswordResetEmail(getAuth(), email);
+}
+
+/**
+ * Change the current user's password. Re-authenticates first so sessions
+ * older than ~1 hour (Firebase refresh cutoff) don't reject the update.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = getCurrentUser();
+  const email = user?.email;
+  if (!user || !email) {
+    throw new Error('No authenticated user');
+  }
+
+  const credential = EmailAuthProvider.credential(email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await updatePassword(user, newPassword);
 }

@@ -5,16 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radii, Shadows, Spacing } from '@/constants/theme';
+import { AlertColors, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useUIStore } from '@/data/stores/uiStore';
-import { useTheme } from '@/hooks/use-theme';
 
 const AUTO_DISMISS_MS = 5000;
 
 export function ErrorBanner() {
   const error = useUIStore((s) => s.error);
   const clearError = useUIStore((s) => s.clearError);
-  const theme = useTheme();
   const insets = useSafeAreaInsets();
   // Below the status bar/notch on native, with breathing room on web
   const topOffset = Math.max(Spacing.four, insets.top + Spacing.three);
@@ -35,19 +33,21 @@ export function ErrorBanner() {
 
   if (!error) return null;
 
+  const colors = AlertColors.error;
+
   return (
     <Animated.View
       style={[
         styles.container,
         { top: topOffset, opacity, transform: [{ translateY }] },
       ]}>
-      <ThemedView style={[styles.card, { borderColor: theme.destructive }, Shadows.lg]}>
-        <Ionicons name="alert-circle" size={22} color={theme.destructive} />
-        <ThemedText type="small" style={styles.message} numberOfLines={3}>
+      <ThemedView style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }, Shadows.lg]}>
+        <Ionicons name="alert-circle" size={22} color={colors.icon} />
+        <ThemedText type="small" style={[styles.message, { color: colors.text }]} numberOfLines={3}>
           {error.userMessage}
         </ThemedText>
         <Pressable onPress={clearError} hitSlop={8} style={styles.dismiss}>
-          <Ionicons name="close" size={18} color={theme.muted} />
+          <Ionicons name="close" size={18} color={colors.text} />
         </Pressable>
       </ThemedView>
     </Animated.View>

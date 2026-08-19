@@ -5,6 +5,10 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword,
   setPersistence,
   browserLocalPersistence,
   type User,
@@ -47,6 +51,10 @@ export {
   createUserWithEmailAndPassword,
   firebaseSignOut,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword,
   getAuth,
 };
 export type { User };

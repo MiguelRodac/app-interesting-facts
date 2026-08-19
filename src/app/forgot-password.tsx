@@ -1,50 +1,72 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, View, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  StyleSheet,
+  TextInput,
+  View,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { PasswordField } from '@/components/PasswordField';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
-import { useAuth } from '@/data/hooks/useAuth';
+import { checkEmailExists } from '@/data/auth/authService';
+import { sendPasswordReset } from '@/data/auth/firebaseAuth';
+import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
-import { isValidEmail, MIN_PASSWORD_LENGTH } from '@/utils/validation';
+import { isValidEmail } from '@/utils/validation';
 
-export default function LoginScreen() {
+export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const [isSending, setIsSending] = useState(false);
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
-
-  const isValid = isValidEmail(email) && password.length >= MIN_PASSWORD_LENGTH;
+  const uiStore = useUIStore();
 
   const emailInvalid = email.trim().length > 0 && !isValidEmail(email);
+  const isValid = isValidEmail(email) && !isSending;
 
-  const handleSubmit = async () => {
-    if (!isValid || isSubmitting) return;
+  const handleSend = async () => {
+    if (!isValid) return;
+    const emailValue = email.trim();
 
-    setIsSubmitting(true);
+    setIsSending(true);
     try {
-      await login(email.trim(), password);
-      router.replace('/(tabs)');
-    } catch {
-      // Error handled by uiStore → ErrorBanner
+      // Pre-check with the backend (when the endpoint exists) so we don't
+      // call Firebase for emails that aren't registered anywhere.
+      const emailAvailable = await checkEmailExists(emailValue);
+      if (emailAvailable === true) {
+        router.back();
+        uiStore.showToast('No account found with this email.', 'info');
+        return;
+      }
+
+      await sendPasswordReset(emailValue);
+      router.back();
+      uiStore.showToast('If an account exists for this email, a reset link was sent.', 'success');
+    } catch (error) {
+      // Don't reveal whether an email is registered: only surface real failures
+      // (network, rate limit). Everything else responds like success.
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        ((error as { code: string }).code === 'auth/network-request-failed' ||
+          (error as { code: string }).code === 'auth/too-many-requests')
+      ) {
+        uiStore.setError(error as never);
+      } else {
+        router.back();
+        uiStore.showToast('If an account exists for this email, a reset link was sent.', 'success');
+      }
     } finally {
-      setIsSubmitting(false);
+      setIsSending(false);
     }
-  };
-
-  const goToRegister = () => {
-    router.push('/auth/register');
-  };
-
-  const goToForgotPassword = () => {
-    router.push('/forgot-password');
   };
 
   return (
@@ -59,7 +81,7 @@ export default function LoginScreen() {
             if (router.canGoBack()) {
               router.back();
             } else {
-              router.replace('/');
+              router.replace('/auth/login');
             }
           }}
           style={styles.closeButton}
@@ -69,9 +91,9 @@ export default function LoginScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <ThemedText type="title">Welcome Back</ThemedText>
+          <ThemedText type="title">Reset Password</ThemedText>
           <ThemedText type="default" themeColor="textSecondary">
-            Sign in to continue
+            Enter your email and we'll send you a link to reset your password.
           </ThemedText>
         </View>
 
@@ -98,7 +120,7 @@ export default function LoginScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              editable={!isSubmitting}
+              editable={!isSending}
             />
             {emailInvalid && (
               <ThemedText type="small" style={{ color: theme.destructive }}>
@@ -107,42 +129,17 @@ export default function LoginScreen() {
             )}
           </View>
 
-          <PasswordField
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Your password"
-            editable={!isSubmitting}
-          />
-
           <Pressable
-            onPress={goToForgotPassword}
-            style={styles.forgotButton}
-            hitSlop={6}>
-            <ThemedText type="small" style={{ color: theme.primary }}>
-              Forgot password?
-            </ThemedText>
-          </Pressable>
-
-          <Pressable
-            onPress={isValid && !isSubmitting ? handleSubmit : undefined}
+            onPress={isValid ? handleSend : undefined}
             style={[
               styles.submitButton,
               {
                 backgroundColor: isValid ? theme.primary : theme.muted,
-                opacity: isSubmitting ? 0.7 : 1,
+                opacity: isSending ? 0.7 : 1,
               },
             ]}>
             <ThemedText type="smallBold" style={styles.submitText}>
-              {isSubmitting ? 'Signing in...' : 'Sign In'}
-            </ThemedText>
-          </Pressable>
-
-          <Pressable onPress={goToRegister} style={styles.linkButton}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Don't have an account?{' '}
-            </ThemedText>
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>
-              Sign Up
+              {isSending ? 'Sending...' : 'Send Reset Link'}
             </ThemedText>
           </Pressable>
         </View>
@@ -185,10 +182,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     fontSize: 16,
   },
-  forgotButton: {
-    alignSelf: 'flex-end',
-    marginTop: -Spacing.one,
-  },
   submitButton: {
     paddingVertical: Spacing.three,
     borderRadius: Radii.md,
@@ -198,10 +191,5 @@ const styles = StyleSheet.create({
   },
   submitText: {
     color: '#FFFFFF',
-  },
-  linkButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: Spacing.two,
   },
 });

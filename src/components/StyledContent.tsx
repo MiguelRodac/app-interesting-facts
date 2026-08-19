@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/use-theme';
 interface StyledContentProps {
   content: string;
   style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
 }
 
 /**
@@ -14,7 +15,7 @@ interface StyledContentProps {
  * Hashtags navigate to search screen with the hashtag pre-filled.
  * Mentions navigate to the user's public profile.
  */
-export function StyledContent({ content, style }: StyledContentProps) {
+export function StyledContent({ content, style, numberOfLines }: StyledContentProps) {
   const theme = useTheme();
   const router = useRouter();
   const segments = parseContent(content);
@@ -32,7 +33,7 @@ export function StyledContent({ content, style }: StyledContentProps) {
   };
 
   return (
-    <Text style={[{ color: theme.text }, style]}>
+    <Text numberOfLines={numberOfLines} style={[{ color: theme.text }, style]}>
       {segments.map((segment, index) => {
         if (segment.type === 'text') {
           return (

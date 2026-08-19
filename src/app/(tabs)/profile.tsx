@@ -14,14 +14,13 @@ import { useAuth } from '@/data/hooks/useAuth';
 import { useLikedFacts } from '@/data/hooks/useLikedFacts';
 import { useFactsStore } from '@/data/stores/factsStore';
 import { useTheme } from '@/hooks/use-theme';
-import { useThemeContext } from '@/hooks/theme-provider';
 import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
 type ProfileTab = 'mine' | 'liked';
 
 export default function ProfileScreen() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const userFacts = useFactsStore((s) => s.userFacts);
   const userFactsLoading = useFactsStore((s) => s.userFactsLoading);
   const fetchUserFacts = useFactsStore((s) => s.fetchUserFacts);
@@ -29,10 +28,9 @@ export default function ProfileScreen() {
   const { likedFacts } = useLikedFacts();
   const userFactsCount = useFactsStore((s) => s.userFacts.length);
   const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
-  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [avatarModalVisible, setAvatarModalVisible] = useState(false);
   const router = useRouter();
   const theme = useTheme();
-  const { colorScheme, toggleDarkMode } = useThemeContext();
   const topInset = useTopInset();
 
   // Fetch fresh user facts every time the profile gains focus (create/edit/delete happen elsewhere)
@@ -60,19 +58,9 @@ export default function ProfileScreen() {
     [toggleLike],
   );
 
-  const handleLogout = useCallback(() => {
-    setLogoutModalVisible(true);
-  }, []);
-
-  const handleConfirmLogout = useCallback(async () => {
-    setLogoutModalVisible(false);
-    await logout();
-    router.replace('/auth/login');
-  }, [logout, router]);
-
-  const handleCancelLogout = useCallback(() => {
-    setLogoutModalVisible(false);
-  }, []);
+  const handleSettings = useCallback(() => {
+    router.push('/settings');
+  }, [router]);
 
   const handleEditProfile = useCallback(() => {
     router.push('/edit-profile');
@@ -134,38 +122,26 @@ export default function ProfileScreen() {
     <ThemedView style={styles.container}>
       {/* Profile header */}
       <View style={[styles.profileHeader, { paddingTop: topInset }]}>
+        {/* Settings — anchored to the top-right corner, doesn't push content */}
+        <Pressable
+          onPress={handleSettings}
+          hitSlop={8}
+          style={[styles.settingsButton, { top: topInset + Spacing.two }]}>
+          <Ionicons name="settings-outline" size={24} color={theme.text} />
+        </Pressable>
+
         <View style={styles.avatarSection}>
-          <UserAvatar user={user} size={80} />
-          <View style={styles.userInfo}>
+          <Pressable onPress={() => setAvatarModalVisible(true)} hitSlop={8}>
+            <UserAvatar user={user} size={80} />
+          </Pressable>
+          {/* Tapping anywhere on the name/username opens Edit Profile */}
+          <Pressable onPress={handleEditProfile} style={styles.userInfo} hitSlop={4}>
             <ThemedText type="subtitle">{user.displayName}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               @{user.username}
             </ThemedText>
-          </View>
-        </View>
-
-        {/* Action buttons */}
-        <View style={styles.actions}>
-          <Pressable onPress={toggleDarkMode} style={[styles.actionButton, { borderColor: theme.border }]}>
-            <Ionicons
-              name={colorScheme === 'dark' ? 'sunny-outline' : 'moon-outline'}
-              size={18}
-              color={theme.primary}
-            />
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>
-              {colorScheme === 'dark' ? 'Light' : 'Dark'}
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={handleEditProfile} style={[styles.actionButton, { borderColor: theme.border }]}>
-            <Ionicons name="create-outline" size={18} color={theme.primary} />
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>
+            <ThemedText type="small" style={{ color: theme.primary }}>
               Edit Profile
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={handleLogout} style={[styles.actionButton, { borderColor: theme.destructive }]}>
-            <Ionicons name="log-out-outline" size={18} color={theme.destructive} />
-            <ThemedText type="smallBold" style={{ color: theme.destructive }}>
-              Logout
             </ThemedText>
           </Pressable>
         </View>
@@ -203,34 +179,17 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Logout confirmation modal */}
-      <Modal visible={logoutModalVisible} transparent animationType="fade" onRequestClose={handleCancelLogout}>
-        <View style={styles.modalOverlay}>
-          <ThemedView type="backgroundElement" style={styles.modalContent}>
-            <ThemedText type="subtitle" style={styles.modalTitle}>
-              ¿Salir de la sesión?
-            </ThemedText>
-            <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-              ¿Seguro que quieres cerrar tu sesión?
-            </ThemedText>
-            <View style={styles.modalButtons}>
-              <Pressable
-                onPress={handleCancelLogout}
-                style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
-                <ThemedText type="smallBold" style={styles.cancelModalText}>
-                  Cancelar
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                onPress={handleConfirmLogout}
-                style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
-                <ThemedText type="smallBold" style={styles.confirmModalText}>
-                  Salir
-                </ThemedText>
-              </Pressable>
-            </View>
-          </ThemedView>
-        </View>
+      {/* Avatar preview modal — Instagram-style full view */}
+      <Modal
+        visible={avatarModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAvatarModalVisible(false)}>
+        <Pressable
+          style={styles.avatarModalOverlay}
+          onPress={() => setAvatarModalVisible(false)}>
+          <UserAvatar user={user} size={240} />
+        </Pressable>
       </Modal>
     </ThemedView>
   );
@@ -251,21 +210,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
   },
+  settingsButton: {
+    position: 'absolute',
+    right: Spacing.three,
+    padding: Spacing.one,
+    zIndex: 10,
+  },
+  avatarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.five,
+  },
   userInfo: {
     gap: Spacing.half,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Radii.md,
-    borderWidth: 1,
   },
   tabBar: {
     flexDirection: 'row',
@@ -320,47 +279,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     minWidth: 150,
     alignItems: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.four,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 340,
-    borderRadius: Radii.lg,
-    padding: Spacing.four,
-    gap: Spacing.three,
-  },
-  modalTitle: {
-    textAlign: 'center',
-  },
-  modalMessage: {
-    textAlign: 'center',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-    marginTop: Spacing.one,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: Spacing.three,
-    borderRadius: Radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelModalButton: {
-    borderWidth: 1,
-  },
-  cancelModalText: {
-    opacity: 0.7,
-  },
-  confirmModalButton: {},
-  confirmModalText: {
-    color: '#FFFFFF',
   },
 });
