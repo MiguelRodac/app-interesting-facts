@@ -1,31 +1,27 @@
 import { useState, useCallback, useEffect } from 'react';
-import {
-  StyleSheet,
-  TextInput,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  ScrollView,
-  Pressable,
-} from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AvatarPickerModal } from '@/components/AvatarPickerModal';
+import { PasswordField } from '@/components/PasswordField';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
+import { changeEmail } from '@/data/auth/firebaseAuth';
+import { isFirebaseAuthError, mapFirebaseError } from '@/data/auth/firebaseErrors';
 import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import { isValidEmail } from '@/utils/validation';
 
 export default function EditProfileScreen() {
-  const { user, updateProfile, isLoading } = useAuth();
+const { user, updateProfile, isLoading } = useAuth();
   const showToast = useUIStore((s) => s.showToast);
+  const setError = useUIStore((s) => s.setError);
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
@@ -35,6 +31,11 @@ export default function EditProfileScreen() {
   const [pendingEmail, setPendingEmail] = useState(user?.email ?? '');
   const [pendingAvatarColor, setPendingAvatarColor] = useState<string | null>(user?.avatarColor ?? null);
   const [pendingAvatarUrl, setPendingAvatarUrl] = useState<string | null>(user?.avatarUrl ?? null);
+
+  // Email change requires the current password (Firebase re-authentication)
+  const [isPasswordPromptVisible, setIsPasswordPromptVisible] = useState(false);
+  const [passwordValue, setPasswordValue] = useState('');
+  const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState('');
@@ -114,22 +115,28 @@ export default function EditProfileScreen() {
     }
   }, []);
 
-  const handleSave = useCallback(async () => {
+const handleSave = useCallback(async () => {
     // Local email format check before hitting the backend (422 otherwise)
     if (!isValidEmail(pendingEmail)) {
       showToast('Please enter a valid email', 'warning');
       return;
     }
 
+    // Email changes go through Firebase (identity) — ask for the password
+    // first so we can re-authenticate before updateEmail.
+    const emailChanged = user != null && pendingEmail.trim() !== (user.email ?? '').trim();
+    if (emailChanged) {
+      setPasswordValue('');
+      setIsPasswordPromptVisible(true);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // Only send the email if it actually changed — avoids a needless 409 on PATCH /auth/me
-      const emailChanged = user != null && pendingEmail.trim() !== (user.email ?? '').trim();
       await updateProfile({
         displayName: pendingDisplayName,
         avatarColor: pendingAvatarColor,
         avatarUrl: pendingAvatarUrl,
-        ...(emailChanged && pendingEmail.trim() ? { email: pendingEmail.trim() } : {}),
       });
       showToast('Profile updated successfully', 'success');
       router.replace('/(tabs)/profile');
@@ -138,7 +145,36 @@ export default function EditProfileScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [pendingDisplayName, pendingEmail, pendingAvatarColor, pendingAvatarUrl, updateProfile, router, user]);
+  }, [pendingDisplayName, pendingEmail, pendingAvatarColor, pendingAvatarUrl, updateProfile, router, user, showToast]);
+
+  const handleCancelPasswordPrompt = useCallback(() => {
+    setIsPasswordPromptVisible(false);
+    setPasswordValue('');
+  }, []);
+
+  // 1. Re-authenticate + updateEmail in Firebase (source of truth for the
+  //    identity — enforces email uniqueness across accounts).
+  // 2. Sync the new email to the backend so its user table matches.
+  const handleConfirmEmailChange = useCallback(async () => {
+    const newEmail = pendingEmail.trim();
+    setIsConfirmingEmail(true);
+    try {
+      await changeEmail(newEmail, passwordValue);
+      await updateProfile({
+        displayName: pendingDisplayName,
+        avatarColor: pendingAvatarColor,
+        avatarUrl: pendingAvatarUrl,
+        email: newEmail,
+      });
+      showToast('Email changed successfully', 'success');
+      router.replace('/(tabs)/profile');
+    } catch (error) {
+      setIsConfirmingEmail(false);
+      setPasswordValue('');
+      setIsPasswordPromptVisible(true);
+      setError(isFirebaseAuthError(error) ? mapFirebaseError(error) : (error as never));
+    }
+  }, [pendingEmail, passwordValue, pendingDisplayName, pendingAvatarColor, pendingAvatarUrl, updateProfile, showToast, setError, router]);
 
   const handleCancel = useCallback(() => {
     router.replace('/(tabs)/profile');
@@ -162,23 +198,23 @@ export default function EditProfileScreen() {
       <ThemedView style={styles.container}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: topInset }]}>
-          <Pressable onPress={handleCancel} hitSlop={8} style={styles.backButton}>
+          <AppPressable onPress={handleCancel} hitSlop={8} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
-          </Pressable>
+          </AppPressable>
           <ThemedText type="subtitle" style={styles.headerTitle}>
             Edit Profile
           </ThemedText>
-          <Pressable onPress={handleSave} hitSlop={8} disabled={isSubmitting}>
+          <AppPressable onPress={handleSave} hitSlop={8} disabled={isSubmitting}>
             <ThemedText type="smallBold" style={{ color: theme.primary }}>
               {isSubmitting ? 'Saving...' : 'Done'}
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           {/* Avatar section */}
           <View style={styles.avatarSection}>
-            <Pressable onPress={() => setIsAvatarModalVisible(true)} style={styles.avatarContainer}>
+            <AppPressable onPress={() => setIsAvatarModalVisible(true)} style={styles.avatarContainer}>
               <View style={styles.avatar}>
                 <UserAvatar
                   user={{
@@ -192,12 +228,12 @@ export default function EditProfileScreen() {
               <View style={[styles.avatarBadge, { backgroundColor: theme.primary }]}>
                 <Ionicons name="camera" size={16} color="#FFFFFF" />
               </View>
-            </Pressable>
-            <Pressable onPress={() => setIsAvatarModalVisible(true)}>
+            </AppPressable>
+            <AppPressable onPress={() => setIsAvatarModalVisible(true)}>
               <ThemedText type="small" themeColor="primary">
                 Tap to change
               </ThemedText>
-            </Pressable>
+            </AppPressable>
           </View>
 
           {/* Display name row */}
@@ -223,26 +259,26 @@ export default function EditProfileScreen() {
                   autoCapitalize="words"
                   editable={!isSubmitting}
                 />
-                <Pressable
+                <AppPressable
                   onPress={handleConfirmEditName}
                   style={[styles.iconButton, { backgroundColor: theme.success }]}
                   disabled={isSubmitting}>
                   <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                </Pressable>
-                <Pressable
+                </AppPressable>
+                <AppPressable
                   onPress={handleCancelEditName}
                   style={[styles.iconButton, { backgroundColor: theme.muted }]}
                   disabled={isSubmitting}>
                   <Ionicons name="close" size={20} color="#FFFFFF" />
-                </Pressable>
+                </AppPressable>
               </View>
             ) : (
-              <Pressable onPress={handleStartEditName} style={styles.nameDisplayRow}>
+              <AppPressable onPress={handleStartEditName} style={styles.nameDisplayRow}>
                 <ThemedText type="default" style={styles.nameDisplayText}>
                   {pendingDisplayName}
                 </ThemedText>
                 <Ionicons name="pencil" size={18} color={theme.muted} />
-              </Pressable>
+              </AppPressable>
             )}
           </View>
 
@@ -282,28 +318,69 @@ export default function EditProfileScreen() {
                   keyboardType="email-address"
                   editable={!isSubmitting}
                 />
-                <Pressable
+                <AppPressable
                   onPress={handleConfirmEditEmail}
                   style={[styles.iconButton, { backgroundColor: theme.success }]}
                   disabled={isSubmitting}>
                   <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                </Pressable>
-                <Pressable
+                </AppPressable>
+                <AppPressable
                   onPress={handleCancelEditEmail}
                   style={[styles.iconButton, { backgroundColor: theme.muted }]}
                   disabled={isSubmitting}>
                   <Ionicons name="close" size={20} color="#FFFFFF" />
-                </Pressable>
+                </AppPressable>
               </View>
             ) : (
-              <Pressable onPress={handleStartEditEmail} style={styles.nameDisplayRow}>
+              <AppPressable onPress={handleStartEditEmail} style={styles.nameDisplayRow}>
                 <ThemedText type="default" style={styles.nameDisplayText}>
                   {pendingEmail}
                 </ThemedText>
-                <Ionicons name="pencil" size={18} color={theme.muted} />
-              </Pressable>
+<Ionicons name="pencil" size={18} color={theme.muted} />
+              </AppPressable>
             )}
           </View>
+
+          {/* Password confirmation for email changes */}
+          {isPasswordPromptVisible && (
+            <View style={styles.passwordSection}>
+              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.fieldLabel}>
+                Confirm your email change
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                Enter your current password to update your email.
+              </ThemedText>
+              <PasswordField
+                value={passwordValue}
+                onChangeText={setPasswordValue}
+                label="Current Password"
+                placeholder="Your password"
+                editable={!isConfirmingEmail}
+              />
+              <View style={styles.passwordButtons}>
+                <AppPressable
+                  style={[styles.passwordButton, styles.passwordCancelButton, { borderColor: theme.border }]}
+                  onPress={handleCancelPasswordPrompt}
+                  disabled={isConfirmingEmail}>
+                  <ThemedText type="smallBold" style={styles.passwordCancelText}>
+                    Cancel
+                  </ThemedText>
+                </AppPressable>
+                <AppPressable
+                  style={[
+                    styles.passwordButton,
+                    styles.passwordConfirmButton,
+                    { backgroundColor: isConfirmingEmail || passwordValue.length === 0 ? theme.muted : theme.primary },
+                  ]}
+                  onPress={handleConfirmEmailChange}
+                  disabled={isConfirmingEmail || passwordValue.length === 0}>
+                  <ThemedText type="smallBold" style={styles.passwordConfirmText}>
+                    {isConfirmingEmail ? 'Confirming...' : 'Confirm'}
+                  </ThemedText>
+                </AppPressable>
+              </View>
+            </View>
+          )}
         </ScrollView>
 
         {/* Avatar picker modal */}
@@ -416,8 +493,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  readOnlyRow: {
+readOnlyRow: {
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.three,
+  },
+  passwordSection: {
+    marginTop: Spacing.four,
+    gap: Spacing.two,
+    padding: Spacing.three,
+    borderWidth: 1,
+    borderRadius: Radii.lg,
+    borderColor: 'transparent',
+  },
+  passwordButtons: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    marginTop: Spacing.two,
+  },
+  passwordButton: {
+    flex: 1,
+    paddingVertical: Spacing.three,
+    borderRadius: Radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  passwordCancelButton: {
+    borderWidth: 1,
+  },
+  passwordCancelText: {
+    opacity: 0.7,
+  },
+  passwordConfirmButton: {},
+  passwordConfirmText: {
+    color: '#FFFFFF',
   },
 });

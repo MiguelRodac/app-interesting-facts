@@ -8,6 +8,7 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   updatePassword,
+  updateEmail,
   type User,
 } from '@/lib/firebase';
 
@@ -145,4 +146,25 @@ export async function changePassword(
   const credential = EmailAuthProvider.credential(email, currentPassword);
   await reauthenticateWithCredential(user, credential);
   await updatePassword(user, newPassword);
+}
+
+/**
+ * Change the current user's email. Re-authenticates first so sessions
+ * older than ~1 hour (Firebase refresh cutoff) don't reject the update.
+ * Firebase enforces email uniqueness across accounts — a duplicate email
+ * throws 'auth/email-already-in-use'.
+ */
+export async function changeEmail(
+  newEmail: string,
+  currentPassword: string,
+): Promise<void> {
+  const user = getCurrentUser();
+  const email = user?.email;
+  if (!user || !email) {
+    throw new Error('No authenticated user');
+  }
+
+  const credential = EmailAuthProvider.credential(email, currentPassword);
+  await reauthenticateWithCredential(user, credential);
+  await updateEmail(user, newEmail);
 }

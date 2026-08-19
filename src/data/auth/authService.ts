@@ -11,26 +11,7 @@ import {
   setCachedUser,
 } from './firebaseAuth';
 import type { Author } from '@/types';
-import type { ApiProfileResponse, ApiUsernameCheck } from '../api/types';
-
-/**
- * Check whether an email is already registered, mirroring the username check.
- * Falls back to `null` when the endpoint doesn't exist yet (404) or the
- * request fails — callers then skip the check instead of blocking.
- */
-export async function checkEmailExists(email: string): Promise<boolean | null> {
-  try {
-    const response = await client.get<ApiUsernameCheck>('/users/check-email', { email: email.trim() });
-    return response.available;
-  } catch (error) {
-    const status = error && typeof error === 'object' && 'status' in error ? (error as { status?: number }).status : undefined;
-    if (status === 404) {
-      // Endpoint not implemented on the backend yet — skip the check
-      return null;
-    }
-    throw error;
-  }
-}
+import type { ApiProfileResponse } from '../api/types';
 
 /**
  * Auth service — high-level auth operations consumed by authStore.

@@ -9,6 +9,7 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
   updatePassword,
+  updateEmail,
   setPersistence,
   browserLocalPersistence,
   type User,
@@ -55,6 +56,7 @@ export {
   reauthenticateWithCredential,
   EmailAuthProvider,
   updatePassword,
+  updateEmail,
   getAuth,
 };
 export type { User };
