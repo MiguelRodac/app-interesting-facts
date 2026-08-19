@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { APK_URL } from '@/config/landing';
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useThemeContext } from '@/hooks/theme-provider';
 
 const BREAKPOINT = 600;
 
@@ -37,6 +38,8 @@ const FEATURES = [
 
 export default function LandingScreen() {
   const theme = useTheme();
+  const { colorScheme, toggleDarkMode } = useThemeContext();
+  const isDark = colorScheme === 'dark';
   const router = useRouter();
   const { width } = useWindowDimensions();
 
@@ -187,11 +190,25 @@ export default function LandingScreen() {
           </ThemedView>
         )}
 
-        {/* Footer */}
+{/* Footer */}
         <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>
           Interesting Facts · Made with curiosity
         </ThemedText>
       </ScrollView>
+
+      {/* Theme toggle — top-right corner */}
+      <View style={styles.themeToggleWrap}>
+        <AppPressable
+          accessibilityRole="button"
+          accessibilityLabel={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          onPress={toggleDarkMode}
+          style={[
+            styles.themeToggle,
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+          ]}>
+          <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={20} color={theme.text} />
+        </AppPressable>
+      </View>
     </ThemedView>
   );
 }
@@ -206,6 +223,21 @@ const Shadows = {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  themeToggleWrap: {
+    position: 'absolute',
+    top: Spacing.four,
+    right: Spacing.four,
+    zIndex: 10,
+  },
+  themeToggle: {
+    width: 40,
+    height: 40,
+    borderRadius: Radii.full,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.sm,
   },
   scroll: {
     flexGrow: 1,
