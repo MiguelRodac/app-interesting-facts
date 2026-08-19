@@ -93,6 +93,16 @@ export interface ApiUsernameCheck {
   available: boolean;
 }
 
+/** Like entry from GET /facts/:id/likes (signed-in only — likes are not exposed to anonymous users) */
+export interface ApiFactLike {
+  id: string;
+  username: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  avatarColor?: string;
+  createdAt: string;
+}
+
 /** Response from GET /users/avatar-options */
 export interface ApiAvatarOption {
   id: string;

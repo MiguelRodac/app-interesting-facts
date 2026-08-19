@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-  ActivityIndicator,
-} from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, TextInput, View, ActivityIndicator } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useSegments, useFocusEffect } from 'expo-router';
 
 import { EmptyState } from '@/components/EmptyState';
 import { FactCard } from '@/components/FactCard';
+import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { SegmentedTabs, type SegmentedTab } from '@/components/SegmentedTabs';
 import { ThemedText } from '@/components/themed-text';
@@ -51,12 +46,24 @@ export default function SearchScreen() {
   const topInset = useTopInset();
   const params = useLocalSearchParams<{ q?: string }>();
   const segments = useSegments();
-  const [inputValue, setInputValue] = useState(query);
+const [inputValue, setInputValue] = useState(query);
   const initialSearchDone = useRef(false);
   const latestTextRef = useRef(query);
   const hasCheckedAuth = useRef(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [likesFactId, setLikesFactId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    if (!query.trim()) return;
+    setRefreshing(true);
+    try {
+      await search(query);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [query, search]);
 
   // Redirect to login when unauthenticated
   useEffect(() => {
@@ -169,7 +176,7 @@ export default function SearchScreen() {
   // --- People tab ---
   const renderPeopleItem = useCallback(
     ({ item }: { item: Author }) => (
-      <Pressable
+      <AppPressable
         style={[styles.userRow, { borderBottomColor: theme.border }]}
         onPress={() => handleUserPress(item)}>
         <UserAvatar user={item} size={44} />
@@ -181,18 +188,19 @@ export default function SearchScreen() {
             @{item.username}
           </ThemedText>
         </View>
-      </Pressable>
+      </AppPressable>
     ),
     [handleUserPress, theme.border],
   );
 
   // --- Posts tab ---
-  const renderPostItem = useCallback(
+const renderPostItem = useCallback(
     ({ item }: { item: Fact }) => (
       <FactCard
         fact={item}
         variant="preview"
         onPress={() => handleFactPress(item)}
+        onOpenLikes={() => setLikesFactId(item.id)}
       />
     ),
     [handleFactPress],
@@ -201,14 +209,14 @@ export default function SearchScreen() {
   // --- Hashtags tab ---
   const renderHashtagItem = useCallback(
     ({ item }: { item: Hashtag }) => (
-      <Pressable
+      <AppPressable
         style={[styles.hashtagRow, { borderBottomColor: theme.border }]}
         onPress={() => handleHashtagPress(item.tag)}>
         <Ionicons name="pricetag-outline" size={18} color={theme.primary} />
         <ThemedText type="default" style={styles.hashtagText}>
           #{item.tag}
         </ThemedText>
-      </Pressable>
+      </AppPressable>
     ),
     [handleHashtagPress, theme.border, theme.primary],
   );
@@ -295,9 +303,9 @@ export default function SearchScreen() {
             returnKeyType="search"
           />
           {inputValue.length > 0 && (
-            <Pressable onPress={handleClear} hitSlop={8}>
+            <AppPressable onPress={handleClear} hitSlop={8}>
               <Ionicons name="close-circle" size={20} color={theme.muted} />
-            </Pressable>
+            </AppPressable>
           )}
         </View>
       </View>
@@ -311,8 +319,9 @@ export default function SearchScreen() {
         />
       )}
 
-      {/* Results */}
-      {isLoading ? (
+      {/* Results — keep the list mounted while results exist so
+          pull-to-refresh works; the skeleton only shows on first load */}
+      {isLoading && activeData.length === 0 ? (
         <LoadingSkeleton count={3} />
       ) : (
         <FlatList
@@ -322,8 +331,23 @@ export default function SearchScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
         />
       )}
+
+      {/* Full likes list */}
+      <LikesModal
+        factId={likesFactId}
+        visible={likesFactId !== null}
+        onClose={() => setLikesFactId(null)}
+      />
     </ThemedView>
   );
 }

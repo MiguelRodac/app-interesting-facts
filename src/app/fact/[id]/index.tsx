@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View, Share, Pressable, ScrollView } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View, Share, ScrollView, RefreshControl } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
+import { LikedByLine } from '@/components/LikedByLine';
+import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { StyledContent } from '@/components/StyledContent';
 import { TabBar } from '@/components/TabBar';
@@ -14,14 +17,15 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { useFacts } from '@/data/hooks/useFacts';
+import { useFactLikes } from '@/data/hooks/useFactLikes';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
 export default function FactDetailScreen() {
-  const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
-  const { facts, toggleLike, deleteFact } = useFacts();
+const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
+  const { facts, fetchFactById, toggleLike, deleteFact } = useFacts();
   const { user } = useAuth();
   const router = useRouter();
   const theme = useTheme();
@@ -41,7 +45,11 @@ export default function FactDetailScreen() {
     }
   }, [fact, deleteFact, router]);
 
-  const [loading, setLoading] = useState(true);
+const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [likesModalVisible, setLikesModalVisible] = useState(false);
+  // Likes are only fetched/shown for signed-in users
+  const { likes, refetch: refetchLikes } = useFactLikes(id, !!user);
 
   // Tab bar — highlight the tab the user came from
   const activeTab = from === 'search' ? 'search' : from === 'profile' || from === 'user' ? 'profile' : 'index';
@@ -65,18 +73,46 @@ export default function FactDetailScreen() {
     [router],
   );
 
-  // Try to find the fact from the store; if not found, it would need a fetch-by-ID call
+// Prefer the store copy (feed already has it); on cold start / F5 the store
+  // is empty, so fetch the fact by ID instead of showing "not found".
   useEffect(() => {
     if (!id) return;
     const found = facts.find((f) => f.id === id);
     if (found) {
       setFact(found);
       setLoading(false);
-    } else {
-      // Fact not in store — could implement getById later
-      setLoading(false);
+      return;
     }
-  }, [id, facts]);
+    let active = true;
+    setLoading(true);
+    fetchFactById(id)
+      .then((fetched) => {
+        if (active) setFact(fetched);
+      })
+      .catch(() => {
+        if (active) setFact(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id, facts, fetchFactById]);
+
+  const handleRefresh = useCallback(async () => {
+    if (!id) return;
+    setRefreshing(true);
+    try {
+      await fetchFactById(id);
+      if (user) refetchLikes();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [id, user, fetchFactById, refetchLikes]);
+
+// Likes with usernames — fetched via the shared useFactLikes hook
+  // (cached per factId; the LikesModal refetches fresh on open).
 
   const isOwner = fact && user?.id === fact.author.id;
 
@@ -89,7 +125,7 @@ export default function FactDetailScreen() {
     }
   }, [user, fact, router]);
 
-  const handleLike = useCallback(() => {
+const handleLike = useCallback(() => {
     if (fact) {
       toggleLike(fact.id);
     }
@@ -153,17 +189,26 @@ export default function FactDetailScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: topInset }]}>
+<View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, { paddingTop: topInset }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+          />
+        }>
         {/* Back button */}
-        <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
+        <AppPressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </Pressable>
+        </AppPressable>
 
         {/* Fact detail card */}
         <ThemedView type="backgroundElement" style={[styles.card, Shadows.md]}>
           {/* Author */}
-          <Pressable onPress={handleAuthorPress} style={styles.authorRow} hitSlop={8}>
+          <AppPressable onPress={handleAuthorPress} style={styles.authorRow} hitSlop={8}>
             <UserAvatar user={fact.author} size={44} />
             <View style={styles.authorInfo}>
               <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
@@ -171,7 +216,7 @@ export default function FactDetailScreen() {
                 @{fact.author.username}
               </ThemedText>
             </View>
-          </Pressable>
+          </AppPressable>
 
           {/* Title */}
           {fact.title ? (
@@ -190,11 +235,11 @@ export default function FactDetailScreen() {
 
           {/* Expand/collapse toggle for long facts */}
           {isCollapsible && (
-            <Pressable onPress={() => setExpanded((current) => !current)} hitSlop={6} style={styles.seeMore}>
+            <AppPressable onPress={() => setExpanded((current) => !current)} hitSlop={6} style={styles.seeMore}>
               <ThemedText type="smallBold" style={{ color: theme.primary }}>
                 {expanded ? 'See less' : 'See more'}
               </ThemedText>
-            </Pressable>
+            </AppPressable>
           )}
 
           {/* Meta */}
@@ -206,9 +251,15 @@ export default function FactDetailScreen() {
             })}
           </ThemedText>
 
+{/* Likes line — "Liked by @alice, @bob and 3 more"; tap opens the full modal.
+        Only shown to signed-in users. */}
+          {user && (
+            <LikedByLine likes={likes} onPress={() => setLikesModalVisible(true)} />
+          )}
+
           {/* Actions */}
           <View style={[styles.actions, { borderTopColor: theme.border }]}>
-            <Pressable onPress={handleLike} style={styles.actionBtn} hitSlop={8}>
+            <AppPressable onPress={handleLike} style={styles.actionBtn} hitSlop={8}>
               <Ionicons
                 name={fact.liked ? 'heart' : 'heart-outline'}
                 size={28}
@@ -217,15 +268,15 @@ export default function FactDetailScreen() {
               <ThemedText type="small" themeColor="textSecondary">
                 {fact.likesCount}
               </ThemedText>
-            </Pressable>
+            </AppPressable>
 
-            <Pressable onPress={handleShare} style={styles.actionBtn} hitSlop={8}>
+            <AppPressable onPress={handleShare} style={styles.actionBtn} hitSlop={8}>
               <Ionicons name="share-outline" size={24} color={theme.muted} />
-            </Pressable>
+            </AppPressable>
 
             {isOwner ? (
               <View style={styles.ownerActions}>
-                <Pressable
+                <AppPressable
                   onPress={handleEdit}
                   style={[styles.editButton, { borderColor: theme.primary }]}
                   hitSlop={8}>
@@ -233,10 +284,10 @@ export default function FactDetailScreen() {
                   <ThemedText type="smallBold" style={{ color: theme.primary }}>
                     Edit
                   </ThemedText>
-                </Pressable>
-                <Pressable onPress={handleDelete} style={styles.actionBtn} hitSlop={8}>
+                </AppPressable>
+                <AppPressable onPress={handleDelete} style={styles.actionBtn} hitSlop={8}>
                   <Ionicons name="trash-outline" size={24} color={theme.destructive} />
-                </Pressable>
+                </AppPressable>
               </View>
             ) : null}
           </View>
@@ -246,7 +297,7 @@ export default function FactDetailScreen() {
       {/* Bottom tab bar */}
       <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
 
-      {/* Delete confirmation */}
+{/* Delete confirmation */}
       <ConfirmDialog
         visible={confirmDeleteVisible}
         title="Delete Fact"
@@ -256,6 +307,15 @@ export default function FactDetailScreen() {
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDeleteVisible(false)}
       />
+
+      {/* Full likes list — signed-in only */}
+      {user && (
+        <LikesModal
+          factId={id}
+          visible={likesModalVisible}
+          onClose={() => setLikesModalVisible(false)}
+        />
+      )}
     </View>
   );
 }
@@ -307,7 +367,7 @@ const styles = StyleSheet.create({
   meta: {
     marginBottom: Spacing.three,
   },
-  actions: {
+actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,

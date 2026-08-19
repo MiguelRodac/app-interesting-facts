@@ -1,9 +1,12 @@
 import { useCallback, useState } from 'react';
-import { FlatList, StyleSheet, View, Pressable, Modal } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { AppModal } from '@/components/ui/app-modal';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { FactCard } from '@/components/FactCard';
+import { LikesModal } from '@/components/LikesModal';
 import { UserAvatar } from '@/components/UserAvatar';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -21,17 +24,31 @@ type ProfileTab = 'mine' | 'liked';
 
 export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
-  const userFacts = useFactsStore((s) => s.userFacts);
+const userFacts = useFactsStore((s) => s.userFacts);
   const userFactsLoading = useFactsStore((s) => s.userFactsLoading);
   const fetchUserFacts = useFactsStore((s) => s.fetchUserFacts);
+  const fetchFacts = useFactsStore((s) => s.fetchFacts);
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const { likedFacts } = useLikedFacts();
   const userFactsCount = useFactsStore((s) => s.userFacts.length);
-  const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
-  const [avatarModalVisible, setAvatarModalVisible] = useState(false);
+const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
+const [avatarModalVisible, setAvatarModalVisible] = useState(false);
+  const [likesFactId, setLikesFactId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
+
+  const handleRefresh = useCallback(async () => {
+    if (!user?.id) return;
+    setRefreshing(true);
+    try {
+      // Silent refreshes: profile facts + feed (feeds the "Liked" tab)
+      await Promise.all([fetchUserFacts(user.id, true), fetchFacts(true)]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [user?.id, fetchUserFacts, fetchFacts]);
 
   // Fetch fresh user facts every time the profile gains focus (create/edit/delete happen elsewhere)
   useFocusEffect(
@@ -66,13 +83,14 @@ export default function ProfileScreen() {
     router.push('/edit-profile');
   }, [router]);
 
-  const renderItem = useCallback(
+const renderItem = useCallback(
     ({ item }: { item: Fact }) => (
       <FactCard
         fact={item}
         variant="preview"
         onPress={() => handleFactPress(item)}
         onLike={() => handleLike(item.id)}
+        onOpenLikes={() => setLikesFactId(item.id)}
       />
     ),
     [handleFactPress, handleLike],
@@ -99,20 +117,20 @@ export default function ProfileScreen() {
           <ThemedText type="small" themeColor="textSecondary" style={styles.loginSubtitle}>
             Create facts, save your favorites, and more
           </ThemedText>
-          <Pressable
+          <AppPressable
             style={[styles.loginButton, { backgroundColor: theme.primary }]}
             onPress={() => router.push('/auth/login')}>
             <ThemedText type="small" style={styles.loginButtonText}>
               Sign In
             </ThemedText>
-          </Pressable>
-          <Pressable
+          </AppPressable>
+          <AppPressable
             style={[styles.registerButton, { borderColor: theme.border }]}
             onPress={() => router.push('/auth/register')}>
             <ThemedText type="small" style={{ color: theme.text }}>
               Create Account
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         </ThemedView>
       </ThemedView>
     );
@@ -123,19 +141,19 @@ export default function ProfileScreen() {
       {/* Profile header */}
       <View style={[styles.profileHeader, { paddingTop: topInset }]}>
         {/* Settings — anchored to the top-right corner, doesn't push content */}
-        <Pressable
+        <AppPressable
           onPress={handleSettings}
           hitSlop={8}
           style={[styles.settingsButton, { top: topInset + Spacing.two }]}>
           <Ionicons name="settings-outline" size={24} color={theme.text} />
-        </Pressable>
+        </AppPressable>
 
         <View style={styles.avatarSection}>
-          <Pressable onPress={() => setAvatarModalVisible(true)} hitSlop={8}>
+          <AppPressable onPress={() => setAvatarModalVisible(true)} hitSlop={8}>
             <UserAvatar user={user} size={80} />
-          </Pressable>
+          </AppPressable>
           {/* Tapping anywhere on the name/username opens Edit Profile */}
-          <Pressable onPress={handleEditProfile} style={styles.userInfo} hitSlop={4}>
+          <AppPressable onPress={handleEditProfile} style={styles.userInfo} hitSlop={4}>
             <ThemedText type="subtitle">{user.displayName}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               @{user.username}
@@ -143,13 +161,13 @@ export default function ProfileScreen() {
             <ThemedText type="small" style={{ color: theme.primary }}>
               Edit Profile
             </ThemedText>
-          </Pressable>
+          </AppPressable>
         </View>
       </View>
 
       {/* Tab switcher */}
       <View style={[styles.tabBar, { borderBottomColor: theme.border }]}>
-        <Pressable
+        <AppPressable
           onPress={() => setActiveTab('mine')}
           style={[styles.tab, activeTab === 'mine' && { borderBottomColor: theme.primary }]}>
           <ThemedText
@@ -157,8 +175,8 @@ export default function ProfileScreen() {
             style={{ color: activeTab === 'mine' ? theme.primary : theme.muted }}>
             My Facts ({userFacts.length})
           </ThemedText>
-        </Pressable>
-        <Pressable
+        </AppPressable>
+        <AppPressable
           onPress={() => setActiveTab('liked')}
           style={[styles.tab, activeTab === 'liked' && { borderBottomColor: theme.primary }]}>
           <ThemedText
@@ -166,31 +184,46 @@ export default function ProfileScreen() {
             style={{ color: activeTab === 'liked' ? theme.primary : theme.muted }}>
             Liked ({likedFacts.length})
           </ThemedText>
-        </Pressable>
+        </AppPressable>
       </View>
 
       {/* Facts list */}
-      <FlatList
+<FlatList
         data={displayedFacts}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+          />
+        }
       />
 
       {/* Avatar preview modal — Instagram-style full view */}
-      <Modal
+<AppModal
         visible={avatarModalVisible}
         transparent
         animationType="fade"
         onRequestClose={() => setAvatarModalVisible(false)}>
-        <Pressable
+        <AppPressable
           style={styles.avatarModalOverlay}
           onPress={() => setAvatarModalVisible(false)}>
-          <UserAvatar user={user} size={240} />
-        </Pressable>
-      </Modal>
+<UserAvatar user={user} size={240} />
+        </AppPressable>
+      </AppModal>
+
+      {/* Full likes list */}
+      <LikesModal
+        factId={likesFactId}
+        visible={likesFactId !== null}
+        onClose={() => setLikesFactId(null)}
+      />
     </ThemedView>
   );
 }

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,9 +9,11 @@ import { ThemedView } from '@/components/themed-view';
 import { StyledContent } from '@/components/StyledContent';
 import { UserAvatar } from '@/components/UserAvatar';
 import { LikeButton } from '@/components/LikeButton';
+import { LikedByLine } from '@/components/LikedByLine';
 import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { useAuth } from '@/data/hooks/useAuth';
+import { useFactLikes } from '@/data/hooks/useFactLikes';
 import { useTheme } from '@/hooks/use-theme';
 import type { Fact } from '@/types';
 
@@ -22,6 +25,7 @@ interface FactCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onPress?: () => void;
+  onOpenLikes?: () => void;
   isOwner?: boolean;
 }
 
@@ -38,14 +42,29 @@ export function FactCard({
   onEdit,
   onDelete,
   onPress,
+  onOpenLikes,
   isOwner = false,
 }: FactCardProps) {
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  // Likes are only fetched (and shown) for signed-in users
+  const { likes } = useFactLikes(variant !== 'anon' && fact.likesCount > 0 ? fact.id : undefined);
 
   const isCollapsible = fact.content.length > COLLAPSE_THRESHOLD;
+
+  const titleEl = fact.title ? (
+    <StyledContent content={fact.title} style={[styles.defaultText, styles.title]} />
+  ) : null;
+
+  const contentEl = (
+    <StyledContent
+      content={fact.content}
+      numberOfLines={isCollapsible && !expanded ? COLLAPSE_LINES : undefined}
+      style={[styles.defaultText, styles.content]}
+    />
+  );
 
   const handleAuthorPress = useCallback(() => {
     if (user && fact.author.id === user.id) {
@@ -60,92 +79,90 @@ export function FactCard({
     setExpanded((current) => !current);
   }, []);
 
-  return (
-    <Pressable onPress={onPress} disabled={!onPress}>
-      <ThemedView
-        type="backgroundElement"
-        style={[styles.card, Shadows.sm]}>
-        {/* Author row — hidden for anon */}
-        {variant !== 'anon' && (
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              handleAuthorPress();
-            }}
-            hitSlop={8}
-            style={styles.authorRow}
-          >
-            <UserAvatar user={fact.author} size={32} />
-            <View style={styles.authorInfo}>
-              <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                @{fact.author.username} · {formatDate(fact.createdAt)}
-              </ThemedText>
-            </View>
-          </Pressable>
-        )}
-
-        {/* Title */}
-        {fact.title ? (
-          <StyledContent
-            content={fact.title}
-            style={[styles.defaultText, styles.title]}
-          />
-        ) : null}
-
-        {/* Content */}
-        <StyledContent
-          content={fact.content}
-          numberOfLines={isCollapsible && !expanded ? COLLAPSE_LINES : undefined}
-          style={[styles.defaultText, styles.content]}
-        />
-
-        {/* Expand/collapse toggle for long facts */}
-        {isCollapsible && (
-          <Pressable onPress={handleToggleExpand} hitSlop={6} style={styles.seeMore}>
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>
-              {expanded ? 'See less' : 'See more'}
-            </ThemedText>
-          </Pressable>
-        )}
-
-        {/* Actions row */}
-        {variant !== 'anon' && (
-          <View style={styles.actionsRow}>
-            <LikeButton
-              liked={fact.liked}
-              likesCount={fact.likesCount}
-              onPress={onLike ?? (() => {})}
-              disabled={!onLike}
-            />
+return (
+    <ThemedView type="backgroundElement" style={[styles.card, Shadows.sm]}>
+      {/* Author row — hidden for anon. Sibling of the content area so the
+          card never nests interactive elements (web renders <button>). */}
+      {variant !== 'anon' && (
+        <AppPressable
+          onPress={(e) => {
+            e.stopPropagation();
+            handleAuthorPress();
+          }}
+          hitSlop={8}
+          style={styles.authorRow}
+        >
+          <UserAvatar user={fact.author} size={32} />
+          <View style={styles.authorInfo}>
+            <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              {fact.likesCount}
+              @{fact.author.username} · {formatDate(fact.createdAt)}
             </ThemedText>
-
-            {variant === 'full' && onShare && (
-              <Pressable onPress={onShare} hitSlop={8} style={styles.actionBtn}>
-                <Ionicons name="share-outline" size={20} color={theme.muted} />
-              </Pressable>
-            )}
-
-            {variant === 'full' && isOwner && (
-              <View style={styles.ownerActions}>
-                {onEdit && (
-                  <Pressable onPress={onEdit} hitSlop={8} style={styles.actionBtn}>
-                    <Ionicons name="create-outline" size={20} color={theme.primary} />
-                  </Pressable>
-                )}
-                {onDelete && (
-                  <Pressable onPress={onDelete} hitSlop={8} style={styles.actionBtn}>
-                    <Ionicons name="trash-outline" size={20} color={theme.destructive} />
-                  </Pressable>
-                )}
-              </View>
-            )}
           </View>
-        )}
-      </ThemedView>
-    </Pressable>
+        </AppPressable>
+      )}
+
+      {/* Tappable body — opens the fact detail */}
+      {onPress ? (
+        <AppPressable onPress={onPress} style={styles.body}>
+          {titleEl}
+          {contentEl}
+        </AppPressable>
+      ) : (
+        <View>
+          {titleEl}
+          {contentEl}
+        </View>
+      )}
+
+      {/* Expand/collapse toggle for long facts */}
+      {isCollapsible && (
+        <AppPressable onPress={handleToggleExpand} hitSlop={6} style={styles.seeMore}>
+          <ThemedText type="smallBold" style={{ color: theme.primary }}>
+            {expanded ? 'See less' : 'See more'}
+          </ThemedText>
+        </AppPressable>
+      )}
+
+      {/* Likes line — opens the full likes modal; hidden for anonymous users */}
+      {variant !== 'anon' && <LikedByLine likes={likes} onPress={onOpenLikes} />}
+
+      {/* Actions row */}
+      {variant !== 'anon' && (
+        <View style={styles.actionsRow}>
+          <LikeButton
+            liked={fact.liked}
+            likesCount={fact.likesCount}
+            onPress={onLike ?? (() => {})}
+            disabled={!onLike}
+          />
+          <ThemedText type="small" themeColor="textSecondary">
+            {fact.likesCount}
+          </ThemedText>
+
+          {variant === 'full' && onShare && (
+            <AppPressable onPress={onShare} hitSlop={8} style={styles.actionBtn}>
+              <Ionicons name="share-outline" size={20} color={theme.muted} />
+            </AppPressable>
+          )}
+
+          {variant === 'full' && isOwner && (
+            <View style={styles.ownerActions}>
+              {onEdit && (
+                <AppPressable onPress={onEdit} hitSlop={8} style={styles.actionBtn}>
+                  <Ionicons name="create-outline" size={20} color={theme.primary} />
+                </AppPressable>
+              )}
+              {onDelete && (
+                <AppPressable onPress={onDelete} hitSlop={8} style={styles.actionBtn}>
+                  <Ionicons name="trash-outline" size={20} color={theme.destructive} />
+                </AppPressable>
+              )}
+            </View>
+          )}
+        </View>
+      )}
+    </ThemedView>
   );
 }
 
@@ -154,10 +171,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-  card: {
+card: {
     padding: Spacing.three,
     borderRadius: Radii.md,
     marginBottom: Spacing.two,
+  },
+  body: {
+    gap: Spacing.two,
   },
   authorRow: {
     flexDirection: 'row',

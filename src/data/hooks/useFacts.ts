@@ -12,6 +12,7 @@ export function useFacts() {
   const hasMore = useFactsStore((s) => s.hasMore);
   const fetchFacts = useFactsStore((s) => s.fetchFacts);
   const loadMore = useFactsStore((s) => s.loadMore);
+  const fetchFactById = useFactsStore((s) => s.fetchFactById);
   const addFact = useFactsStore((s) => s.addFact);
   const deleteFact = useFactsStore((s) => s.deleteFact);
   const toggleLike = useFactsStore((s) => s.toggleLike);
@@ -25,6 +26,7 @@ export function useFacts() {
     hasMore,
     fetchFacts,
     loadMore,
+    fetchFactById,
     addFact,
     deleteFact,
     toggleLike,

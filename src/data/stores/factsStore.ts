@@ -4,12 +4,37 @@ import { createApiClient } from '../api/client';
 import type { ApiFact, ApiPaginatedResponse } from '../api/types';
 import { mapFactsDtos, mapFactDto } from '../mappers/factMapper';
 import { getIdToken } from '../auth/firebaseAuth';
+import { notifyFactLikesChanged } from '../hooks/useFactLikes';
 import { useAuthStore } from './authStore';
 import { useUIStore } from './uiStore';
 
 const PAGE_SIZE = 20;
 
 const client = createApiClient(getIdToken);
+
+/**
+ * Inserts a fact into a list keeping createdAt-desc order, or replaces it
+ * if it already exists. Used when opening a fact detail by ID so the fact
+ * joins the feed cache coherently (likes/delete/edit keep working).
+ */
+function upsertFact(list: Fact[], fact: Fact): Fact[] {
+  const exists = list.some((f) => f.id === fact.id);
+  if (!exists) {
+    return [...list, fact].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  return list.map((f) => (f.id === fact.id ? fact : f));
+}
+
+/**
+ * Merges a fresh page 1 into the existing list: newer items get added on
+ * top and existing ones get updated, so a background refresh brings new
+ * facts without resetting the feed/scroll position.
+ */
+function mergeFacts(current: Fact[], fresh: Fact[]): Fact[] {
+  const byId = new Map(current.map((f) => [f.id, f]));
+  for (const fact of fresh) byId.set(fact.id, fact);
+  return Array.from(byId.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
 
 interface FactsState {
   facts: Fact[];
@@ -18,8 +43,9 @@ interface FactsState {
   userFactsLoading: boolean;
   page: number;
   hasMore: boolean;
-  fetchFacts: () => Promise<void>;
+  fetchFacts: (silent?: boolean) => Promise<void>;
   loadMore: () => Promise<void>;
+  fetchFactById: (factId: string) => Promise<Fact>;
   fetchUserFacts: (userId: string, silent?: boolean) => Promise<void>;
   toggleLike: (factId: string) => Promise<void>;
   addFact: (fact: { title?: string; content: string }) => Promise<Fact>;
@@ -36,17 +62,25 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   page: 1,
   hasMore: true,
 
-  fetchFacts: async () => {
-    set({ isLoading: true });
+  fetchFacts: async (silent?: boolean) => {
+    // Silent refresh skips the loading state (background/pull-to-refresh)
+    if (!silent) set({ isLoading: true });
     try {
       const { results, nextPage } = await client.get<ApiPaginatedResponse<ApiFact>>(
         '/facts',
         { page: '1', limit: String(PAGE_SIZE), order_by: 'createdAt', order_dir: 'desc' },
       );
-      const facts = mapFactsDtos(results);
-      set({ facts, page: 1, hasMore: nextPage !== null, isLoading: false });
+      const fetched = mapFactsDtos(results);
+      if (silent) {
+        // Background refresh: merge so new facts appear on top, existing
+        // ones get fresh data, and the scroll position is preserved.
+        set({ facts: mergeFacts(get().facts, fetched), hasMore: nextPage !== null });
+      } else {
+        set({ facts: fetched, page: 1, hasMore: nextPage !== null, isLoading: false });
+      }
     } catch (error) {
-      set({ isLoading: false });
+      if (!silent) set({ isLoading: false });
+      if (silent) return;
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
@@ -76,6 +110,22 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
+    }
+  },
+
+  fetchFactById: async (factId: string) => {
+    try {
+      const dto = await client.get<ApiFact>(`/facts/${factId}`);
+      const fact = mapFactDto(dto);
+      set((state) => ({
+        facts: upsertFact(state.facts, fact),
+      }));
+      return fact;
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error) {
+        useUIStore.getState().setError(error as import('@/types').AppError);
+      }
+      throw error;
     }
   },
 
@@ -124,6 +174,8 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       } else {
         await client.post(`/facts/${factId}/likes`);
       }
+      // Live-update "Liked by …" lines across every mounted screen
+      notifyFactLikesChanged(factId);
     } catch (error) {
       // Rollback on error
       set({ facts, userFacts });

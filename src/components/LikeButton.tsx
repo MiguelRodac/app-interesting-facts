@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, type GestureResponderEvent } from 'react-native';
+import { StyleSheet, type GestureResponderEvent } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -47,7 +48,7 @@ export function LikeButton({ liked, likesCount, onPress, disabled = false }: Lik
   const iconColor = liked ? theme.destructive : theme.muted;
 
   return (
-    <Pressable
+    <AppPressable
       onPress={handlePress}
       disabled={disabled}
       hitSlop={Spacing.two}
@@ -55,7 +56,7 @@ export function LikeButton({ liked, likesCount, onPress, disabled = false }: Lik
       <Animated.View style={animatedStyle}>
         <Ionicons name={iconName} size={22} color={iconColor} />
       </Animated.View>
-    </Pressable>
+    </AppPressable>
   );
 }
 

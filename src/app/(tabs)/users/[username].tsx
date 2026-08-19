@@ -1,10 +1,12 @@
-import { useCallback, useEffect } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { EmptyState } from '@/components/EmptyState';
 import { FactCard } from '@/components/FactCard';
+import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -37,16 +39,36 @@ export default function UserProfileScreen() {
     clearProfile,
   } = useUserProfile();
   const { isAuthenticated } = useAuth();
+  const [likesFactId, setLikesFactId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const handleRefresh = useCallback(async () => {
     if (!username) return;
+    setRefreshing(true);
+    try {
+      await fetchProfile(username, profile ? true : undefined);
+      if (profile?.id) {
+        await fetchUserFacts(profile.id, true);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [username, profile, fetchProfile, fetchUserFacts]);
+
+useEffect(() => {
+    if (!username) {
+      // Route without the dynamic segment (/users without a username) — not a
+      // real page, send the visitor back to the feed instead of a dead end.
+      router.replace('/(tabs)');
+      return;
+    }
     fetchProfile(username).catch(() => {
       // Error handled by store → uiStore
     });
     return () => {
       clearProfile();
     };
-  }, [username, fetchProfile, clearProfile]);
+  }, [username, fetchProfile, clearProfile, router]);
 
   // Fetch facts once profile is loaded (uses profile.id from GET /users/:username)
   useEffect(() => {
@@ -98,9 +120,9 @@ export default function UserProfileScreen() {
     return (
       <View style={styles.header}>
         {/* Back button */}
-        <Pressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
+        <AppPressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </Pressable>
+        </AppPressable>
 
         {/* Profile card */}
         <ThemedView type="backgroundElement" style={[styles.profileCard, Shadows.md]}>
@@ -140,7 +162,7 @@ export default function UserProfileScreen() {
   };
 
   // Don't render the list at all while initial loading or if profile not found
-  if (isLoading || !profile) {
+if (isLoading || !profile) {
     return (
       <ThemedView style={styles.container}>
         <FlatList
@@ -148,6 +170,14 @@ export default function UserProfileScreen() {
           renderItem={null}
           ListHeaderComponent={renderHeader}
           contentContainerStyle={[styles.list, { paddingTop: topInset }]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.primary}
+              colors={[theme.primary]}
+            />
+          }
         />
       </ThemedView>
     );
@@ -162,12 +192,28 @@ export default function UserProfileScreen() {
         renderItem={({ item }) => (
           <FactCard
             fact={item}
-            variant="preview"
+            variant={isAuthenticated ? 'preview' : 'anon'}
             onPress={() => handleFactPress(item)}
             onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
+            onOpenLikes={isAuthenticated ? () => setLikesFactId(item.id) : undefined}
           />
         )}
         contentContainerStyle={[styles.list, { paddingTop: topInset }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+          />
+        }
+      />
+
+      {/* Full likes list */}
+      <LikesModal
+        factId={likesFactId}
+        visible={likesFactId !== null}
+        onClose={() => setLikesFactId(null)}
       />
     </ThemedView>
   );

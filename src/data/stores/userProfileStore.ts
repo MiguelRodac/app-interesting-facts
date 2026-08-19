@@ -6,6 +6,7 @@ import type { ApiAuthor, ApiFact, ApiPaginatedResponse } from '../api/types';
 import { getIdToken } from '../auth/firebaseAuth';
 import { mapFactsDtos } from '../mappers/factMapper';
 import { mapAuthorDto } from '../mappers/userMapper';
+import { notifyFactLikesChanged } from '../hooks/useFactLikes';
 import { useUIStore } from './uiStore';
 
 const client = createApiClient(getIdToken);
@@ -15,8 +16,8 @@ interface UserProfileState {
   facts: Fact[];
   isLoading: boolean;
   factsLoading: boolean;
-  fetchProfile: (username: string) => Promise<void>;
-  fetchUserFacts: (authorId: string) => Promise<void>;
+  fetchProfile: (username: string, silent?: boolean) => Promise<void>;
+  fetchUserFacts: (authorId: string, silent?: boolean) => Promise<void>;
   toggleLike: (factId: string) => Promise<void>;
   clearProfile: () => void;
 }
@@ -27,8 +28,9 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
   isLoading: false,
   factsLoading: false,
 
-  fetchProfile: async (username: string) => {
-    set({ isLoading: true, profile: null });
+  fetchProfile: async (username: string, silent?: boolean) => {
+    // Silent refresh keeps the current profile visible while updating it
+    if (!silent) set({ isLoading: true, profile: null });
     try {
       const data = await client.get<ApiAuthor>(`/users/${username}`);
       const profile: PublicProfile = {
@@ -38,6 +40,7 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
       set({ profile, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
+      if (silent) return;
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
@@ -45,8 +48,9 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
     }
   },
 
-  fetchUserFacts: async (authorId: string) => {
-    set({ factsLoading: true, facts: [] });
+  fetchUserFacts: async (authorId: string, silent?: boolean) => {
+    // Silent refresh keeps the current list while updating it
+    if (!silent) set({ factsLoading: true, facts: [] });
     try {
       const response = await client.get<ApiPaginatedResponse<ApiFact>>(
         `/facts/author/${authorId}`,
@@ -56,7 +60,8 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
       const facts = mapFactsDtos(raw as ApiFact[]);
       set({ facts, factsLoading: false });
     } catch (error) {
-      set({ factsLoading: false, facts: [] });
+      if (!silent) set({ factsLoading: false, facts: [] });
+      if (silent) return;
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
@@ -82,6 +87,8 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
       } else {
         await client.post(`/facts/${factId}/likes`);
       }
+      // Live-update "Liked by …" lines across every mounted screen
+      notifyFactLikesChanged(factId);
     } catch (error) {
       set({ facts });
       if (error && typeof error === 'object' && 'code' in error) {
