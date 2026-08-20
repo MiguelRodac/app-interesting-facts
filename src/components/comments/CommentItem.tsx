@@ -15,6 +15,16 @@ interface CommentItemProps {
   comment: Comment;
   /** Called when the author is pressed — parent decides profile deep-link. */
   onAuthorPress?: (author: CommentAuthor) => void;
+  /** Current signed-in user's username, for editing/deleting own comments. */
+  currentUsername?: string;
+  /** Whether a user is signed in — reply is only offered to signed-in viewers. */
+  isSignedIn?: boolean;
+  /** Tapped "Reply" (depth-0 top-level only). Parent sets replyTo + focuses composer. */
+  onReply?: (comment: Comment) => void;
+  /** Tapped "Edit" (own comment within the 1h window). */
+  onEdit?: (comment: Comment) => void;
+  /** Tapped "Delete" (own comment). Parent opens the ConfirmDialog. */
+  onDelete?: (comment: Comment) => void;
 }
 
 // Re-check the 1-hour edit window every 60s so the (PR5) edit affordance
@@ -31,13 +41,21 @@ function formatTimestamp(iso: string): string {
  * in via props. Edit affordance is intentionally read-phase in PR4 — the
  * edit-window timer is wired up so PR5 can drop the action in cleanly.
  */
-export function CommentItem({ comment, onAuthorPress }: CommentItemProps) {
+export function CommentItem({
+  comment,
+  onAuthorPress,
+  currentUsername,
+  isSignedIn = false,
+  onReply,
+  onEdit,
+  onDelete,
+}: CommentItemProps) {
   const theme = useTheme();
   const [repliesExpanded, setRepliesExpanded] = useState(false);
   const [canEdit, setCanEdit] = useState(() => canEditComment(comment.createdAt));
 
   // Re-evaluate the edit window on an interval so `canEdit` flips to false
-  // ~60s after the 1-hour mark. PR5 renders edit controls from this value.
+  // ~60s after the 1-hour mark. Edit controls render from this value.
   useEffect(() => {
     const interval = setInterval(() => {
       setCanEdit(canEditComment(comment.createdAt));
@@ -49,7 +67,19 @@ export function CommentItem({ comment, onAuthorPress }: CommentItemProps) {
     onAuthorPress?.(comment.author);
   }, [onAuthorPress, comment.author]);
 
+  const handleReply = useCallback(() => onReply?.(comment), [onReply, comment]);
+  const handleEdit = useCallback(() => onEdit?.(comment), [onEdit, comment]);
+  const handleDelete = useCallback(() => onDelete?.(comment), [onDelete, comment]);
+
   const replies = comment.replies ?? [];
+
+  // Authoring visibility:
+  //  - Reply: depth-0 top-level only (backend rejects reply-to-reply), signed-in.
+  //  - Edit: own comment within the 1-hour window (canEdit from the timer).
+  //  - Delete: own comment (no window; blocked replies handled by the store).
+  const isTopLevel = comment.parentCommentId == null;
+  const isOwn = currentUsername != null && comment.author.username === currentUsername;
+  const canReply = isTopLevel && isSignedIn;
 
   return (
     <View style={styles.container}>
@@ -75,6 +105,32 @@ export function CommentItem({ comment, onAuthorPress }: CommentItemProps) {
 
       {/* Body */}
       <StyledContent content={comment.content} style={styles.content} />
+
+      {/* Authoring actions */}
+      {(canReply || (isOwn && canEdit) || isOwn) && (
+        <View style={styles.actions}>
+          {canReply && (
+            <AppPressable onPress={handleReply} hitSlop={8} style={styles.action}>
+              <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                Reply
+              </ThemedText>
+            </AppPressable>
+          )}
+          {isOwn && canEdit && (
+            <AppPressable onPress={handleEdit} hitSlop={8} style={styles.action}>
+              <Ionicons name="create-outline" size={16} color={theme.muted} />
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Edit
+              </ThemedText>
+            </AppPressable>
+          )}
+          {isOwn && (
+            <AppPressable onPress={handleDelete} hitSlop={8} style={styles.action}>
+              <Ionicons name="trash-outline" size={15} color={theme.destructive} />
+            </AppPressable>
+          )}
+        </View>
+      )}
 
       {/* Replies — depth-1 only, flat indented list */}
       {replies.length > 0 && (
@@ -127,6 +183,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     marginTop: Spacing.one,
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    marginTop: Spacing.one,
+  },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   replies: {
     marginTop: Spacing.two,
