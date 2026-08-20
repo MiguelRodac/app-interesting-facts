@@ -102,13 +102,11 @@ export default function LandingScreen() {
       <ScrollView contentContainerStyle={[styles.scroll, isNarrow && styles.scrollNarrow]}>
         {/* Hero */}
         <View style={styles.hero}>
-          <View style={[styles.logoBadge, isNarrow && styles.logoBadgeNarrow, { backgroundColor: theme.primary }]}>
-            <Image
-              source={require('@/assets/images/icon.png')}
-              style={[styles.logoImage, isNarrow && styles.logoImageNarrow]}
-              accessibilityLabel="Interesting Facts logo"
-            />
-          </View>
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={[styles.logoImage, isNarrow && styles.logoImageNarrow]}
+            accessibilityLabel="Interesting Facts logo"
+          />
           <ThemedText type="title" style={[styles.title, isNarrow && styles.titleNarrow]}>
             Interesting Facts
           </ThemedText>
@@ -264,26 +262,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three,
   },
-  logoBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: Radii.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.one,
-  },
-  logoBadgeNarrow: {
-    width: 64,
-    height: 64,
-  },
   logoImage: {
-    width: 64,
-    height: 64,
+    width: 96,
+    height: 96,
     borderRadius: Radii.lg,
   },
   logoImageNarrow: {
-    width: 48,
-    height: 48,
+    width: 72,
+    height: 72,
   },
   title: {
     fontSize: 34,
