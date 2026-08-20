@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, Share, ScrollView, RefreshControl } from 'react-native';
+import { StyleSheet, View, Share, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LikedByLine } from '@/components/LikedByLine';
 import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { CommentComposer } from '@/components/comments/CommentComposer';
 import { CommentSection } from '@/components/comments/CommentSection';
 import { StyledContent } from '@/components/StyledContent';
 import { TabBar } from '@/components/TabBar';
@@ -18,11 +19,17 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { useFacts } from '@/data/hooks/useFacts';
-import { notifyFactCommentsChanged } from '@/data/hooks/useFactComments';
+import { notifyFactCommentsChanged, useFactComments } from '@/data/hooks/useFactComments';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
-import type { Fact } from '@/types';
+import type { Comment, Fact } from '@/types';
+
+/** Reply target — enough to prefill the fixed composer in reply mode. */
+interface CommentReplyTarget {
+  commentId: string;
+  username: string;
+}
 
 export default function FactDetailScreen() {
 const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
@@ -50,6 +57,41 @@ const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
 const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 const [likesModalVisible, setLikesModalVisible] = useState(false);
+
+  // Fixed-bottom composer state (moved up from CommentSection so the detail
+  // screen owns the single pinned composer for create/reply/edit).
+  const [replyTo, setReplyTo] = useState<CommentReplyTarget | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Live thread (same store cache CommentSection renders) — lets us resolve the
+  // comment under edit so the fixed composer can prefill its content.
+  const { comments } = useFactComments(id ?? '');
+  const editingComment = useMemo(
+    () => (editingId ? comments.find((c) => c.id === editingId) ?? null : null),
+    [comments, editingId],
+  );
+
+  // Reply: cancel any edit, prefill replyTo so the fixed composer submits with
+  // parentCommentId, and focus it (autoFocus on the TextInput when replyTo set).
+  const handleCommentReply = useCallback((comment: Comment) => {
+    setEditingId(null);
+    setReplyTo({ commentId: comment.id, username: comment.author.username });
+  }, []);
+
+  // Edit: cancel any reply, swap the fixed composer into edit mode.
+  const handleCommentEdit = useCallback((comment: Comment) => {
+    setReplyTo(null);
+    setEditingId(comment.id);
+  }, []);
+
+  const handleComposerCancelReply = useCallback(() => setReplyTo(null), []);
+  const handleComposerCancelEdit = useCallback(() => setEditingId(null), []);
+
+  // After a successful create/reply/edit, reset the fixed composer state.
+  const handleComposerDone = useCallback(() => {
+    setReplyTo(null);
+    setEditingId(null);
+  }, []);
 
   // Tab bar — highlight the tab the user came from
   const activeTab = from === 'search' ? 'search' : from === 'profile' || from === 'user' ? 'profile' : 'index';
@@ -221,7 +263,10 @@ const isOwner = fact && user?.id === fact.author.id;
   }
 
   return (
-<View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={0}>
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: topInset }]}
         refreshControl={
@@ -352,9 +397,29 @@ const isOwner = fact && user?.id === fact.author.id;
             factId={fact.id}
             onCommentAuthorPress={handleCommentAuthorPress}
             isSignedIn={isAuthenticated}
+            onReply={handleCommentReply}
+            onEdit={handleCommentEdit}
           />
         )}
       </ScrollView>
+
+      {/* Fixed bottom comment composer — pinned above the TabBar, OUTSIDE the
+          ScrollView, so it stays visible while the thread scrolls (Instagram/
+          Facebook pattern). Reply/edit state is owned here; when Reply/Edit is
+          tapped on a comment, onReply/onEdit route through the section and swap
+          this composer into reply/edit mode. */}
+      {isAuthenticated && (
+        <CommentComposer
+          factId={fact.id}
+          mode={editingComment ? 'edit' : 'create'}
+          commentId={editingComment?.id}
+          initialValue={editingComment?.content ?? ''}
+          replyTo={editingComment ? null : replyTo}
+          onCancelReply={handleComposerCancelReply}
+          onCancelEdit={handleComposerCancelEdit}
+          onDone={handleComposerDone}
+        />
+      )}
 
 
       {/* Bottom tab bar */}
@@ -379,7 +444,7 @@ const isOwner = fact && user?.id === fact.author.id;
           onClose={() => setLikesModalVisible(false)}
         />
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

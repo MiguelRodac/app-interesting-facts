@@ -8,13 +8,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { CharCounter } from '@/components/CharCounter';
 import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AppPressable } from '@/components/ui/app-pressable';
-import { Radii, Shadows, Spacing } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
+import { useAuth } from '@/data/hooks/useAuth';
 import type { ApiUserSearchResult } from '@/data/api/types';
 import { useCommentsStore } from '@/data/stores/commentsStore';
 import { useTheme } from '@/hooks/use-theme';
@@ -43,7 +43,7 @@ interface CommentComposerProps {
   onCancelReply?: () => void;
   /** Fired after a successful create/reply POST (cleared input) — used to blur/reset focus. */
   onDone?: () => void;
-  /** 'edit' reuses the same composer inline to edit one of the author's own comments. */
+  /** 'edit' reuses the same composer to edit one of the author's own comments. */
   mode?: ComposerMode;
   /** The comment being edited (edit mode) — drives updateComment(factId, commentId, content). */
   commentId?: string;
@@ -54,12 +54,18 @@ interface CommentComposerProps {
 }
 
 /**
- * Inline multiline comment box used for creating, replying and editing.
- * Includes a CharCounter (10-500) and @mention autocomplete with debounced
- * /users/search — the backend validates mentions in comment content (422
- * VALIDATION_ERROR), so the dropdown inserts `@username` phrase exactly as
- * the backend parses. For signed-in authors only; the parent decides whether
- * to mount it at all.
+ * Minimal Instagram/Facebook-style comment bar, pinned at the bottom of the
+ * fact detail (the parent mounts it OUTSIDE the ScrollView so it stays visible
+ * while the thread scrolls).
+ *
+ * Clean single-row layout: avatar + multiline TextInput + a plain "Post" text
+ * button that enables only when the 10-char minimum is met. There is NO visible
+ * CharCounter and NO filled pill button. The 500-char maxLength and the 10-char
+ * minimum gate stay silent (validated on submit by disabling Post while short).
+ *
+ * @mention autocomplete is preserved (GET /users/search) but restyled to blend —
+ * a subtle bottom:'100%' dropdown above the input. Signed-in authors only; the
+ * parent decides whether to mount it at all.
  */
 export function CommentComposer({
   factId,
@@ -72,6 +78,7 @@ export function CommentComposer({
   onCancelEdit,
 }: CommentComposerProps) {
   const theme = useTheme();
+  const { user } = useAuth();
   const isEdit = mode === 'edit';
   const addComment = useCommentsStore((s) => s.addComment);
   const updateComment = useCommentsStore((s) => s.updateComment);
@@ -95,6 +102,14 @@ export function CommentComposer({
   const canSubmit =
     trimmedLength >= COMMENT_MIN_LENGTH && trimmedLength <= COMMENT_MAX_LENGTH && !isSubmitting;
 
+  const avatarUser = user
+    ? {
+        displayName: user.displayName,
+        avatarColor: user.avatarColor,
+        avatarUrl: user.avatarUrl,
+      }
+    : null;
+
   // Clear any pending timeouts when the composer unmounts.
   useEffect(() => {
     const timeout = mentionTimeoutRef.current;
@@ -104,6 +119,20 @@ export function CommentComposer({
       if (blur) clearTimeout(blur);
     };
   }, []);
+
+  // Sync content when the parent swaps the same mounted composer between create
+  // and edit modes (replyTo/editingId live in the detail screen). Entering edit
+  // mode pre-fills the target comment's text; leaving edit mode clears any
+  // stale draft and any pending mention state.
+  useEffect(() => {
+    if (mode === 'edit' && commentId) {
+      setContent(initialValue);
+    } else {
+      setContent('');
+      setShowMentions(false);
+      setMentionResults([]);
+    }
+  }, [mode, commentId, initialValue]);
 
   const searchMentions = useCallback((query: string) => {
     latestMentionQueryRef.current = query;
@@ -194,12 +223,12 @@ export function CommentComposer({
   }, []);
 
   const handleSelectMention = useCallback(
-    (user: ApiUserSearchResult) => {
+    (userMention: ApiUserSearchResult) => {
       const lastAtIndex = content.lastIndexOf('@', cursorPositionRef.current);
       if (lastAtIndex === -1) return;
       const beforeAt = content.substring(0, lastAtIndex);
       const afterCursor = content.substring(cursorPositionRef.current);
-      const newContent = `${beforeAt}@${user.username} ${afterCursor}`;
+      const newContent = `${beforeAt}@${userMention.username} ${afterCursor}`;
 
       setContent(newContent);
       setShowMentions(false);
@@ -236,95 +265,104 @@ export function CommentComposer({
     onCancelEdit?.();
   };
 
+  const postLabel = isEdit ? 'Save' : 'Post';
+
   return (
-    <View style={[styles.wrap, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+    <View style={[styles.wrap, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
+      {/* Subtle reply-to chip, only in create/reply mode with an active target. */}
       {replyTo && !isEdit ? (
         <View style={styles.replyChipRow}>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.replyChipText}>
             Replying to <ThemedText type="smallBold">@{replyTo.username}</ThemedText>
           </ThemedText>
           <AppPressable onPress={onCancelReply} hitSlop={8} style={styles.replyCancel}>
-            <Ionicons name="close-circle" size={18} color={theme.muted} />
+            <Ionicons name="close-circle" size={17} color={theme.muted} />
           </AppPressable>
         </View>
       ) : null}
 
-      <View style={styles.contentContainer}>
-        <TextInput
-          ref={inputRef}
-          style={[styles.input, { color: theme.text }]}
-          placeholder={isEdit ? 'Edit your comment...' : 'Add a comment... Use @ to mention'}
-          placeholderTextColor={theme.muted}
-          value={content}
-          onChangeText={handleContentChange}
-          onSelectionChange={handleSelectionChange}
-          onBlur={handleContentBlur}
-          maxLength={COMMENT_MAX_LENGTH}
-          multiline
-          textAlignVertical="top"
-          editable={!isSubmitting}
-          autoFocus={isEdit || !!replyTo}
-        />
-
-        {showMentions && (
-          <View
-            style={[
-              styles.autocompleteDropdown,
-              { backgroundColor: DROPDOWN_BG, borderColor: DROPDOWN_BORDER },
-            ]}>
-            {isSearchingMentions ? (
-              <View style={styles.autocompleteState}>
-                <ActivityIndicator size="small" color={theme.muted} />
-              </View>
-            ) : mentionResults.length === 0 ? (
-              <View style={styles.autocompleteState}>
-                <ThemedText type="small" style={styles.autocompleteEmptyText}>
-                  No users found
-                </ThemedText>
-              </View>
-            ) : (
-              <FlatList
-                data={mentionResults}
-                keyExtractor={(item) => item.username}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item, index }) => (
-                  <AppPressable
-                    style={[
-                      styles.autocompleteItem,
-                      index === selectedMentionIndex && styles.autocompleteItemSelected,
-                    ]}
-                    onPress={() => handleSelectMention(item)}
-                    onPressIn={() => setSelectedMentionIndex(index)}>
-                    <UserAvatar
-                      user={{
-                        displayName: item.displayName,
-                        avatarColor: item.avatarColor ?? '#64B5F6',
-                        avatarUrl: item.avatarUrl,
-                      }}
-                      size={28}
-                    />
-                    <View style={styles.autocompleteInfo}>
-                      <ThemedText type="smallBold" style={styles.autocompleteName}>
-                        {item.username}
-                      </ThemedText>
-                      <ThemedText type="small" style={styles.autocompleteSubtext}>
-                        {item.displayName}
-                      </ThemedText>
-                    </View>
-                  </AppPressable>
-                )}
-              />
-            )}
-          </View>
+      <View style={[styles.row, { borderTopColor: theme.border }]}>
+        {/* Avatar — current signed-in user. */}
+        {avatarUser ? (
+          <UserAvatar user={avatarUser} size={32} />
+        ) : (
+          <View style={styles.avatarPlaceholder} />
         )}
-      </View>
 
-      <View style={styles.footer}>
-        <CharCounter current={trimmedLength} min={COMMENT_MIN_LENGTH} max={COMMENT_MAX_LENGTH} />
+        <View style={styles.inputWrap}>
+          <TextInput
+            ref={inputRef}
+            style={[styles.input, { color: theme.text }]}
+            placeholder={isEdit ? 'Edit your comment...' : 'Add a comment...'}
+            placeholderTextColor={theme.muted}
+            value={content}
+            onChangeText={handleContentChange}
+            onSelectionChange={handleSelectionChange}
+            onBlur={handleContentBlur}
+            maxLength={COMMENT_MAX_LENGTH}
+            multiline
+            textAlignVertical="top"
+            editable={!isSubmitting}
+            autoFocus={isEdit || !!replyTo}
+          />
+
+          {showMentions && (
+            <View
+              style={[
+                styles.autocompleteDropdown,
+                { backgroundColor: DROPDOWN_BG, borderColor: DROPDOWN_BORDER },
+              ]}>
+              {isSearchingMentions ? (
+                <View style={styles.autocompleteState}>
+                  <ActivityIndicator size="small" color={theme.muted} />
+                </View>
+              ) : mentionResults.length === 0 ? (
+                <View style={styles.autocompleteState}>
+                  <ThemedText type="small" style={styles.autocompleteEmptyText}>
+                    No users found
+                  </ThemedText>
+                </View>
+              ) : (
+                <FlatList
+                  data={mentionResults}
+                  keyExtractor={(item) => item.username}
+                  keyboardShouldPersistTaps="handled"
+                  renderItem={({ item, index }) => (
+                    <AppPressable
+                      style={[
+                        styles.autocompleteItem,
+                        index === selectedMentionIndex && styles.autocompleteItemSelected,
+                      ]}
+                      onPress={() => handleSelectMention(item)}
+                      onPressIn={() => setSelectedMentionIndex(index)}>
+                      <UserAvatar
+                        user={{
+                          displayName: item.displayName,
+                          avatarColor: item.avatarColor ?? '#64B5F6',
+                          avatarUrl: item.avatarUrl,
+                        }}
+                        size={28}
+                      />
+                      <View style={styles.autocompleteInfo}>
+                        <ThemedText type="smallBold" style={styles.autocompleteName}>
+                          {item.username}
+                        </ThemedText>
+                        <ThemedText type="small" style={styles.autocompleteSubtext}>
+                          {item.displayName}
+                        </ThemedText>
+                      </View>
+                    </AppPressable>
+                  )}
+                />
+              )}
+            </View>
+          )}
+        </View>
+
         <View style={styles.actions}>
           {isEdit ? (
-            <AppPressable onPress={handleCancelEdit} disabled={isSubmitting} hitSlop={6} style={styles.button}>
-              <ThemedText type="smallBold" themeColor="textSecondary">
+            <AppPressable onPress={handleCancelEdit} disabled={isSubmitting} hitSlop={6} style={styles.textButton}>
+              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.cancelText}>
                 Cancel
               </ThemedText>
             </AppPressable>
@@ -333,19 +371,15 @@ export function CommentComposer({
             onPress={canSubmit ? handleSubmit : undefined}
             disabled={!canSubmit}
             hitSlop={6}
-            style={[
-              styles.button,
-              { backgroundColor: canSubmit ? theme.primary : theme.muted },
-              isSubmitting && styles.submitting,
-            ]}>
+            style={styles.textButton}>
             {isSubmitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : isEdit ? (
-              <ThemedText type="smallBold" style={styles.buttonText}>
-                Save
-              </ThemedText>
+              <ActivityIndicator size="small" color={theme.primary} />
             ) : (
-              <Ionicons name="paper-plane" size={16} color="#FFFFFF" />
+              <ThemedText
+                type="smallBold"
+                style={[styles.postText, { color: canSubmit ? theme.primary : theme.muted }]}>
+                {postLabel}
+              </ThemedText>
             )}
           </AppPressable>
         </View>
@@ -355,32 +389,46 @@ export function CommentComposer({
 }
 
 const styles = StyleSheet.create({
+  // Fixed bar — clean, borderless card; separation via a subtle top hairline.
   wrap: {
-    // Instagram-ish: the composer sits just below the list with airy rhythm.
-    marginTop: Spacing.three,
-    borderRadius: Radii.md,
-    borderWidth: 1,
+    borderTopWidth: 1,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    gap: Spacing.two,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
   },
   replyChipRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.two,
+    marginBottom: Spacing.one,
+  },
+  replyChipText: {
+    flexShrink: 1,
   },
   replyCancel: {
     padding: 2,
   },
-  contentContainer: {
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.two,
+  },
+  avatarPlaceholder: {
+    width: 32,
+    height: 32,
+  },
+  inputWrap: {
+    flex: 1,
     position: 'relative',
   },
   input: {
     fontSize: 15,
-    lineHeight: 22,
-    minHeight: 48,
-    maxHeight: 120,
-    padding: 0,
+    lineHeight: 21,
+    minHeight: 32,
+    maxHeight: 96,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: 0,
   },
   autocompleteDropdown: {
     position: 'absolute',
@@ -388,12 +436,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     maxHeight: 220,
-    marginBottom: Spacing.one,
+    marginBottom: Spacing.two,
     borderRadius: Radii.lg,
     borderWidth: 1,
     zIndex: 1000,
     overflow: 'hidden',
-    ...Shadows.lg,
   },
   autocompleteState: {
     padding: Spacing.three,
@@ -424,28 +471,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#A0A0B0',
   },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+    justifyContent: 'flex-end',
   },
-  button: {
-    minWidth: 44,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one + 1,
-    borderRadius: Radii.full,
+  textButton: {
+    minWidth: 40,
+    paddingHorizontal: Spacing.one,
+    paddingVertical: Spacing.two,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  submitting: {
-    opacity: 0.7,
+  postText: {
+    fontSize: 15,
   },
-  buttonText: {
-    color: '#FFFFFF',
+  cancelText: {
+    fontSize: 15,
   },
 });

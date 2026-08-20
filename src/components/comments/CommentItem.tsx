@@ -156,16 +156,18 @@ export function CommentItem({
         </View>
       </View>
 
-      {/* Replies — depth-1 only, flat indented list */}
+      {/* Replies — depth-1 only, soft Instagram-style thread: no heavy left
+          border, a light indent, and a plain "View N replies / Hide replies"
+          toggle with a small chevron. Author + content continue inline. */}
       {replies.length > 0 && (
-        <View style={[styles.replies, { borderLeftColor: theme.border }]}>
+        <View style={styles.replies}>
           <AppPressable
             onPress={() => setRepliesExpanded((current) => !current)}
             style={styles.repliesToggle}
             hitSlop={8}>
             <Ionicons
               name={repliesExpanded ? 'chevron-up' : 'chevron-down'}
-              size={13}
+              size={12}
               color={theme.textSecondary}
             />
             <ThemedText type="small" themeColor="textSecondary" style={styles.repliesToggleText}>
@@ -177,13 +179,12 @@ export function CommentItem({
 
           {repliesExpanded &&
             replies.map((reply) => (
-              <View key={reply.id} style={styles.replyItem}>
-                <CommentItem
-                  comment={reply}
-                  onAuthorPress={onAuthorPress}
-                  isSignedIn={isSignedIn}
-                />
-              </View>
+              <CommentItem
+                key={reply.id}
+                comment={reply}
+                onAuthorPress={onAuthorPress}
+                isSignedIn={isSignedIn}
+              />
             ))}
         </View>
       )}
@@ -246,11 +247,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.half,
   },
+  // Soft IG thread: a light consistent indent, no heavy left border. The
+  // replies' own padding gives the visual nesting.
   replies: {
-    marginTop: Spacing.two,
-    marginLeft: 38,
-    paddingLeft: Spacing.three,
-    borderLeftWidth: 2,
+    marginTop: Spacing.one,
+    marginLeft: Spacing.four,
+    paddingLeft: Spacing.two,
   },
   repliesToggle: {
     flexDirection: 'row',
@@ -260,9 +262,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.one,
   },
   repliesToggleText: {
-    fontWeight: 600,
-  },
-  replyItem: {
-    marginBottom: Spacing.one,
+    fontWeight: 500,
+    fontSize: 13,
   },
 });

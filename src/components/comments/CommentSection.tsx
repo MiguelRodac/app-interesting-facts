@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
-import { CommentComposer } from '@/components/comments/CommentComposer';
 import { CommentItem } from '@/components/comments/CommentItem';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ThemedText } from '@/components/themed-text';
@@ -20,12 +19,12 @@ interface CommentSectionProps {
    *  read-only with @username author names (no displayName). Defaults to the
    *  detected auth state when omitted. */
   isSignedIn?: boolean;
-}
-
-/** Reply target — enough to prefill reply mode with the parentCommentId. */
-interface ReplyTarget {
-  commentId: string;
-  username: string;
+  /** Tapped "Reply" (top-level comment). Parent owns replyTo state and focuses
+   *  the fixed bottom composer in reply mode. */
+  onReply?: (comment: Comment) => void;
+  /** Tapped "Edit" (own comment within the 1h window). Parent swaps the fixed
+   *  bottom composer into edit mode. */
+  onEdit?: (comment: Comment) => void;
 }
 
 // How long we show the loader for the initial fetch before yielding to the
@@ -38,23 +37,24 @@ const INITIAL_LOADING_MS = 250;
  * Threaded comments section. Mounted inside the fact detail ScrollView —
  * FlatList with scrollEnabled={false} so the outer ScrollView scrolls.
  *
- * PR5 adds the WRITE UI on top of the PR4 read surface: an inline composer
- * for new comments/replies, inline editing of one's own comments, and delete
- * (with ConfirmDialog). The store's optimistic cache + notify pipeline keeps
- * every mutation reflected in the list without a manual refresh.
+ * The write composer is NOT rendered here: the fact detail screen mounts a
+ * single FIXED bottom composer (Instagram/Facebook style) that stays pinned
+ * above the tab bar while this thread scrolls. Reply/edit state lives in the
+ * parent and is coordinated through onReply/onEdit. This section only renders
+ * the comment thread plus the delete ConfirmDialog.
  */
 export function CommentSection({
   factId,
   onCommentAuthorPress,
   isSignedIn: isSignedInProp,
+  onReply,
+  onEdit,
 }: CommentSectionProps) {
   const theme = useTheme();
   const { comments } = useFactComments(factId);
   const { user } = useAuth();
   const deleteComment = useCommentsStore((s) => s.deleteComment);
 
-  const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Comment | null>(null);
 
   const [loading, setLoading] = useState(() => comments.length === 0);
@@ -63,31 +63,8 @@ export function CommentSection({
     return () => clearTimeout(timer);
   }, []);
 
-  /** The comment currently being edited, looked up from the live thread. */
-  const editingComment = useMemo(
-    () => comments.find((c) => c.id === editingId) ?? null,
-    [comments, editingId],
-  );
-
   const isSignedIn = isSignedInProp ?? !!user;
   const currentUsername = user?.username;
-
-  // Reply: prefill replyTo so the composer submits with parentCommentId, and
-  // focus the composer (autoFocus on the TextInput triggers when replyTo set).
-  const handleReply = useCallback((comment: Comment) => {
-    setEditingId(null);
-    setReplyTo({ commentId: comment.id, username: comment.author.username });
-  }, []);
-
-  // Edit: swap the top-level composer region for an inline edit composer.
-  const handleEdit = useCallback((comment: Comment) => {
-    setReplyTo(null);
-    setEditingId(comment.id);
-  }, []);
-
-  const handleCancelEdit = useCallback(() => {
-    setEditingId(null);
-  }, []);
 
   // Delete: hold the target until the ConfirmDialog resolves.
   const handleDelete = useCallback((comment: Comment) => {
@@ -99,11 +76,6 @@ export function CommentSection({
     const targetId = deleteTarget.id;
     // Clear the pending target eagerly so the dialog closes immediately.
     setDeleteTarget(null);
-    // If we were editing or replying to the deleted comment, reset that state.
-    setEditingId((current) => (current === targetId ? null : current));
-    setReplyTo((current) =>
-      current?.commentId === targetId ? null : current,
-    );
     // The store optimistically removes the comment and surfaces errors (e.g.
     // DELETE_BLOCKED_HAS_REPLIES 403) via uiStore.setError → global banner.
     deleteComment(factId, targetId).catch(() => {
@@ -115,15 +87,10 @@ export function CommentSection({
     setDeleteTarget(null);
   }, []);
 
-  const handleComposerDone = useCallback(() => {
-    setReplyTo(null);
-    setEditingId(null);
-  }, []);
-
   return (
     <View style={styles.section}>
       <ThemedText type="smallBold" style={styles.header}>
-        Comments ({comments.length})
+        Comments
       </ThemedText>
 
       {loading ? (
@@ -132,7 +99,7 @@ export function CommentSection({
         </View>
       ) : comments.length === 0 ? (
         <View style={styles.stateWrap}>
-          <ThemedText type="small" themeColor="textSecondary">
+          <ThemedText type="small" themeColor="muted">
             No comments yet. Be the first to share a thought.
           </ThemedText>
         </View>
@@ -148,35 +115,13 @@ export function CommentSection({
               onAuthorPress={onCommentAuthorPress}
               currentUsername={currentUsername}
               isSignedIn={isSignedIn}
-              onReply={handleReply}
-              onEdit={handleEdit}
+              onReply={onReply}
+              onEdit={onEdit}
               onDelete={handleDelete}
             />
           )}
         />
       )}
-
-      {/* Inline edit composer — replaces the create composer while editing. */}
-      {isSignedIn && editingComment ? (
-        <CommentComposer
-          factId={factId}
-          mode="edit"
-          commentId={editingComment.id}
-          initialValue={editingComment.content}
-          onCancelEdit={handleCancelEdit}
-          onDone={handleComposerDone}
-        />
-      ) : null}
-
-      {/* Create/reply composer — signed-in only, at the bottom of the section. */}
-      {isSignedIn && !editingComment ? (
-        <CommentComposer
-          factId={factId}
-          replyTo={replyTo}
-          onCancelReply={() => setReplyTo(null)}
-          onDone={handleComposerDone}
-        />
-      ) : null}
 
       {/* Delete confirmation */}
       <ConfirmDialog
@@ -197,6 +142,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.three,
   },
   header: {
+    fontSize: 18,
+    fontWeight: '700',
     marginBottom: Spacing.two,
   },
   stateWrap: {
