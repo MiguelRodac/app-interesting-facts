@@ -63,12 +63,15 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
           <AppPressable style={StyleSheet.absoluteFill} onPress={() => {}} />
           <View style={styles.handle} />
           <View style={styles.header}>
-            <ThemedText type="subtitle">Likes</ThemedText>
-            {likes.length > 0 && (
-              <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText type="small" themeColor="textSecondary">
+              Likes
+            </ThemedText>
+            <View style={styles.counterRow}>
+              <Ionicons name="heart" size={28} color={theme.destructive} />
+              <ThemedText type="default" style={styles.counterNumber}>
                 {likes.length}
               </ThemedText>
-            )}
+            </View>
           </View>
 
           {loading && likes.length === 0 ? (
@@ -133,12 +136,21 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.one,
     paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.two,
+    paddingBottom: Spacing.three,
+  },
+  counterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  counterNumber: {
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: 700,
   },
   center: {
     paddingVertical: Spacing.five,
