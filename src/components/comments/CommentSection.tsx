@@ -195,7 +195,11 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.four,
     alignItems: 'center',
   },
+  // Instagram-like rhythm: airy gap between comments, no heavy borders —
+  // separation comes from spacing alone. Slightly larger gap than the default
+  // Spacing.one to keep the list breathable.
   listContent: {
-    gap: Spacing.one,
+    gap: Spacing.three,
+    paddingVertical: Spacing.two,
   },
 });

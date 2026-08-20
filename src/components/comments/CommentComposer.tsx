@@ -356,7 +356,8 @@ export function CommentComposer({
 
 const styles = StyleSheet.create({
   wrap: {
-    marginTop: Spacing.two,
+    // Instagram-ish: the composer sits just below the list with airy rhythm.
+    marginTop: Spacing.three,
     borderRadius: Radii.md,
     borderWidth: 1,
     paddingHorizontal: Spacing.three,

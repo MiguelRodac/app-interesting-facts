@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppPressable } from '@/components/ui/app-pressable';
@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { canEditComment } from '@/utils/commentTime';
+import { canEditComment, formatRelativeTime } from '@/utils/commentTime';
 import type { Comment, CommentAuthor } from '@/types';
 
 interface CommentItemProps {
@@ -31,15 +31,11 @@ interface CommentItemProps {
 // stays in sync without a re-render from data changes.
 const EDIT_RECHECK_MS = 60 * 1000;
 
-function formatTimestamp(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
 /**
- * Renders a single comment (top-level or reply). Presentational: data flows
- * in via props. Edit affordance is intentionally read-phase in PR4 — the
- * edit-window timer is wired up so PR5 can drop the action in cleanly.
+ * Renders a single comment (top-level or reply) in the Instagram style:
+ * a top-aligned avatar beside an inline "**author** text" flow, a compact
+ * muted actions line below (Reply · time · Edit · Delete, plus a right-aligned
+ * like heart), and an indented replies group.
  */
 export function CommentItem({
   comment,
@@ -81,56 +77,82 @@ export function CommentItem({
   const isOwn = currentUsername != null && comment.author.username === currentUsername;
   const canReply = isTopLevel && isSignedIn;
 
+  // Comment likes are NOT yet wired to the backend (no /comments/:id/likes
+  // endpoint; CommentResponse has no isLiked/likesCount). The heart is a
+  // visual placeholder: count comes from likesCount when the domain type has
+  // it, otherwise 0, and the button stays inert.
+  // TODO(backend): wire comment likes once /comments/:id/likes exists.
+  const likesCount = comment.likesCount ?? 0;
+  const liked = comment.liked ?? false;
+
   return (
     <View style={styles.container}>
-      {/* Header: avatar + author + timestamp + edited badge */}
-      <AppPressable onPress={handleAuthorPress} style={styles.header} hitSlop={8}>
-        <UserAvatar user={comment.author} size={28} />
-        <View style={styles.meta}>
-          <ThemedText type="smallBold" numberOfLines={1}>
-            {comment.author.displayName}
-          </ThemedText>
-          <View style={styles.metaLine}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {formatTimestamp(comment.createdAt)}
-            </ThemedText>
-            {comment.edited && (
-              <ThemedText type="small" themeColor="textSecondary">
-                {' '}(edited)
+      {/* Instagram row: top-aligned avatar beside the inline text block. */}
+      <View style={styles.row}>
+        <AppPressable onPress={handleAuthorPress} style={styles.avatarWrap} hitSlop={8}>
+          <UserAvatar user={comment.author} size={30} />
+        </AppPressable>
+
+        {/* Inline "author text" flow — one block, wraps naturally. */}
+        <View style={styles.body}>
+          <Text style={styles.inline}>
+            <Text
+              onPress={handleAuthorPress}
+              style={[styles.authorName, { color: theme.text }]}
+              suppressHighlighting>
+              {comment.author.displayName}{' '}
+            </Text>
+            <StyledContent content={comment.content} style={styles.content} />
+          </Text>
+
+          {/* Compact actions: Reply · time · Edit · Delete   [♥ count] */}
+          <View style={styles.actionsRow}>
+            <View style={styles.actionsLeft}>
+              {canReply && (
+                <AppPressable onPress={handleReply} hitSlop={8}>
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.actionLink}>
+                    Reply
+                  </ThemedText>
+                </AppPressable>
+              )}
+              <ThemedText type="small" themeColor="muted">
+                {formatRelativeTime(comment.createdAt)}
               </ThemedText>
-            )}
+              {comment.edited && (
+                <ThemedText type="small" themeColor="muted">
+                  (edited)
+                </ThemedText>
+              )}
+              {isOwn && canEdit && (
+                <AppPressable onPress={handleEdit} hitSlop={8} style={styles.actionWithIcon}>
+                  <Ionicons name="create-outline" size={13} color={theme.muted} />
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Edit
+                  </ThemedText>
+                </AppPressable>
+              )}
+              {isOwn && (
+                <AppPressable onPress={handleDelete} hitSlop={8}>
+                  <Ionicons name="trash-outline" size={14} color={theme.muted} />
+                </AppPressable>
+              )}
+            </View>
+
+            {/* Visual-only like heart (backed by likesCount when present, else 0).
+                Non-interactive until the backend /comments/:id/likes contract lands. */}
+            <View style={styles.like}>
+              <Ionicons
+                name={liked ? 'heart' : 'heart-outline'}
+                size={17}
+                color={liked ? theme.destructive : theme.textSecondary}
+              />
+              <ThemedText type="small" themeColor="textSecondary">
+                {likesCount}
+              </ThemedText>
+            </View>
           </View>
         </View>
-      </AppPressable>
-
-      {/* Body */}
-      <StyledContent content={comment.content} style={styles.content} />
-
-      {/* Authoring actions */}
-      {(canReply || (isOwn && canEdit) || isOwn) && (
-        <View style={styles.actions}>
-          {canReply && (
-            <AppPressable onPress={handleReply} hitSlop={8} style={styles.action}>
-              <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                Reply
-              </ThemedText>
-            </AppPressable>
-          )}
-          {isOwn && canEdit && (
-            <AppPressable onPress={handleEdit} hitSlop={8} style={styles.action}>
-              <Ionicons name="create-outline" size={16} color={theme.muted} />
-              <ThemedText type="smallBold" themeColor="textSecondary">
-                Edit
-              </ThemedText>
-            </AppPressable>
-          )}
-          {isOwn && (
-            <AppPressable onPress={handleDelete} hitSlop={8} style={styles.action}>
-              <Ionicons name="trash-outline" size={15} color={theme.destructive} />
-            </AppPressable>
-          )}
-        </View>
-      )}
+      </View>
 
       {/* Replies — depth-1 only, flat indented list */}
       {replies.length > 0 && (
@@ -141,10 +163,10 @@ export function CommentItem({
             hitSlop={8}>
             <Ionicons
               name={repliesExpanded ? 'chevron-up' : 'chevron-down'}
-              size={14}
-              color={theme.primary}
+              size={13}
+              color={theme.textSecondary}
             />
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.repliesToggleText}>
               {repliesExpanded
                 ? `Hide ${replies.length === 1 ? 'reply' : 'replies'}`
                 : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}
@@ -167,36 +189,60 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: Spacing.two,
   },
-  header: {
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.two,
+  },
+  avatarWrap: {
+    marginTop: Spacing.half,
+  },
+  body: {
+    flex: 1,
+    gap: Spacing.one,
+  },
+  // Author name + content share one text flow so the comment reads inline:
+  // "**alice** this is the comment text" on the same block as the avatar.
+  inline: {
+    flexDirection: 'row',
+    flexShrink: 1,
+  },
+  authorName: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: 700,
+  },
+  content: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: Spacing.half,
+  },
+  actionsLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
   },
-  meta: {
-    flex: 1,
+  actionLink: {
+    fontWeight: 600,
   },
-  metaLine: {
+  actionWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.half,
   },
-  content: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginTop: Spacing.one,
-  },
-  actions: {
+  like: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
-    marginTop: Spacing.one,
-  },
-  action: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.half,
   },
   replies: {
     marginTop: Spacing.two,
+    marginLeft: 38,
     paddingLeft: Spacing.three,
     borderLeftWidth: 2,
   },
@@ -206,6 +252,9 @@ const styles = StyleSheet.create({
     gap: Spacing.half,
     alignSelf: 'flex-start',
     marginBottom: Spacing.one,
+  },
+  repliesToggleText: {
+    fontWeight: 600,
   },
   replyItem: {
     marginBottom: Spacing.one,

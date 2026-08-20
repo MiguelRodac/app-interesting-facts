@@ -68,6 +68,14 @@ export interface Comment {
   edited: boolean;
   /** Nested replies, present only in threaded responses. */
   replies?: Comment[];
+  /**
+   * Like count for the comment. The backend does NOT expose comment likes yet
+   * (no CommentResponse.likesCount), so this is undefined until the contract
+   * lands — the UI renders 0 as a visual placeholder.
+   */
+  likesCount?: number;
+  /** Whether the current user has liked this comment (backend gap — undefined for now). */
+  liked?: boolean;
 }
 
 export interface Fact {
