@@ -3,7 +3,9 @@ import type { Author, AppError } from '@/types';
 import * as authService from '../auth/authService';
 import { isFirebaseAuthError, mapFirebaseError } from '../auth/firebaseErrors';
 import { setUnauthorizedHandler } from '../api/client';
+import { clearCommentsCache } from '../hooks/useFactComments';
 import { useUIStore } from './uiStore';
+import { useCommentsStore } from './commentsStore';
 import { useFactsStore } from './factsStore';
 import { useSearchStore } from './searchStore';
 import { useUserProfileStore } from './userProfileStore';
@@ -68,6 +70,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     useFactsStore.getState().reset();
     useSearchStore.getState().clearResults();
     useUserProfileStore.getState().clearProfile();
+    useCommentsStore.getState().reset();
+    clearCommentsCache();
   },
 
   updateProfile: async (data) => {
