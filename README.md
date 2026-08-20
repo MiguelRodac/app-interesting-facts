@@ -123,8 +123,8 @@ app-interesting-facts/
 
 ### Prerrequisitos
 
-- Node.js 20+
-- pnpm (recomendado) o npm
+- Node.js 22.13.0+ (mínimo requerido por Expo SDK 57)
+- pnpm (el proyecto usa pnpm y `pnpm-lock.yaml`)
 - [Expo Go](https://expo.dev/go) app en tu dispositivo (para desarrollo)
 
 ### Setup
