@@ -264,7 +264,7 @@ Este proyecto está bajo la licencia MIT.
 
 ## 👨‍💻 Autor
 
-Desarrollado con ❤️ usando React Native + Expo
+Desarrollado con ❤️ por **Miguel Rodac** usando React Native + Expo
 
 **Stack:**
 - Frontend: React Native, Expo, TypeScript, Zustand
