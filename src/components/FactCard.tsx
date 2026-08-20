@@ -126,24 +126,6 @@ return (
         <LikedByLine likes={fact.likeBy} likesCount={fact.likesCount} onPress={onOpenLikes} />
       )}
 
-      {/* Comment preview line — tap navigates to the fact detail */}
-      {variant !== 'anon' && fact.commentsCount > 0 && fact.commentPreview && (
-        <AppPressable onPress={onPress} hitSlop={8} style={styles.commentPreviewRow} disabled={!onPress}>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} style={styles.commentPreview}>
-            <ThemedText type="smallBold" style={{ color: theme.text }}>
-              @{fact.commentPreview.author.username}
-            </ThemedText>{' '}
-            <StyledContent content={fact.commentPreview.content} />
-            {fact.commentPreview.replies > 0 && (
-              <ThemedText type="smallBold" themeColor="primary">
-                {' '}+{fact.commentPreview.replies}{' '}
-                {fact.commentPreview.replies === 1 ? 'reply' : 'replies'}
-              </ThemedText>
-            )}
-          </ThemedText>
-        </AppPressable>
-      )}
-
       {/* Actions row */}
       {variant !== 'anon' && (
         <View style={styles.actionsRow}>
@@ -172,6 +154,13 @@ return (
             </AppPressable>
           )}
 
+          {/* Repost placeholder — visual only while the backend builds the
+              repost module. Disabled on purpose: do not fake functionality.
+              TODO(backend): wire repost when /facts/:id/reposts exists */}
+          <AppPressable disabled hitSlop={8} style={styles.actionBtn}>
+            <Ionicons name="repeat" size={20} color={theme.muted} />
+          </AppPressable>
+
           {variant === 'full' && isOwner && (
             <View style={styles.ownerActions}>
               {onEdit && (
@@ -187,6 +176,25 @@ return (
             </View>
           )}
         </View>
+      )}
+
+      {/* Comment preview line — BELOW the action bar. Tap navigates to the
+          fact detail. */}
+      {variant !== 'anon' && fact.commentsCount > 0 && fact.commentPreview && (
+        <AppPressable onPress={onPress} hitSlop={8} style={styles.commentPreviewRow} disabled={!onPress}>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} style={styles.commentPreview}>
+            <ThemedText type="smallBold" style={{ color: theme.text }}>
+              @{fact.commentPreview.author.username}
+            </ThemedText>{' '}
+            <StyledContent content={fact.commentPreview.content} />
+            {fact.commentPreview.replies > 0 && (
+              <ThemedText type="smallBold" themeColor="primary">
+                {' '}+{fact.commentPreview.replies}{' '}
+                {fact.commentPreview.replies === 1 ? 'reply' : 'replies'}
+              </ThemedText>
+            )}
+          </ThemedText>
+        </AppPressable>
       )}
     </ThemedView>
   );

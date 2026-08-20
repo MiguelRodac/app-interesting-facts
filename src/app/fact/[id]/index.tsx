@@ -282,6 +282,13 @@ const handleLike = useCallback(() => {
               </ThemedText>
             </AppPressable>
 
+            {/* Repost placeholder — visual only while the backend builds the
+                repost module. Disabled on purpose: do not fake functionality.
+                TODO(backend): wire repost when /facts/:id/reposts exists */}
+            <AppPressable disabled style={styles.actionBtn} hitSlop={8}>
+              <Ionicons name="repeat" size={24} color={theme.muted} />
+            </AppPressable>
+
             <AppPressable onPress={handleShare} style={styles.actionBtn} hitSlop={8}>
               <Ionicons name="share-outline" size={24} color={theme.muted} />
             </AppPressable>
