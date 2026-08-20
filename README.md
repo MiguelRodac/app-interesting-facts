@@ -4,9 +4,9 @@
   <p><strong>Una plataforma social para compartir datos curiosos</strong></p>
   
   <p>
-    <img src="https://img.shields.io/badge/React_Native-0.76+-61DAFB?style=flat-square&logo=react" alt="React Native" />
+    <img src="https://img.shields.io/badge/React_Native-0.86-61DAFB?style=flat-square&logo=react" alt="React Native" />
     <img src="https://img.shields.io/badge/Expo-SDK_57-000020?style=flat-square&logo=expo" alt="Expo" />
-    <img src="https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
     <img src="https://img.shields.io/badge/Firebase-Auth-FFCA28?style=flat-square&logo=firebase" alt="Firebase" />
     <img src="https://img.shields.io/badge/Zustand-State_Management-453F39?style=flat-square" alt="Zustand" />
   </p>
@@ -42,9 +42,9 @@
 ## 🛠️ Tecnologías
 
 ### Core
-- **React Native 0.76+** — Framework mobile
+- **React Native 0.86** — Framework mobile
 - **Expo SDK 57** — Toolchain y desarrollo
-- **TypeScript 5.0+** — Type safety
+- **TypeScript 6.0** — Type safety
 - **Expo Router** — File-based routing (similar a Next.js)
 
 ### State & Data
