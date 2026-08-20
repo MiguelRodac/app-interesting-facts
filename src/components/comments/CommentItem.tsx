@@ -100,7 +100,9 @@ export function CommentItem({
               onPress={handleAuthorPress}
               style={[styles.authorName, { color: theme.text }]}
               suppressHighlighting>
-              {comment.author.displayName}{' '}
+              {(isSignedIn
+                ? `${comment.author.displayName} `
+                : `@${comment.author.username} `)}
             </Text>
             <StyledContent content={comment.content} style={styles.content} />
           </Text>
@@ -176,7 +178,11 @@ export function CommentItem({
           {repliesExpanded &&
             replies.map((reply) => (
               <View key={reply.id} style={styles.replyItem}>
-                <CommentItem comment={reply} onAuthorPress={onAuthorPress} />
+                <CommentItem
+                  comment={reply}
+                  onAuthorPress={onAuthorPress}
+                  isSignedIn={isSignedIn}
+                />
               </View>
             ))}
         </View>

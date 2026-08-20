@@ -80,15 +80,24 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   hasMore: true,
 
   fetchFacts: async (silent?: boolean) => {
-    // Silent refresh skips the loading state (background/pull-to-refresh)
+    // Anonymous "view mode": cap the feed at 5 and never paginate. Signed-in
+    // viewers get the full PAGE_SIZE (20) with pagination.
+    const isAnon = !useAuthStore.getState().user;
     if (!silent) set({ isLoading: true });
     try {
       const { results, nextPage } = await client.get<ApiPaginatedResponse<ApiFact>>(
         '/facts',
-        { page: '1', limit: String(PAGE_SIZE), order_by: 'createdAt', order_dir: 'desc' },
+        {
+          page: '1',
+          limit: String(isAnon ? 5 : PAGE_SIZE),
+          order_by: 'createdAt',
+          order_dir: 'desc',
+        },
       );
       const fetched = mapFactsDtos(results);
-      if (silent) {
+      if (isAnon) {
+        set({ facts: fetched.slice(0, 5), page: 1, hasMore: false, isLoading: false });
+      } else if (silent) {
         // Background refresh: merge so new facts appear on top, existing
         // ones get fresh data, and the scroll position is preserved.
         set({ facts: mergeFacts(get().facts, fetched), hasMore: nextPage !== null });
@@ -105,6 +114,8 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   },
 
   loadMore: async () => {
+    // Anonymous viewers never paginate — the feed is capped at 5.
+    if (!useAuthStore.getState().user) return;
     const { isLoading, hasMore, page, facts } = get();
     if (isLoading || !hasMore) return;
 

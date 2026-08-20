@@ -16,6 +16,10 @@ interface CommentSectionProps {
   factId: string;
   /** Author deep-link routing — handled by the parent (fact detail screen). */
   onCommentAuthorPress?: (author: CommentAuthor) => void;
+  /** Whether the viewer is signed in. Anonymous viewers see comments
+   *  read-only with @username author names (no displayName). Defaults to the
+   *  detected auth state when omitted. */
+  isSignedIn?: boolean;
 }
 
 /** Reply target — enough to prefill reply mode with the parentCommentId. */
@@ -39,7 +43,11 @@ const INITIAL_LOADING_MS = 250;
  * (with ConfirmDialog). The store's optimistic cache + notify pipeline keeps
  * every mutation reflected in the list without a manual refresh.
  */
-export function CommentSection({ factId, onCommentAuthorPress }: CommentSectionProps) {
+export function CommentSection({
+  factId,
+  onCommentAuthorPress,
+  isSignedIn: isSignedInProp,
+}: CommentSectionProps) {
   const theme = useTheme();
   const { comments } = useFactComments(factId);
   const { user } = useAuth();
@@ -61,7 +69,7 @@ export function CommentSection({ factId, onCommentAuthorPress }: CommentSectionP
     [comments, editingId],
   );
 
-  const isSignedIn = !!user;
+  const isSignedIn = isSignedInProp ?? !!user;
   const currentUsername = user?.username;
 
   // Reply: prefill replyTo so the composer submits with parentCommentId, and

@@ -183,6 +183,10 @@ if (isLoading || !profile) {
     );
   }
 
+  const handleRequireLogin = useCallback(() => {
+    router.push('/auth/login');
+  }, [router]);
+
   return (
     <ThemedView style={styles.container}>
       <FlatList
@@ -192,7 +196,9 @@ if (isLoading || !profile) {
         renderItem={({ item }) => (
           <FactCard
             fact={item}
-            variant={isAuthenticated ? 'preview' : 'anon'}
+            variant="preview"
+            isSignedIn={isAuthenticated}
+            onRequireLogin={handleRequireLogin}
             onPress={() => handleFactPress(item)}
             onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
             onOpenLikes={isAuthenticated ? () => setLikesFactId(item.id) : undefined}

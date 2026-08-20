@@ -66,17 +66,23 @@ const { isAuthenticated } = useAuth();
     [isAuthenticated, toggleLike],
   );
 
-const renderItem = useCallback(
+  const handleRequireLogin = useCallback(() => {
+    router.push('/auth/login');
+  }, [router]);
+
+  const renderItem = useCallback(
     ({ item }: { item: Fact }) => (
       <FactCard
         fact={item}
-        variant={isAuthenticated ? 'preview' : 'anon'}
-        onPress={isAuthenticated ? () => handleFactPress(item) : undefined}
+        variant="preview"
+        isSignedIn={isAuthenticated}
+        onRequireLogin={handleRequireLogin}
+        onPress={() => handleFactPress(item)}
         onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
         onOpenLikes={isAuthenticated ? () => setLikesFactId(item.id) : undefined}
       />
     ),
-    [isAuthenticated, handleFactPress, handleLike],
+    [isAuthenticated, handleFactPress, handleLike, handleRequireLogin],
   );
 
   const renderFooter = useCallback(

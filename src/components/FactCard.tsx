@@ -26,6 +26,12 @@ interface FactCardProps {
   onPress?: () => void;
   onOpenLikes?: () => void;
   isOwner?: boolean;
+  /** Whether the viewer is signed in. When false the card shows the full
+   *  read-only surface (author, liked-by, action bar, comment preview) but
+   *  every action routes to `onRequireLogin` instead of executing. */
+  isSignedIn?: boolean;
+  /** Called instead of the real action when the viewer is signed out. */
+  onRequireLogin?: () => void;
 }
 
 function formatDate(iso: string): string {
@@ -43,6 +49,8 @@ export function FactCard({
   onPress,
   onOpenLikes,
   isOwner = false,
+  isSignedIn = true,
+  onRequireLogin,
 }: FactCardProps) {
   const theme = useTheme();
   const router = useRouter();
@@ -50,6 +58,15 @@ export function FactCard({
   const [expanded, setExpanded] = useState(false);
 
   const isCollapsible = fact.content.length > COLLAPSE_THRESHOLD;
+
+  // View-mode: render the full read-only surface but route every action to
+  // the login gate instead of the real handler.
+  const anonView = !isSignedIn;
+  const requireLogin = onRequireLogin ?? (() => {});
+
+  // Pick which handler an action should fire. Signed-in users always run the
+  // real action; anonymous users hit the login gate instead.
+  const gate = (real?: () => void): (() => void) => (anonView ? requireLogin : real ?? (() => {}));
 
   const titleEl = fact.title ? (
     <StyledContent content={fact.title} style={[styles.defaultText, styles.title]} />
@@ -78,9 +95,9 @@ export function FactCard({
 
 return (
     <ThemedView type="backgroundElement" style={[styles.card, Shadows.sm]}>
-      {/* Author row — hidden for anon. Sibling of the content area so the
-          card never nests interactive elements (web renders <button>). */}
-      {variant !== 'anon' && (
+      {/* Author row — hidden only for the true 'anon' variant (unused by feeds;
+          anonymous view-mode now renders the row with @username only). */}
+      {(isSignedIn || anonView) && (
         <AppPressable
           onPress={(e) => {
             e.stopPropagation();
@@ -91,7 +108,11 @@ return (
         >
           <UserAvatar user={fact.author} size={32} />
           <View style={styles.authorInfo}>
-            <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
+            {anonView ? (
+              <ThemedText type="smallBold">@{fact.author.username}</ThemedText>
+            ) : (
+              <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
+            )}
             <ThemedText type="small" themeColor="textSecondary">
               @{fact.author.username} · {formatDate(fact.createdAt)}
             </ThemedText>
@@ -121,26 +142,35 @@ return (
         </AppPressable>
       )}
 
-      {/* Likes line — opens the full likes modal; hidden for anonymous users */}
-      {variant !== 'anon' && (
-        <LikedByLine likes={fact.likeBy} likesCount={fact.likesCount} onPress={onOpenLikes} />
+      {/* Likes line — opens the full likes modal. Shown to everyone except the
+          true 'anon' variant; anonymous view-mode taps route to login. */}
+      {(isSignedIn || anonView) && (
+        <LikedByLine
+          likes={fact.likeBy}
+          likesCount={fact.likesCount}
+          onPress={gate(onOpenLikes)}
+        />
       )}
 
       {/* Actions row */}
-      {variant !== 'anon' && (
+      {(isSignedIn || anonView) && (
         <View style={styles.actionsRow}>
           <LikeButton
             liked={fact.liked}
             likesCount={fact.likesCount}
-            onPress={onLike ?? (() => {})}
-            disabled={!onLike}
+            onPress={gate(onLike)}
+            disabled={!onLike && !anonView}
           />
           <ThemedText type="small" themeColor="textSecondary">
             {fact.likesCount}
           </ThemedText>
 
           {fact.commentsCount > 0 && (
-            <AppPressable onPress={onPress} hitSlop={8} style={styles.commentBtn} disabled={!onPress}>
+            <AppPressable
+              onPress={gate(onPress)}
+              hitSlop={8}
+              style={styles.commentBtn}
+              disabled={!onPress && !anonView}>
               <Ionicons name="chatbubble-outline" size={18} color={theme.muted} />
               <ThemedText type="small" themeColor="textSecondary">
                 {fact.commentsCount}
@@ -148,8 +178,8 @@ return (
             </AppPressable>
           )}
 
-          {variant === 'full' && onShare && (
-            <AppPressable onPress={onShare} hitSlop={8} style={styles.actionBtn}>
+          {(variant === 'full' || anonView) && (onShare || anonView) && (
+            <AppPressable onPress={gate(onShare)} hitSlop={8} style={styles.actionBtn}>
               <Ionicons name="share-outline" size={20} color={theme.muted} />
             </AppPressable>
           )}
@@ -179,9 +209,13 @@ return (
       )}
 
       {/* Comment preview line — BELOW the action bar. Tap navigates to the
-          fact detail. */}
-      {variant !== 'anon' && fact.commentsCount > 0 && fact.commentPreview && (
-        <AppPressable onPress={onPress} hitSlop={8} style={styles.commentPreviewRow} disabled={!onPress}>
+          fact detail (read-only is fine for anonymous viewers). */}
+      {(isSignedIn || anonView) && fact.commentsCount > 0 && fact.commentPreview && (
+        <AppPressable
+          onPress={onPress}
+          hitSlop={8}
+          style={styles.commentPreviewRow}
+          disabled={!onPress}>
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} style={styles.commentPreview}>
             <ThemedText type="smallBold" style={{ color: theme.text }}>
               @{fact.commentPreview.author.username}

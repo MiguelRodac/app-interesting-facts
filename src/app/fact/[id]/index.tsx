@@ -27,7 +27,7 @@ import type { Fact } from '@/types';
 export default function FactDetailScreen() {
 const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const { facts, fetchFactById, toggleLike, deleteFact } = useFacts();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
@@ -137,11 +137,16 @@ const isOwner = fact && user?.id === fact.author.id;
   );
 
 
-const handleLike = useCallback(() => {
+  const handleLike = useCallback(() => {
+    // View-mode guard: anonymous viewers can't like — route to the login gate.
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+      return;
+    }
     if (fact) {
       toggleLike(fact.id);
     }
-  }, [fact, toggleLike]);
+  }, [fact, toggleLike, isAuthenticated, router]);
 
   const handleShare = useCallback(async () => {
     if (!fact) return;
@@ -223,7 +228,11 @@ const handleLike = useCallback(() => {
           <AppPressable onPress={handleAuthorPress} style={styles.authorRow} hitSlop={8}>
             <UserAvatar user={fact.author} size={44} />
             <View style={styles.authorInfo}>
-              <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
+              {isAuthenticated ? (
+                <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
+              ) : (
+                <ThemedText type="smallBold">@{fact.author.username}</ThemedText>
+              )}
               <ThemedText type="small" themeColor="textSecondary">
                 @{fact.author.username}
               </ThemedText>
@@ -264,10 +273,16 @@ const handleLike = useCallback(() => {
           </ThemedText>
 
 {/* Likes line — "Liked by @alice, @bob and 3 more"; tap opens the full modal.
-        Only shown to signed-in users. */}
-          {user && (
-            <LikedByLine likes={fact.likeBy} likesCount={fact.likesCount} onPress={() => setLikesModalVisible(true)} />
-          )}
+        Shown to everyone; anonymous viewers route to login instead. */}
+          <LikedByLine
+            likes={fact.likeBy}
+            likesCount={fact.likesCount}
+            onPress={() =>
+              isAuthenticated
+                ? setLikesModalVisible(true)
+                : router.push('/auth/login')
+            }
+          />
 
           {/* Actions */}
           <View style={[styles.actions, { borderTopColor: theme.border }]}>
@@ -313,7 +328,11 @@ const handleLike = useCallback(() => {
         </ThemedView>
 
         {/* Threaded comments — read-only in this slice */}
-        <CommentSection factId={fact.id} onCommentAuthorPress={handleCommentAuthorPress} />
+        <CommentSection
+          factId={fact.id}
+          onCommentAuthorPress={handleCommentAuthorPress}
+          isSignedIn={isAuthenticated}
+        />
       </ScrollView>
 
 
