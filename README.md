@@ -15,8 +15,7 @@
     <a href="#-características"><strong>Características</strong></a> •
     <a href="#-tecnologías"><strong>Tecnologías</strong></a> •
     <a href="#-arquitectura"><strong>Arquitectura</strong></a> •
-    <a href="#-instalación"><strong>Instalación</strong></a> •
-    <a href="#-screenshots"><strong>Screenshots</strong></a>
+    <a href="#-instalación"><strong>Instalación</strong></a>
   </p>
 </div>
 
@@ -172,45 +171,6 @@ pnpm web        # Web
 ```
 
 Escanea el QR code con Expo Go o presiona `a`/`i`/`w` para abrir automáticamente.
-
----
-
-## 📸 Screenshots
-
-<div align="center">
-  <table>
-    <tr>
-      <td align="center">
-        <img src="docs/screenshots/feed.png" alt="Feed" width="250" />
-        <br><em>Feed principal</em>
-      </td>
-      <td align="center">
-        <img src="docs/screenshots/create.png" alt="Crear" width="250" />
-        <br><em>Crear fact con autocomplete</em>
-      </td>
-      <td align="center">
-        <img src="docs/screenshots/profile.png" alt="Perfil" width="250" />
-        <br><em>Perfil personalizable</em>
-      </td>
-    </tr>
-    <tr>
-      <td align="center">
-        <img src="docs/screenshots/search.png" alt="Búsqueda" width="250" />
-        <br><em>Búsqueda avanzada</em>
-      </td>
-      <td align="center">
-        <img src="docs/screenshots/detail.png" alt="Detalle" width="250" />
-        <br><em>Detalle de fact</em>
-      </td>
-      <td align="center">
-        <img src="docs/screenshots/dark-mode.png" alt="Dark Mode" width="250" />
-        <br><em>Modo oscuro</em>
-      </td>
-    </tr>
-  </table>
-</div>
-
-> 💡 **Nota:** Los screenshots son placeholders. Agrega capturas reales en `docs/screenshots/`
 
 ---
 
