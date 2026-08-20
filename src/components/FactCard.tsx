@@ -165,18 +165,16 @@ return (
             {fact.likesCount}
           </ThemedText>
 
-          {fact.commentsCount > 0 && (
-            <AppPressable
-              onPress={gate(onPress)}
-              hitSlop={8}
-              style={styles.commentBtn}
-              disabled={!onPress && !anonView}>
-              <Ionicons name="chatbubble-outline" size={18} color={theme.muted} />
-              <ThemedText type="small" themeColor="textSecondary">
-                {fact.commentsCount}
-              </ThemedText>
-            </AppPressable>
-          )}
+          <AppPressable
+            onPress={gate(onPress)}
+            hitSlop={8}
+            style={styles.commentBtn}
+            disabled={!onPress && !anonView}>
+            <Ionicons name="chatbubble-outline" size={18} color={theme.muted} />
+            <ThemedText type="small" themeColor="textSecondary">
+              {fact.commentsCount}
+            </ThemedText>
+          </AppPressable>
 
           {(variant === 'full' || anonView) && (onShare || anonView) && (
             <AppPressable onPress={gate(onShare)} hitSlop={8} style={styles.actionBtn}>
@@ -208,9 +206,11 @@ return (
         </View>
       )}
 
-      {/* Comment preview line — BELOW the action bar. Tap navigates to the
-          fact detail (read-only is fine for anonymous viewers). */}
-      {(isSignedIn || anonView) && fact.commentsCount > 0 && fact.commentPreview && (
+      {/* Comment preview line — BELOW the action bar. Private comment content:
+          only shown to signed-in viewers. Anonymous users see the count badge
+          but not the preview text (backend will 401 comment reads without a
+          token). */}
+      {isSignedIn && fact.commentsCount > 0 && fact.commentPreview && (
         <AppPressable
           onPress={onPress}
           hitSlop={8}

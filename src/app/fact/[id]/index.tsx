@@ -327,12 +327,18 @@ const isOwner = fact && user?.id === fact.author.id;
           </View>
         </ThemedView>
 
-        {/* Threaded comments — read-only in this slice */}
-        <CommentSection
-          factId={fact.id}
-          onCommentAuthorPress={handleCommentAuthorPress}
-          isSignedIn={isAuthenticated}
-        />
+        {/* Threaded comments — read-only in this slice. Mounted only for
+            signed-in users: comment reads are becoming private (backend will
+            401 GET /facts/:id/comments without a token), so anonymous viewers
+            get no thread section. Comment count is still visible via the
+            conversation balloon on the FactCard/detail. */}
+        {isAuthenticated && (
+          <CommentSection
+            factId={fact.id}
+            onCommentAuthorPress={handleCommentAuthorPress}
+            isSignedIn={isAuthenticated}
+          />
+        )}
       </ScrollView>
 
 
