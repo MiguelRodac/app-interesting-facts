@@ -5,10 +5,10 @@ import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
-import type { FactLike } from '@/types';
+import type { LikePreview } from '@/types';
 
 interface LikedByLineProps {
-  likeBy: FactLike[];
+  likes: LikePreview[];
   likesCount: number;
   onPress?: () => void;
 }
@@ -18,15 +18,32 @@ interface LikedByLineProps {
  * Renders entirely from the inline Fact payload — no extra request.
  * Tap opens the full likes modal.
  */
-export function LikedByLine({ likeBy, likesCount, onPress }: LikedByLineProps) {
+export function LikedByLine({ likes, likesCount, onPress }: LikedByLineProps) {
   const theme = useTheme();
 
-  if (likeBy.length === 0 && likesCount === 0) return null;
+  if (likesCount === 0) return null;
 
-  const shown = likeBy.slice(0, 2);
-  const remaining = Math.max(likesCount - likeBy.length, 0);
+  const shown = likes.slice(0, 2);
+  const remaining = likesCount - shown.length;
 
-  const hasNames = likeBy.length > 0;
+  // No inline previews yet but the count is known — show a plain count line.
+  if (shown.length === 0) {
+    return (
+      <AppPressable
+        onPress={(e) => {
+          e.stopPropagation();
+          onPress?.();
+        }}
+        disabled={!onPress}
+        hitSlop={4}
+        style={styles.row}>
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.text}>
+          Liked by {likesCount} {likesCount === 1 ? 'person' : 'people'}
+        </ThemedText>
+      </AppPressable>
+    );
+  }
+
   const names = shown.map((entry) => `@${entry.username}`).join(', ');
   const andMore = remaining > 0 ? ` and ${remaining} more` : '';
 
@@ -53,16 +70,10 @@ export function LikedByLine({ likeBy, likesCount, onPress }: LikedByLineProps) {
           </View>
         ))}
       </View>
-      {hasNames ? (
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.text}>
-          Liked by <ThemedText type="smallBold" style={{ color: theme.text }}>{names}</ThemedText>
-          {andMore}
-        </ThemedText>
-      ) : (
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.text}>
-          {likesCount} likes
-        </ThemedText>
-      )}
+      <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.text}>
+        Liked by <ThemedText type="smallBold" style={{ color: theme.text }}>{names}</ThemedText>
+        {andMore}
+      </ThemedText>
     </AppPressable>
   );
 }

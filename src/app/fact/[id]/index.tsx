@@ -254,7 +254,7 @@ const handleLike = useCallback(() => {
 {/* Likes line — "Liked by @alice, @bob and 3 more"; tap opens the full modal.
         Only shown to signed-in users. */}
           {user && (
-            <LikedByLine likeBy={likes} likesCount={fact.likesCount} onPress={() => setLikesModalVisible(true)} />
+            <LikedByLine likes={likes} likesCount={fact.likesCount} onPress={() => setLikesModalVisible(true)} />
           )}
 
           {/* Actions */}

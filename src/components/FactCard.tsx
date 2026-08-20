@@ -123,7 +123,7 @@ return (
 
       {/* Likes line — opens the full likes modal; hidden for anonymous users */}
       {variant !== 'anon' && (
-        <LikedByLine likeBy={fact.likeBy} likesCount={fact.likesCount} onPress={onOpenLikes} />
+        <LikedByLine likes={fact.likeBy} likesCount={fact.likesCount} onPress={onOpenLikes} />
       )}
 
       {/* Comment preview line — tap navigates to the fact detail */}
@@ -133,7 +133,13 @@ return (
             <ThemedText type="smallBold" style={{ color: theme.text }}>
               @{fact.commentPreview.author.username}
             </ThemedText>{' '}
-            {fact.commentPreview.content}
+            <StyledContent content={fact.commentPreview.content} />
+            {fact.commentPreview.replies > 0 && (
+              <ThemedText type="smallBold" themeColor="primary">
+                {' '}+{fact.commentPreview.replies}{' '}
+                {fact.commentPreview.replies === 1 ? 'reply' : 'replies'}
+              </ThemedText>
+            )}
           </ThemedText>
         </AppPressable>
       )}
