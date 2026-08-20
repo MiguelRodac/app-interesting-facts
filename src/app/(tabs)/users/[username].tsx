@@ -94,12 +94,16 @@ useEffect(() => {
     [isAuthenticated, toggleLike],
   );
 
-  const handleBack = useCallback(() => {
+const handleBack = useCallback(() => {
     if (router.canGoBack()) {
       router.back();
     } else {
       router.replace('/(tabs)');
     }
+  }, [router]);
+
+  const handleRequireLogin = useCallback(() => {
+    router.push('/auth/login');
   }, [router]);
 
   const renderHeader = () => {
@@ -182,10 +186,6 @@ if (isLoading || !profile) {
       </ThemedView>
     );
   }
-
-  const handleRequireLogin = useCallback(() => {
-    router.push('/auth/login');
-  }, [router]);
 
   return (
     <ThemedView style={styles.container}>
