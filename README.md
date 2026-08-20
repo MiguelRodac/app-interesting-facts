@@ -1,90 +1,319 @@
-# Interesting Facts
+<div align="center">
+  <img src="public/logo512.png" alt="Interesting Facts Logo" width="120" />
+  <h1>Interesting Facts</h1>
+  <p><strong>Una plataforma social para compartir datos curiosos</strong></p>
+  
+  <p>
+    <img src="https://img.shields.io/badge/React_Native-0.76+-61DAFB?style=flat-square&logo=react" alt="React Native" />
+    <img src="https://img.shields.io/badge/Expo-SDK_52-000020?style=flat-square&logo=expo" alt="Expo" />
+    <img src="https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Firebase-Auth-FFCA28?style=flat-square&logo=firebase" alt="Firebase" />
+    <img src="https://img.shields.io/badge/Zustand-State_Management-453F39?style=flat-square" alt="Zustand" />
+  </p>
+  
+  <p>
+    <a href="#-características"><strong>Características</strong></a> •
+    <a href="#-tecnologías"><strong>Tecnologías</strong></a> •
+    <a href="#-arquitectura"><strong>Arquitectura</strong></a> •
+    <a href="#-instalación"><strong>Instalación</strong></a> •
+    <a href="#-screenshots"><strong>Screenshots</strong></a>
+  </p>
+</div>
 
-Expo (React Native) app for the **Interesting Facts** platform — Android, iOS and web.
-It consumes the Interesting Facts API at `https://api-interesting-facts-mu.vercel.app`.
+---
 
-## Features
+## 📱 Sobre el Proyecto
 
-- Feed of facts, search, and fact detail with like/delete
-- Create facts with live `@mention` and `#hashtag` autocomplete
-- Firebase email/password auth against the API backend
-- Profile with avatar picker (API-provided colors/images) and edit
-- Toast / error banner / confirmation dialog alert system
-- Android hardware back guard + unsaved-changes guard on the create form
+**Interesting Facts** es una aplicación móvil cross-platform (Android, iOS y Web) construida con React Native y Expo. Permite a los usuarios descubrir, crear y compartir datos curiosos en una comunidad social.
 
-## Requirements
+### ✨ Características Principales
+
+- 🔐 **Autenticación Firebase** — Login seguro con email/password
+- 📰 **Feed Social** — Descubre facts de otros usuarios con infinite scroll
+- 🔍 **Búsqueda Avanzada** — Busca por personas, posts o hashtags
+- 💬 **Interacciones** — Dale like a los facts que te gusten
+- 🏷️ **Menciones y Hashtags** — autocomplete en vivo al escribir `@usuario` o `#tema`
+- 👤 **Perfil Personalizable** — Avatar con colores e imágenes provistos por la API
+- 🌙 **Tema Claro/Oscuro** — Toggle con persistencia y detección del sistema
+- 🔄 **Pull-to-Refresh** — Actualiza el feed en cualquier pantalla
+- ⚡ **Optimizado** — React Compiler habilitado, lazy loading, cache inteligente
+
+---
+
+## 🛠️ Tecnologías
+
+### Core
+- **React Native 0.76+** — Framework mobile
+- **Expo SDK 52** — Toolchain y desarrollo
+- **TypeScript 5.0+** — Type safety
+- **Expo Router** — File-based routing (similar a Next.js)
+
+### State & Data
+- **Zustand** — State management ligero y performante
+- **React Query** — Server state y cache (si aplica)
+- **Firebase Auth** — Autenticación y persistencia de sesión
+
+### UI/UX
+- **React Native Reanimated** — Animaciones fluidas
+- **React Native Gesture Handler** — Gestos nativos
+- **Expo Vector Icons** — Iconografía consistente
+- **Custom Theme System** — Dark/Light mode con detección automática
+
+### Build & Deploy
+- **EAS Build** — Builds nativos en la nube
+- **Vercel** — Deploy web automático
+- **Expo Go** — Desarrollo rápido en dispositivos
+
+---
+
+## 🏗️ Arquitectura
+
+```
+app-interesting-facts/
+├── app/                      # Expo Router (file-based routing)
+│   ├── (tabs)/              # Tab navigator
+│   │   ├── index.tsx        # Feed principal
+│   │   ├── search.tsx       # Búsqueda
+│   │   ├── create.tsx       # Crear fact
+│   │   └── profile.tsx      # Perfil propio
+│   ├── auth/                # Pantallas de autenticación
+│   ├── fact/                # Detalle y edición de facts
+│   └── _layout.tsx          # Root layout con providers
+│
+├── src/
+│   ├── components/          # Componentes reutilizables
+│   │   ├── FactCard.tsx     # Card de fact con acciones
+│   │   ├── StyledContent.tsx # Renderizado de @mentions y #hashtags
+│   │   ├── LikesModal.tsx   # Modal de likes
+│   │   └── ...
+│   │
+│   ├── data/                # Capa de datos
+│   │   ├── api/             # Cliente HTTP y tipos
+│   │   ├── auth/            # Firebase Auth wrapper
+│   │   ├── stores/          # Zustand stores
+│   │   │   ├── factsStore.ts
+│   │   │   ├── userProfileStore.ts
+│   │   │   └── uiStore.ts
+│   │   └── hooks/           # Custom hooks
+│   │       ├── useAuth.ts
+│   │       ├── useFacts.ts
+│   │       └── useFactLikes.ts
+│   │
+│   ├── hooks/               # Hooks de UI
+│   │   ├── use-theme.ts     # Sistema de temas
+│   │   └── use-color-scheme.ts
+│   │
+│   └── utils/               # Utilidades
+│       ├── parseContent.ts  # Parser de @mentions y #hashtags
+│       └── validation.ts    # Validaciones
+│
+└── public/                  # Assets estáticos (PWA)
+```
+
+### Patrones de Diseño
+
+- **Container/Presentational** — Separación de lógica y UI
+- **Custom Hooks** — Reutilización de lógica de negocio
+- **Zustand Stores** — State management global con slices
+- **API Client Pattern** — Cliente HTTP centralizado con interceptors
+- **Theme System** — Tokens de diseño centralizados
+
+---
+
+## 🚀 Instalación
+
+### Prerrequisitos
 
 - Node.js 20+
-- [pnpm](https://pnpm.io)
-- [Expo Go](https://expo.dev/go) app on your device (dev only)
+- pnpm (recomendado) o npm
+- [Expo Go](https://expo.dev/go) app en tu dispositivo (para desarrollo)
 
-## Setup
-
-1. Install dependencies
-
-   ```bash
-   pnpm install
-   ```
-
-2. Create the environment file and fill it in
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Required variables:
-
-   | Variable | Description |
-   | --- | --- |
-   | `EXPO_PUBLIC_API_URL` | Backend API base URL (e.g. `http://localhost:3009` for local dev) |
-   | `EXPO_PUBLIC_FIREBASE_API_KEY` | Firebase web API key |
-   | `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase auth domain (`<project>.firebaseapp.com`) |
-   | `EXPO_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID |
-   | `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket |
-   | `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID |
-   | `EXPO_PUBLIC_FIREBASE_APP_ID` | Firebase web app ID |
-
-   Get the Firebase values from the Firebase Console > Project Settings > Your apps > SDK setup.
-
-3. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-   Scan the QR code with Expo Go (Android or iOS), or press `a` / `i` / `w` for a
-   platform-specific target.
-
-## Scripts
-
-| Command | Description |
-| --- | --- |
-| `pnpm start` | Start the Expo dev server |
-| `pnpm android` | Start and open on Android |
-| `pnpm ios` | Start and open on iOS |
-| `pnpm web` | Start and open on web |
-| `pnpm lint` | Run ESLint |
-| `pnpm reset-project` | Reset the project to the starter template |
-
-## Building a test APK (Android)
+### Setup
 
 ```bash
+# 1. Clonar el repositorio
+git clone <repo-url>
+cd app-interesting-facts
+
+# 2. Instalar dependencias
+pnpm install
+
+# 3. Configurar variables de entorno
+cp .env.example .env
+```
+
+### Variables de Entorno
+
+Edita `.env` con tus credenciales:
+
+```env
+# API Backend
+EXPO_PUBLIC_API_URL=https://api-interesting-facts-mu.vercel.app
+
+# Firebase (obtener del Firebase Console)
+EXPO_PUBLIC_FIREBASE_API_KEY=tu_api_key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tu_project.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=tu_project_id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=tu_bucket
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=tu_sender_id
+EXPO_PUBLIC_FIREBASE_APP_ID=tu_app_id
+```
+
+### Ejecutar
+
+```bash
+# Iniciar servidor de desarrollo
+pnpm start
+
+# O directamente en una plataforma
+pnpm android    # Android
+pnpm ios        # iOS
+pnpm web        # Web
+```
+
+Escanea el QR code con Expo Go o presiona `a`/`i`/`w` para abrir automáticamente.
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <img src="docs/screenshots/feed.png" alt="Feed" width="250" />
+        <br><em>Feed principal</em>
+      </td>
+      <td align="center">
+        <img src="docs/screenshots/create.png" alt="Crear" width="250" />
+        <br><em>Crear fact con autocomplete</em>
+      </td>
+      <td align="center">
+        <img src="docs/screenshots/profile.png" alt="Perfil" width="250" />
+        <br><em>Perfil personalizable</em>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <img src="docs/screenshots/search.png" alt="Búsqueda" width="250" />
+        <br><em>Búsqueda avanzada</em>
+      </td>
+      <td align="center">
+        <img src="docs/screenshots/detail.png" alt="Detalle" width="250" />
+        <br><em>Detalle de fact</em>
+      </td>
+      <td align="center">
+        <img src="docs/screenshots/dark-mode.png" alt="Dark Mode" width="250" />
+        <br><em>Modo oscuro</em>
+      </td>
+    </tr>
+  </table>
+</div>
+
+> 💡 **Nota:** Los screenshots son placeholders. Agrega capturas reales en `docs/screenshots/`
+
+---
+
+## 📦 Scripts Disponibles
+
+| Comando | Descripción |
+|---------|-------------|
+| `pnpm start` | Inicia el servidor de desarrollo Expo |
+| `pnpm android` | Abre en Android |
+| `pnpm ios` | Abre en iOS |
+| `pnpm web` | Abre en navegador web |
+| `pnpm lint` | Ejecuta ESLint |
+| `pnpm build:web` | Build para producción web |
+| `pnpm build:android` | Build APK/AAB para Android (requiere EAS) |
+
+---
+
+## 🏗️ Build para Producción
+
+### Web
+
+```bash
+pnpm build:web
+# Output en dist/
+```
+
+Deploy automático en Vercel al hacer push a `main`.
+
+### Android
+
+```bash
+# Login en EAS
 npx eas-cli login
+
+# Build APK (preview)
 npx eas-cli build -p android --profile preview
+
+# Build AAB (production)
+npx eas-cli build -p android --profile production
 ```
 
-The `preview` profile (see `eas.json`) produces an installable APK with internal
-distribution. For day-to-day development, Expo Go is enough — an installable IPA
-for iOS requires an Apple Developer Program account.
+### iOS
 
-## Project structure
+Requiere cuenta de Apple Developer Program.
 
+```bash
+npx eas-cli build -p ios --profile production
 ```
-app/          file-based routing (expo-router)
-src/app/      screens (tabs, auth, fact, edit-profile)
-src/components/ reusable UI components
-src/data/     API client, auth, hooks and Zustand stores
-src/constants/ theme tokens
-src/hooks/    theme and color scheme
-src/utils/    content parsing and validation
-```
+
+---
+
+## 🎯 Características Destacadas
+
+### Sistema de Temas
+
+- Detección automática del tema del sistema
+- Toggle manual con persistencia en AsyncStorage
+- Anti-flash en web con script inline en `+html.tsx`
+- Tokens de diseño centralizados en `src/constants/theme.ts`
+
+### Autocomplete Inteligente
+
+- Detección en tiempo real de `@mentions` y `#hashtags`
+- Debounce de 300ms para evitar spam a la API
+- Navegación con teclado (flechas + Enter)
+- Dropdown posicionado dinámicamente
+
+### Optimizaciones
+
+- **React Compiler** — Optimizaciones automáticas de re-renders
+- **Zustand** — State management con suscripciones granulares
+- **Image Caching** — Cache de imágenes con expo-image
+- **Lazy Loading** — Carga diferida de componentes pesados
+
+---
+
+## 🤝 Contribuciones
+
+Este es un proyecto personal/portfolio, pero si tienes sugerencias o encuentras bugs:
+
+1. Abre un issue describiendo el problema
+2. O fork el repo y crea un pull request
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia MIT.
+
+---
+
+## 👨‍💻 Autor
+
+Desarrollado con ❤️ usando React Native + Expo
+
+**Stack:**
+- Frontend: React Native, Expo, TypeScript, Zustand
+- Backend: API REST (Node.js)
+- Auth: Firebase Authentication
+- Deploy: Vercel (web), EAS Build (mobile)
+
+---
+
+<div align="center">
+  <sub>¿Te gustó el proyecto? Dale una ⭐️!</sub>
+</div>
