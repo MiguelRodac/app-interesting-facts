@@ -16,7 +16,7 @@ import { isFirebaseAuthError, mapFirebaseError } from '@/data/auth/firebaseError
 import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
-import { isValidEmail } from '@/utils/validation';
+import { isValidEmail, MAX_DISPLAY_NAME_LENGTH } from '@/utils/validation';
 
 export default function EditProfileScreen() {
 const { user, updateProfile, isLoading } = useAuth();
@@ -64,14 +64,15 @@ const { user, updateProfile, isLoading } = useAuth();
     setEditNameValue('');
   }, []);
 
-  const handleConfirmEditName = useCallback(() => {
+const handleConfirmEditName = useCallback(() => {
     const trimmed = editNameValue.trim();
     if (trimmed.length < 2 || trimmed === pendingDisplayName) {
       setIsEditingName(false);
       return;
     }
 
-    setPendingDisplayName(trimmed);
+    // maxLength caps typing, but a pasted value could still exceed the limit
+    setPendingDisplayName(trimmed.slice(0, MAX_DISPLAY_NAME_LENGTH));
     setIsEditingName(false);
   }, [editNameValue, pendingDisplayName]);
 
@@ -253,8 +254,8 @@ const handleSave = useCallback(async () => {
                     },
                   ]}
                   value={editNameValue}
-                  onChangeText={setEditNameValue}
-                  maxLength={50}
+onChangeText={setEditNameValue}
+                  maxLength={MAX_DISPLAY_NAME_LENGTH}
                   autoFocus
                   autoCapitalize="words"
                   editable={!isSubmitting}

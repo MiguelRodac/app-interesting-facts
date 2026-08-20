@@ -16,6 +16,7 @@ import { getIdToken } from '@/data/auth/firebaseAuth';
 import {
   isValidEmail,
   isValidUsername,
+  MAX_DISPLAY_NAME_LENGTH,
   MIN_PASSWORD_LENGTH,
   USERNAME_ERROR_MESSAGE,
 } from '@/utils/validation';
@@ -98,10 +99,11 @@ export default function RegisterScreen() {
     };
   }, [username, checkUsername]);
 
-  const isValid =
+const isValid =
     isValidEmail(email) &&
     password.length >= MIN_PASSWORD_LENGTH &&
     displayName.trim().length > 0 &&
+    displayName.trim().length <= MAX_DISPLAY_NAME_LENGTH &&
     isValidUsername(username) &&
     usernameStatus !== 'taken' &&
     usernameStatus !== 'checking';
@@ -193,8 +195,8 @@ export default function RegisterScreen() {
               placeholder="Your name"
               placeholderTextColor={theme.muted}
               value={displayName}
-              onChangeText={setDisplayName}
-              maxLength={50}
+onChangeText={setDisplayName}
+              maxLength={MAX_DISPLAY_NAME_LENGTH}
               autoCorrect={false}
               editable={!isSubmitting}
             />

@@ -15,6 +15,9 @@ export const USERNAME_ERROR_MESSAGE =
 
 export const EMAIL_ERROR_MESSAGE = 'Email is invalid';
 
+/** Display names are capped at 30 chars, mirroring the username limit */
+export const MAX_DISPLAY_NAME_LENGTH = 30;
+
 /** Firebase Auth requires at least 6 characters; 16 is our product max */
 export const MIN_PASSWORD_LENGTH = 6;
 
