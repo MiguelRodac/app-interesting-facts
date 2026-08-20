@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, FlatList } from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, FlatList, BackHandler } from 'react-native';
+import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +44,7 @@ const facts = useFactsStore((s) => s.facts);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmLeaveVisible, setConfirmLeaveVisible] = useState(false);
 
   // Mention/hashtag autocomplete state
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -289,10 +291,38 @@ const facts = useFactsStore((s) => s.facts);
   }, [isValid, isSubmitting, fact, hasChanges, title, content, updateFact, router]);
 
   const handleCancel = useCallback(() => {
+    // With unsaved changes, block the in-screen back button and ask first.
+    if (hasChanges) {
+      setConfirmLeaveVisible(true);
+      return;
+    }
+    if (fact) {
+      router.navigate(`/fact/${fact.id}`);
+    }
+  }, [router, fact, hasChanges]);
+
+  const handleConfirmLeave = useCallback(() => {
+    setConfirmLeaveVisible(false);
     if (fact) {
       router.navigate(`/fact/${fact.id}`);
     }
   }, [router, fact]);
+
+  const handleCancelLeave = useCallback(() => {
+    setConfirmLeaveVisible(false);
+  }, []);
+
+  // Intercept Android hardware back — confirm before leaving with unsaved changes.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (hasChanges) {
+        setConfirmLeaveVisible(true);
+        return true;
+      }
+      return false;
+    });
+    return () => subscription.remove();
+  }, [hasChanges]);
 
   if (loading || isLoading) {
     return (
@@ -507,6 +537,36 @@ const facts = useFactsStore((s) => s.facts);
           </View>
         </View>
       </ThemedView>
+
+      {/* Unsaved changes confirmation — full-screen, no scroll */}
+      <AppModal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
+        <View style={styles.modalOverlay}>
+          <ThemedView type="backgroundElement" style={styles.modalContent}>
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              Discard changes?
+            </ThemedText>
+            <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
+              You have unsaved changes. Are you sure you want to leave?
+            </ThemedText>
+            <View style={styles.modalButtons}>
+              <AppPressable
+                onPress={handleCancelLeave}
+                style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
+                <ThemedText type="smallBold" style={styles.cancelModalText}>
+                  Keep editing
+                </ThemedText>
+              </AppPressable>
+              <AppPressable
+                onPress={handleConfirmLeave}
+                style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
+                <ThemedText type="smallBold" style={styles.confirmModalText}>
+                  Discard
+                </ThemedText>
+              </AppPressable>
+            </View>
+          </ThemedView>
+        </View>
+      </AppModal>
     </KeyboardAvoidingView>
   );
 }
@@ -631,6 +691,49 @@ autocompleteDropdown: {
   },
   submitButton: {},
   submitText: {
+    color: '#FFFFFF',
+  },
+  // Full-screen (flex:1), no-scroll confirm overlay — mirrors the create-tab guard
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.four,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: Radii.lg,
+    padding: Spacing.four,
+    gap: Spacing.three,
+  },
+  modalTitle: {
+    textAlign: 'center',
+  },
+  modalMessage: {
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    marginTop: Spacing.one,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: Spacing.three,
+    borderRadius: Radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelModalButton: {
+    borderWidth: 1,
+  },
+  cancelModalText: {
+    opacity: 0.7,
+  },
+  confirmModalButton: {},
+  confirmModalText: {
     color: '#FFFFFF',
   },
 });

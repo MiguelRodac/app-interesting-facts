@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, Share, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Share, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, BackHandler } from 'react-native';
+import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -63,6 +64,11 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
   const [replyTo, setReplyTo] = useState<CommentReplyTarget | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Unsaved-changes guard for the fixed comment composer: armed while there's
+  // unsubmitted draft text; shows a full-screen confirm instead of leaving.
+  const [composerHasPending, setComposerHasPending] = useState(false);
+  const [confirmDiscardCommentVisible, setConfirmDiscardCommentVisible] = useState(false);
+
   // Live thread (same store cache CommentSection renders) — lets us resolve the
   // comment under edit so the fixed composer can prefill its content.
   const { comments } = useFactComments(id ?? '');
@@ -91,6 +97,32 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
   const handleComposerDone = useCallback(() => {
     setReplyTo(null);
     setEditingId(null);
+  }, []);
+
+  // Track the composer's unsubmitted draft text so leaving can be guarded.
+  const handleComposerPendingTextChange = useCallback((hasPending: boolean) => {
+    setComposerHasPending(hasPending);
+  }, []);
+
+  // Intercept Android hardware back — confirm before leaving with a draft.
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (composerHasPending) {
+        setConfirmDiscardCommentVisible(true);
+        return true;
+      }
+      return false;
+    });
+    return () => subscription.remove();
+  }, [composerHasPending]);
+
+  const handleConfirmDiscardComment = useCallback(() => {
+    setConfirmDiscardCommentVisible(false);
+    router.replace('/(tabs)');
+  }, [router]);
+
+  const handleCancelDiscardComment = useCallback(() => {
+    setConfirmDiscardCommentVisible(false);
   }, []);
 
   // Tab bar — highlight the tab the user came from
@@ -227,6 +259,11 @@ const isOwner = fact && user?.id === fact.author.id;
   }, [fact, router]);
 
   const handleBack = useCallback(() => {
+    // Unsaved comment draft — confirm before leaving.
+    if (composerHasPending) {
+      setConfirmDiscardCommentVisible(true);
+      return;
+    }
     // Go back to the screen the user came from, never router.back()
     // (detail ↔ edit push/replace can create a navigation loop).
     switch (from) {
@@ -244,7 +281,7 @@ const isOwner = fact && user?.id === fact.author.id;
         router.replace('/(tabs)');
         break;
     }
-  }, [from, router]);
+  }, [from, router, composerHasPending]);
 
   if (loading) {
     return (
@@ -418,6 +455,7 @@ const isOwner = fact && user?.id === fact.author.id;
           onCancelReply={handleComposerCancelReply}
           onCancelEdit={handleComposerCancelEdit}
           onDone={handleComposerDone}
+          onPendingTextChange={handleComposerPendingTextChange}
         />
       )}
 
@@ -435,6 +473,40 @@ const isOwner = fact && user?.id === fact.author.id;
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDeleteVisible(false)}
       />
+
+      {/* Unsaved comment draft — full-screen, no-scroll confirm */}
+      <AppModal
+        visible={confirmDiscardCommentVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelDiscardComment}>
+        <View style={styles.modalOverlay}>
+          <ThemedView type="backgroundElement" style={styles.modalContent}>
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              Discard comment?
+            </ThemedText>
+            <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
+              You have an unsent comment. Are you sure you want to discard it?
+            </ThemedText>
+            <View style={styles.modalButtons}>
+              <AppPressable
+                onPress={handleCancelDiscardComment}
+                style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
+                <ThemedText type="smallBold" style={styles.cancelModalText}>
+                  Keep editing
+                </ThemedText>
+              </AppPressable>
+              <AppPressable
+                onPress={handleConfirmDiscardComment}
+                style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
+                <ThemedText type="smallBold" style={styles.confirmModalText}>
+                  Discard
+                </ThemedText>
+              </AppPressable>
+            </View>
+          </ThemedView>
+        </View>
+      </AppModal>
 
       {/* Full likes list — signed-in only */}
       {user && (
@@ -521,5 +593,48 @@ actions: {
     flexDirection: 'row',
     marginLeft: 'auto',
     gap: Spacing.two,
+  },
+  // Full-screen (flex:1), no-scroll confirm overlay — mirrors the create-tab guard
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.four,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: Radii.lg,
+    padding: Spacing.four,
+    gap: Spacing.three,
+  },
+  modalTitle: {
+    textAlign: 'center',
+  },
+  modalMessage: {
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    marginTop: Spacing.one,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: Spacing.three,
+    borderRadius: Radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelModalButton: {
+    borderWidth: 1,
+  },
+  cancelModalText: {
+    opacity: 0.7,
+  },
+  confirmModalButton: {},
+  confirmModalText: {
+    color: '#FFFFFF',
   },
 });

@@ -51,6 +51,9 @@ interface CommentComposerProps {
   initialValue?: string;
   /** Fired when the edit Cancel button is tapped (edit mode). */
   onCancelEdit?: () => void;
+  /** Fired whenever the pending draft text changes — lets the parent screen
+   *  arm its unsaved-changes guard (true while unsubmitted text exists). */
+  onPendingTextChange?: (hasPending: boolean) => void;
 }
 
 /**
@@ -76,6 +79,7 @@ export function CommentComposer({
   commentId,
   initialValue = '',
   onCancelEdit,
+  onPendingTextChange,
 }: CommentComposerProps) {
   const theme = useTheme();
   const { user } = useAuth();
@@ -133,6 +137,13 @@ export function CommentComposer({
       setMentionResults([]);
     }
   }, [mode, commentId, initialValue]);
+
+  // Tell the parent when there's unsubmitted draft text so it can arm its
+  // unsaved-changes guard. InitialValue in edit mode is not "pending", so
+  // report from the first render based on the current content.
+  useEffect(() => {
+    onPendingTextChange?.(content.length > 0);
+  }, [content, onPendingTextChange]);
 
   const searchMentions = useCallback((query: string) => {
     latestMentionQueryRef.current = query;
