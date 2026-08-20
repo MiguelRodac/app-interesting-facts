@@ -3,6 +3,7 @@ import { Linking, Platform, StyleSheet, ScrollView, View, useWindowDimensions } 
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -102,7 +103,11 @@ export default function LandingScreen() {
         {/* Hero */}
         <View style={styles.hero}>
           <View style={[styles.logoBadge, isNarrow && styles.logoBadgeNarrow, { backgroundColor: theme.primary }]}>
-            <Ionicons name="bulb" size={isNarrow ? 28 : 36} color="#FFFFFF" />
+            <Image
+              source={require('@/assets/images/icon.png')}
+              style={[styles.logoImage, isNarrow && styles.logoImageNarrow]}
+              accessibilityLabel="Interesting Facts logo"
+            />
           </View>
           <ThemedText type="title" style={[styles.title, isNarrow && styles.titleNarrow]}>
             Interesting Facts
@@ -270,6 +275,15 @@ const styles = StyleSheet.create({
   logoBadgeNarrow: {
     width: 64,
     height: 64,
+  },
+  logoImage: {
+    width: 64,
+    height: 64,
+    borderRadius: Radii.lg,
+  },
+  logoImageNarrow: {
+    width: 48,
+    height: 48,
   },
   title: {
     fontSize: 34,
