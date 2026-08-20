@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LikedByLine } from '@/components/LikedByLine';
 import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { CommentSection } from '@/components/comments/CommentSection';
 import { StyledContent } from '@/components/StyledContent';
 import { TabBar } from '@/components/TabBar';
 import { ThemedText } from '@/components/themed-text';
@@ -18,6 +19,7 @@ import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useFactLikes } from '@/data/hooks/useFactLikes';
+import { notifyFactCommentsChanged } from '@/data/hooks/useFactComments';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
@@ -106,6 +108,9 @@ const [loading, setLoading] = useState(true);
     try {
       await fetchFactById(id);
       if (user) refetchLikes();
+      // Ping any mounted useFactComments for this fact so pull-to-refresh also
+      // refetches the threaded comments.
+      notifyFactCommentsChanged(id);
     } finally {
       setRefreshing(false);
     }
@@ -124,6 +129,20 @@ const [loading, setLoading] = useState(true);
       router.push({ pathname: '/(tabs)/users/[username]', params: { username: fact.author.username } });
     }
   }, [user, fact, router]);
+
+  // Comment authors follow the same deep-link rule via username (comments
+  // carry no author id, so match the signed-in user's username like mentions).
+  const handleCommentAuthorPress = useCallback(
+    (author: { username: string }) => {
+      if (user && user.username === author.username) {
+        router.push('/(tabs)/profile');
+      } else {
+        router.push({ pathname: '/(tabs)/users/[username]', params: { username: author.username } });
+      }
+    },
+    [user, router],
+  );
+
 
 const handleLike = useCallback(() => {
     if (fact) {
@@ -292,7 +311,11 @@ const handleLike = useCallback(() => {
             ) : null}
           </View>
         </ThemedView>
+
+        {/* Threaded comments — read-only in this slice */}
+        <CommentSection factId={fact.id} onCommentAuthorPress={handleCommentAuthorPress} />
       </ScrollView>
+
 
       {/* Bottom tab bar */}
       <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
