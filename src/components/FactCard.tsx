@@ -13,7 +13,6 @@ import { LikedByLine } from '@/components/LikedByLine';
 import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { useAuth } from '@/data/hooks/useAuth';
-import { useFactLikes } from '@/data/hooks/useFactLikes';
 import { useTheme } from '@/hooks/use-theme';
 import type { Fact } from '@/types';
 
@@ -49,8 +48,6 @@ export function FactCard({
   const router = useRouter();
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
-  // Likes are only fetched (and shown) for signed-in users
-  const { likes } = useFactLikes(variant !== 'anon' && fact.likesCount > 0 ? fact.id : undefined);
 
   const isCollapsible = fact.content.length > COLLAPSE_THRESHOLD;
 
@@ -125,7 +122,21 @@ return (
       )}
 
       {/* Likes line — opens the full likes modal; hidden for anonymous users */}
-      {variant !== 'anon' && <LikedByLine likes={likes} onPress={onOpenLikes} />}
+      {variant !== 'anon' && (
+        <LikedByLine likeBy={fact.likeBy} likesCount={fact.likesCount} onPress={onOpenLikes} />
+      )}
+
+      {/* Comment preview line — tap navigates to the fact detail */}
+      {variant !== 'anon' && fact.commentsCount > 0 && fact.commentPreview && (
+        <AppPressable onPress={onPress} hitSlop={8} style={styles.commentPreviewRow} disabled={!onPress}>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} style={styles.commentPreview}>
+            <ThemedText type="smallBold" style={{ color: theme.text }}>
+              @{fact.commentPreview.author.username}
+            </ThemedText>{' '}
+            {fact.commentPreview.content}
+          </ThemedText>
+        </AppPressable>
+      )}
 
       {/* Actions row */}
       {variant !== 'anon' && (
@@ -139,6 +150,15 @@ return (
           <ThemedText type="small" themeColor="textSecondary">
             {fact.likesCount}
           </ThemedText>
+
+          {fact.commentsCount > 0 && (
+            <AppPressable onPress={onPress} hitSlop={8} style={styles.commentBtn} disabled={!onPress}>
+              <Ionicons name="chatbubble-outline" size={18} color={theme.muted} />
+              <ThemedText type="small" themeColor="textSecondary">
+                {fact.commentsCount}
+              </ThemedText>
+            </AppPressable>
+          )}
 
           {variant === 'full' && onShare && (
             <AppPressable onPress={onShare} hitSlop={8} style={styles.actionBtn}>
@@ -208,6 +228,19 @@ card: {
     alignItems: 'center',
     gap: Spacing.two,
     marginTop: Spacing.one,
+  },
+  commentBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    padding: Spacing.one,
+  },
+  commentPreviewRow: {
+    paddingVertical: Spacing.half,
+  },
+  commentPreview: {
+    flexShrink: 1,
+    backgroundColor: 'transparent',
   },
   actionBtn: {
     padding: Spacing.one,

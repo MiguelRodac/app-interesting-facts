@@ -30,6 +30,27 @@ export interface ApiHashtag {
   usageCount?: number;
 }
 
+/** Inline like entry carried on FactResponse — the 2 most recent likers. */
+export interface ApiFactLikeByEntry {
+  username: string;
+  avatarUrl?: string | null;
+  avatarColor?: string | null;
+}
+
+/** Preview of the first top-level comment carried on FactResponse. */
+export interface ApiFactCommentPreview {
+  id: string;
+  content: string;
+  author: {
+    username: string;
+    avatarUrl?: string | null;
+    avatarColor?: string | null;
+  };
+  parentCommentId: null;
+  replies: number;
+  createdAt: string;
+}
+
 export interface ApiFact {
   id: string;
   title?: string | null;
@@ -37,6 +58,9 @@ export interface ApiFact {
   author: ApiAuthor;
   likes: number;
   liked?: boolean;
+  likeBy?: ApiFactLikeByEntry[];
+  comments?: number;
+  commentsDetails?: ApiFactCommentPreview | null;
   hashtags: ApiHashtag[];
   createdAt: string;
   updatedAt?: string;

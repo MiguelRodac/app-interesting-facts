@@ -23,6 +23,25 @@ export interface Hashtag {
   tag: string;
 }
 
+/** A user who liked a fact — carried inline on the Fact for the feed (no N+1). */
+export interface FactLike {
+  username: string;
+  avatarUrl?: string | null;
+  avatarColor?: string | null;
+}
+
+/** Preview of the first top-level comment on a fact (see FactResponse.commentsDetails). */
+export interface FactCommentPreview {
+  id: string;
+  content: string;
+  author: {
+    username: string;
+    avatarUrl?: string | null;
+    avatarColor?: string | null;
+  };
+  replies: number;
+}
+
 export interface Fact {
   id: string;
   title?: string;
@@ -30,6 +49,9 @@ export interface Fact {
   author: Author;
   likesCount: number;
   liked: boolean;
+  likeBy: FactLike[];
+  commentsCount: number;
+  commentPreview: FactCommentPreview | null;
   hashtags: Hashtag[];
   createdAt: string;
 }
