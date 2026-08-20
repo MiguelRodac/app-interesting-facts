@@ -24,7 +24,7 @@ export function AppModal({
 }: AppModalProps) {
   if (Platform.OS === 'web') {
     if (!visible) return null;
-    return <View style={StyleSheet.absoluteFill}>{children}</View>;
+    return <View style={styles.webOverlay}>{children}</View>;
   }
 
   return (
@@ -37,3 +37,19 @@ export function AppModal({
     </RNModal>
   );
 }
+
+// Web only: a true fixed, full-viewport overlay so dialogs stay centered on
+// screen regardless of where they are mounted (e.g. inside a ScrollView or a
+// constrained flex container). `StyleSheet.absoluteFill` positions relative to
+// the nearest positioned ancestor, which makes a dialog mounted deep in a
+// scroll/flex tree appear off-center — this overlay escapes that flow.
+const styles = StyleSheet.create({
+  webOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+});
