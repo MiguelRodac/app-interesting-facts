@@ -13,6 +13,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   USERNAME_ALREADY_EXISTS: 'This username is already taken.',
   INVALID_CREDENTIALS: 'Invalid email or password.',
   RATE_LIMITED: 'Too many requests. Please try again later.',
+  EDIT_WINDOW_EXPIRED: 'The 1-hour edit window has expired.',
+  DELETE_BLOCKED_HAS_REPLIES:
+    "This comment has replies and can't be deleted.",
 };
 
 function getUserMessage(code: string, fallback: string): string {
@@ -28,7 +31,7 @@ export function mapApiError(status: number, body: unknown): AppError {
 
   // Legacy error format
   if (parsed?.error) {
-    const code = parsed.error.code;
+    const code = parsed.error_code ?? parsed.error.code;
     return {
       code,
       message: parsed.error.message,
@@ -40,7 +43,10 @@ export function mapApiError(status: number, body: unknown): AppError {
   // RFC 9457 format
   const title = parsed?.title ?? 'Unknown error';
   const detail = parsed?.detail ?? title;
-  const code = parsed?.type?.split('/').pop()?.toUpperCase() ?? title.replace(/\s+/g, '_').toUpperCase();
+  const code =
+    parsed?.error_code ??
+    parsed?.type?.split('/').pop()?.toUpperCase() ??
+    title.replace(/\s+/g, '_').toUpperCase();
 
   return {
     code,

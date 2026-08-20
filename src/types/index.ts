@@ -30,16 +30,44 @@ export interface FactLike {
   avatarColor?: string | null;
 }
 
+/** Slim user preview (no displayName) — used for likeBy and comment-preview authors. */
+export interface LikePreview {
+  username: string;
+  avatarUrl?: string | null;
+  avatarColor?: string | null;
+}
+
+/** Full comment author (has displayName). */
+export interface CommentAuthor {
+  username: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  avatarColor?: string | null;
+}
+
 /** Preview of the first top-level comment on a fact (see FactResponse.commentsDetails). */
-export interface FactCommentPreview {
+export interface CommentPreview {
   id: string;
   content: string;
-  author: {
-    username: string;
-    avatarUrl?: string | null;
-    avatarColor?: string | null;
-  };
+  author: LikePreview;
+  parentCommentId: string | null;
   replies: number;
+  createdAt: string;
+}
+
+/** A comment (top-level or reply) from the comments module. */
+export interface Comment {
+  id: string;
+  content: string;
+  author: CommentAuthor;
+  parentCommentId: string | null;
+  /** Present only when the comment came from the flat per-user list. */
+  factId?: string;
+  createdAt: string;
+  updatedAt: string;
+  edited: boolean;
+  /** Nested replies, present only in threaded responses. */
+  replies?: Comment[];
 }
 
 export interface Fact {
@@ -49,9 +77,9 @@ export interface Fact {
   author: Author;
   likesCount: number;
   liked: boolean;
-  likeBy: FactLike[];
+  likeBy: LikePreview[];
   commentsCount: number;
-  commentPreview: FactCommentPreview | null;
+  commentPreview: CommentPreview | null;
   hashtags: Hashtag[];
   createdAt: string;
 }
