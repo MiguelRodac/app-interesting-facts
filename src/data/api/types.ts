@@ -72,13 +72,6 @@ export interface ApiProfileResponse {
   avatarColor?: string;
 }
 
-export interface ApiLike {
-  id: string;
-  userId: string;
-  factId: string;
-  createdAt: string;
-}
-
 /** Response from GET /users/search */
 export interface ApiUserSearchResult {
   id: string;
