@@ -18,7 +18,6 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { useFacts } from '@/data/hooks/useFacts';
-import { useFactLikes } from '@/data/hooks/useFactLikes';
 import { notifyFactCommentsChanged } from '@/data/hooks/useFactComments';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -49,9 +48,7 @@ const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
 
 const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [likesModalVisible, setLikesModalVisible] = useState(false);
-  // Likes are only fetched/shown for signed-in users
-  const { likes, refetch: refetchLikes } = useFactLikes(id, !!user);
+const [likesModalVisible, setLikesModalVisible] = useState(false);
 
   // Tab bar — highlight the tab the user came from
   const activeTab = from === 'search' ? 'search' : from === 'profile' || from === 'user' ? 'profile' : 'index';
@@ -107,19 +104,15 @@ const [loading, setLoading] = useState(true);
     setRefreshing(true);
     try {
       await fetchFactById(id);
-      if (user) refetchLikes();
       // Ping any mounted useFactComments for this fact so pull-to-refresh also
       // refetches the threaded comments.
       notifyFactCommentsChanged(id);
     } finally {
       setRefreshing(false);
     }
-  }, [id, user, fetchFactById, refetchLikes]);
+  }, [id, fetchFactById]);
 
-// Likes with usernames — fetched via the shared useFactLikes hook
-  // (cached per factId; the LikesModal refetches fresh on open).
-
-  const isOwner = fact && user?.id === fact.author.id;
+const isOwner = fact && user?.id === fact.author.id;
 
   const handleAuthorPress = useCallback(() => {
     if (!fact) return;
@@ -273,7 +266,7 @@ const handleLike = useCallback(() => {
 {/* Likes line — "Liked by @alice, @bob and 3 more"; tap opens the full modal.
         Only shown to signed-in users. */}
           {user && (
-            <LikedByLine likes={likes} likesCount={fact.likesCount} onPress={() => setLikesModalVisible(true)} />
+            <LikedByLine likes={fact.likeBy} likesCount={fact.likesCount} onPress={() => setLikesModalVisible(true)} />
           )}
 
           {/* Actions */}
