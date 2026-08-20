@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="public/logo512.png" alt="Interesting Facts Logo" width="120" />
   <h1>Interesting Facts</h1>
   <p><strong>Una plataforma social para compartir datos curiosos</strong></p>
   
