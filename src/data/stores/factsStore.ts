@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Fact } from '@/types';
+import type { Author, Fact, FactLike } from '@/types';
 import { createApiClient } from '../api/client';
 import type { ApiFact, ApiPaginatedResponse } from '../api/types';
 import { mapFactsDtos, mapFactDto } from '../mappers/factMapper';
@@ -34,6 +34,23 @@ function mergeFacts(current: Fact[], fresh: Fact[]): Fact[] {
   const byId = new Map(current.map((f) => [f.id, f]));
   for (const fact of fresh) byId.set(fact.id, fact);
   return Array.from(byId.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/**
+ * Builds the optimistic liked-by list for the current user's like/unlike.
+ * On like the user is prepended (most recent liker first) and the list is
+ * capped at 2 — the number shown by LikedByLine. On unlike their row is
+ * dropped. The backend reconcile that follows the API call corrects drift.
+ */
+function optimisticLikeBy(likeBy: FactLike[], user: Author, liked: boolean): FactLike[] {
+  const withoutUser = likeBy.filter((l) => l.username !== user.username);
+  if (!liked) return withoutUser;
+  const entry: FactLike = {
+    username: user.username,
+    avatarUrl: user.avatarUrl,
+    avatarColor: user.avatarColor,
+  };
+  return [entry, ...withoutUser].slice(0, 2);
 }
 
 interface FactsState {
@@ -154,19 +171,23 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     if (!fact) return;
 
     const wasLiked = fact.liked;
+    const currentUser = useAuthStore.getState().user;
 
-    // Optimistic update — keep feed and user facts in sync
-    const newFacts = facts.map((f) =>
+    // Optimistic update — keep feed and user facts in sync, including the
+    // liked-by line (mini avatars + usernames) so it feels instant.
+    const applyOptimistic = (f: Fact): Fact =>
       f.id === factId
-        ? { ...f, liked: !wasLiked, likesCount: f.likesCount + (wasLiked ? -1 : 1) }
-        : f,
-    );
-    const newUserFacts = userFacts.map((f) =>
-      f.id === factId
-        ? { ...f, liked: !wasLiked, likesCount: f.likesCount + (wasLiked ? -1 : 1) }
-        : f,
-    );
-    set({ facts: newFacts, userFacts: newUserFacts });
+        ? {
+            ...f,
+            liked: !wasLiked,
+            likesCount: f.likesCount + (wasLiked ? -1 : 1),
+            likeBy: currentUser
+              ? optimisticLikeBy(f.likeBy, currentUser, !wasLiked)
+              : f.likeBy,
+          }
+        : f;
+
+    set({ facts: facts.map(applyOptimistic), userFacts: userFacts.map(applyOptimistic) });
 
     try {
       if (wasLiked) {
@@ -174,10 +195,24 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       } else {
         await client.post(`/facts/${factId}/likes`);
       }
+
+      // Reconcile with the backend's authoritative likeBy/commentsCount so
+      // the "2 most recent likers" line matches reality after the rush.
+      // On failure keep the optimistic state — the like/unlike succeeded.
+      try {
+        const fresh = await get().fetchFactById(factId);
+        set((state) => ({
+          userFacts: state.userFacts.map((f) => (f.id === factId ? fresh : f)),
+        }));
+      } catch {
+        // keep optimistic state
+      }
+
       // Live-update "Liked by …" lines across every mounted screen
       notifyFactLikesChanged(factId);
     } catch (error) {
-      // Rollback on error
+      // Rollback on error — restores the pre-optimistic snapshots, which
+      // also reverts this action's likeBy change.
       set({ facts, userFacts });
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
