@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, Share, ScrollView, RefreshControl } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -27,8 +27,9 @@ import type { Fact } from '@/types';
 export default function FactDetailScreen() {
 const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const { facts, fetchFactById, toggleLike, deleteFact } = useFacts();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const hasCheckedAuth = useRef(false);
   const theme = useTheme();
   const topInset = useTopInset();
   const [fact, setFact] = useState<Fact | null>(null);
@@ -71,6 +72,20 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
     },
     [router],
   );
+
+// Redirect to login when the session is gone (e.g. expired token). The
+  // detail is private: anonymous viewers must not see fact contents. The ref
+  // guards against redirect loops once navigation lands on the auth screen.
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading) {
+      if (!hasCheckedAuth.current) {
+        hasCheckedAuth.current = true;
+        router.replace('/auth/login');
+      }
+    } else if (isAuthenticated) {
+      hasCheckedAuth.current = false;
+    }
+  }, [isAuthenticated, isLoading, router]);
 
 // Prefer the store copy (feed already has it); on cold start / F5 the store
   // is empty, so fetch the fact by ID instead of showing "not found".
