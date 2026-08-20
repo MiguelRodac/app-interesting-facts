@@ -21,8 +21,8 @@ import { useTheme } from '@/hooks/use-theme';
 
 const client = createApiClient(getIdToken);
 
-/** Backend contract: comment content is 10-500 chars after trim. */
-export const COMMENT_MIN_LENGTH = 10;
+/** Comment content is 1-500 chars after trim (backend min is being relaxed to 1). */
+export const COMMENT_MIN_LENGTH = 1;
 export const COMMENT_MAX_LENGTH = 500;
 
 const DROPDOWN_BG = '#26262E';
@@ -59,8 +59,8 @@ interface CommentComposerProps {
  * while the thread scrolls).
  *
  * Clean single-row layout: avatar + multiline TextInput + a plain "Post" text
- * button that enables only when the 10-char minimum is met. There is NO visible
- * CharCounter and NO filled pill button. The 500-char maxLength and the 10-char
+ * button that enables only when the 1-char minimum is met. There is NO visible
+ * CharCounter and NO filled pill button. The 500-char maxLength and the 1-char
  * minimum gate stay silent (validated on submit by disabling Post while short).
  *
  * @mention autocomplete is preserved (GET /users/search) but restyled to blend —
@@ -284,7 +284,9 @@ export function CommentComposer({
       <View style={[styles.row, { borderTopColor: theme.border }]}>
         {/* Avatar — current signed-in user. */}
         {avatarUser ? (
-          <UserAvatar user={avatarUser} size={32} />
+          <View style={styles.avatar}>
+            <UserAvatar user={avatarUser} size={32} />
+          </View>
         ) : (
           <View style={styles.avatarPlaceholder} />
         )}
@@ -411,12 +413,19 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     gap: Spacing.two,
+  },
+  avatar: {
+    // Small nudge down so the 32px avatar's vertical center lines up with the
+    // input's first text line (top-aligned, Instagram-style) instead of sitting
+    // flush at the row top or being pushed low by multiline growth.
+    marginTop: Spacing.half,
   },
   avatarPlaceholder: {
     width: 32,
     height: 32,
+    marginTop: Spacing.half,
   },
   inputWrap: {
     flex: 1,
