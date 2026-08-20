@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
-import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView, BackHandler } from 'react-native';
+import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +44,7 @@ const { user, updateProfile, isLoading } = useAuth();
   const [editEmailValue, setEditEmailValue] = useState('');
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmLeaveVisible, setConfirmLeaveVisible] = useState(false);
 
   // Sync with user changes (only on initial load or user refresh)
   useEffect(() => {
@@ -53,6 +55,29 @@ const { user, updateProfile, isLoading } = useAuth();
       setPendingAvatarUrl(user.avatarUrl ?? null);
     }
   }, [user]);
+
+  // Resolves whether the user has made any real edits relative to the saved profile.
+  const hasChanges = useMemo(() => {
+    if (!user) return false;
+    return (
+      pendingDisplayName !== user.displayName ||
+      pendingEmail !== (user.email ?? '') ||
+      pendingAvatarColor !== (user.avatarColor ?? null) ||
+      pendingAvatarUrl !== (user.avatarUrl ?? null)
+    );
+  }, [user, pendingDisplayName, pendingEmail, pendingAvatarColor, pendingAvatarUrl]);
+
+  // Intercept Android hardware back button — confirm before leaving with unsaved changes
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (hasChanges) {
+        setConfirmLeaveVisible(true);
+        return true;
+      }
+      return false;
+    });
+    return () => subscription.remove();
+  }, [hasChanges]);
 
   const handleStartEditName = useCallback(() => {
     setEditNameValue(pendingDisplayName);
@@ -178,8 +203,22 @@ const handleSave = useCallback(async () => {
   }, [pendingEmail, passwordValue, pendingDisplayName, pendingAvatarColor, pendingAvatarUrl, updateProfile, showToast, setError, router]);
 
   const handleCancel = useCallback(() => {
+    // With unsaved changes, block the in-screen back button and ask for confirmation.
+    if (hasChanges) {
+      setConfirmLeaveVisible(true);
+      return;
+    }
+    router.replace('/(tabs)/profile');
+  }, [router, hasChanges]);
+
+  const handleConfirmLeave = useCallback(() => {
+    setConfirmLeaveVisible(false);
     router.replace('/(tabs)/profile');
   }, [router]);
+
+  const handleCancelLeave = useCallback(() => {
+    setConfirmLeaveVisible(false);
+  }, []);
 
   if (isLoading || !user) {
     return (
@@ -392,6 +431,36 @@ onChangeText={setEditNameValue}
           onClose={() => setIsAvatarModalVisible(false)}
           onSelectAvatarOption={handleSelectAvatarOption}
         />
+
+        {/* Unsaved changes confirmation — full-screen, no scroll (matches create tab guard) */}
+        <AppModal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
+          <View style={styles.modalOverlay}>
+            <ThemedView type="backgroundElement" style={styles.modalContent}>
+              <ThemedText type="subtitle" style={styles.modalTitle}>
+                ¿Perder los cambios?
+              </ThemedText>
+              <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
+                Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?
+              </ThemedText>
+              <View style={styles.modalButtons}>
+                <AppPressable
+                  onPress={handleCancelLeave}
+                  style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
+                  <ThemedText type="smallBold" style={styles.cancelModalText}>
+                    Cancelar
+                  </ThemedText>
+                </AppPressable>
+                <AppPressable
+                  onPress={handleConfirmLeave}
+                  style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
+                  <ThemedText type="smallBold" style={styles.confirmModalText}>
+                    Salir
+                  </ThemedText>
+                </AppPressable>
+              </View>
+            </ThemedView>
+          </View>
+        </AppModal>
       </ThemedView>
     </KeyboardAvoidingView>
   );
@@ -526,6 +595,49 @@ readOnlyRow: {
   },
   passwordConfirmButton: {},
   passwordConfirmText: {
+    color: '#FFFFFF',
+  },
+  // Full-screen (flex:1), no-scroll confirm overlay — mirrors the create-tab guard
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.four,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: Radii.lg,
+    padding: Spacing.four,
+    gap: Spacing.three,
+  },
+  modalTitle: {
+    textAlign: 'center',
+  },
+  modalMessage: {
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+    marginTop: Spacing.one,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: Spacing.three,
+    borderRadius: Radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelModalButton: {
+    borderWidth: 1,
+  },
+  cancelModalText: {
+    opacity: 0.7,
+  },
+  confirmModalButton: {},
+  confirmModalText: {
     color: '#FFFFFF',
   },
 });
