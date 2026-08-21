@@ -418,7 +418,7 @@ const isOwner = fact && user?.id === fact.author.id;
             <AppPressable onPress={handleRepost} style={styles.actionBtn} hitSlop={8}>
               <Ionicons
                 name={fact.repostedByMe ? 'repeat' : 'repeat-outline'}
-                size={24}
+                size={28}
                 color={fact.repostedByMe ? theme.primary : theme.muted}
               />
               <ThemedText type="small" themeColor="textSecondary">

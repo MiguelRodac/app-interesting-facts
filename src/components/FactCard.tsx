@@ -303,7 +303,10 @@ card: {
     flexShrink: 1,
     backgroundColor: 'transparent',
   },
-  actionBtn: {
+actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
     padding: Spacing.one,
   },
   ownerActions: {
