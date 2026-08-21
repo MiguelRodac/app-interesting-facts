@@ -72,10 +72,19 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
   // Live thread (same store cache CommentSection renders) — lets us resolve the
   // comment under edit so the fixed composer can prefill its content.
   const { comments } = useFactComments(id ?? '');
-  const editingComment = useMemo(
-    () => (editingId ? comments.find((c) => c.id === editingId) ?? null : null),
-    [comments, editingId],
-  );
+  const editingComment = useMemo(() => {
+    if (!editingId) return null;
+    // Search top-level comments first, then nested replies, so a reply can be
+    // resolved for the fixed composer's edit mode (replies aren't at the top
+    // level of the thread).
+    const topLevel = comments.find((c) => c.id === editingId);
+    if (topLevel) return topLevel;
+    for (const comment of comments) {
+      const reply = (comment.replies ?? []).find((r) => r.id === editingId);
+      if (reply) return reply;
+    }
+    return null;
+  }, [comments, editingId]);
 
   // Reply: cancel any edit, prefill replyTo so the fixed composer submits with
   // parentCommentId, and focus it (autoFocus on the TextInput when replyTo set).

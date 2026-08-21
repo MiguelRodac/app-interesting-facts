@@ -183,7 +183,11 @@ export function CommentItem({
                 key={reply.id}
                 comment={reply}
                 onAuthorPress={onAuthorPress}
+                currentUsername={currentUsername}
                 isSignedIn={isSignedIn}
+                onReply={onReply}
+                onEdit={onEdit}
+                onDelete={onDelete}
               />
             ))}
         </View>
