@@ -9,6 +9,7 @@ import {
   notifyFactCommentsChanged,
   setCachedComments,
 } from '@/data/hooks/useFactComments';
+import { notifyCommentLikesChanged } from '@/data/hooks/useCommentLikes';
 import { mapCommentDto } from '@/data/mappers/commentMapper';
 import { useAuthStore } from './authStore';
 import { useUIStore } from './uiStore';
@@ -210,7 +211,9 @@ export const useCommentsStore = create<CommentsState>(() => ({
         await client.post(`/facts/${factId}/comments/${comment.id}/likes`);
       }
       // Success — the optimistic liked/count flip is authoritative; leave it
-      // in place.
+      // in place. Also invalidate the comment-likes modal cache so the list
+      // refetches when the user opens it again.
+      notifyCommentLikesChanged(factId, comment.id);
     } catch (error) {
       setCachedComments(factId, snapshot);
       notifyFactCommentsChanged(factId);
