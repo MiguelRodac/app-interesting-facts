@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppPressable } from '@/components/ui/app-pressable';
 import { ThemedText } from '@/components/themed-text';
@@ -78,14 +78,10 @@ const EMOJI_DATA: Record<string, { label: string; icon: string; emojis: string[]
     label: 'Symbols',
     icon: '♾️',
     emojis: [
-      '♾️','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤',
-      '🔺','🔻','💠','🔶','🔷','🔳','🔲','▪️','▫️','◾',
-      '◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛',
-      '⬜','🟫','➕','➖','➗','✖️','🟰','♾️','‼️','⁉️',
-      '❓','❔','❕','❗','〰️','〽️','特权','㊗️','㊙️','🈶',
-      '🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️',
-      '🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘',
-      '❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷',
+      '🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔺',
+      '🔻','💠','🔶','🔷','🔳','🔲','▪️','▫️','◾','◽',
+      '◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛','⬜',
+      '🟫','➕','➖','➗','✖️','❓','❔','❕','❗','〰️',
     ],
   },
   travel: {
@@ -95,21 +91,32 @@ const EMOJI_DATA: Record<string, { label: string; icon: string; emojis: string[]
       '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐',
       '🛻','🚚','🚛','🚜','🏍️','🛵','🚲','🛴','🛹','🛼',
       '🚁','🛸','✈️','🛩️','🛫','🛬','🪂','💺','🚀','🛸',
-      '🚉','🚊','🚝','🚞','🚋','🚃','🚋','🚆','🚇','🚈',
+      '🚉','🚊','🚝','🚞','🚋','🚃','🚆','🚇','🚈','🚂',
     ],
   },
   flags: {
     label: 'Flags',
     icon: '🏁',
     emojis: [
-      '🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏳️‍⚧️','🏴‍☠️','🇺🇸','🇬🇧',
-      '🇫🇷','🇩🇪','🇪🇸','🇮🇹','🇯🇵','🇰🇷','🇧🇷','🇮🇳','🇷🇺','🇨🇳',
-      '🇲🇽','🇨🇦','🇦🇺','🇦🇷','🇨🇴','🇨🇱','🇵🇪','🇪🇨','🇻🇪','🇧🇴',
+      '🏁','🚩','🎌','🏴','🏳️','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇪🇸',
+      '🇮🇹','🇯🇵','🇰🇷','🇧🇷','🇮🇳','🇷🇺','🇨🇳','🇲🇽','🇨🇦','🇦🇺',
+      '🇦🇷','🇨🇴','🇨🇱','🇵🇪','🇪🇨','🇻🇪','🇧🇴','🇨🇺','🇵🇦','🇯🇲',
     ],
   },
 };
 
 const CATEGORIES = Object.keys(EMOJI_DATA);
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+}
+
+const COLS = 8;
+const ROWS_MIN = 5;
 
 interface EmojiPickerPopoverProps {
   visible: boolean;
@@ -119,13 +126,8 @@ interface EmojiPickerPopoverProps {
 
 export function EmojiPickerPopover({ visible, onClose, onEmojiSelected }: EmojiPickerPopoverProps) {
   const theme = useTheme();
-  const { width } = useWindowDimensions();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
-
-  const numColumns = width < 350 ? 5 : width < 420 ? 6 : 7;
-  const cellSize = width < 350 ? 38 : width < 420 ? 42 : 44;
-  const emojiFontSize = width < 350 ? 22 : width < 420 ? 24 : 26;
 
   const emojis = useMemo(() => {
     if (query.trim()) {
@@ -134,11 +136,16 @@ export function EmojiPickerPopover({ visible, onClose, onEmojiSelected }: EmojiP
     return EMOJI_DATA[activeCategory]?.emojis ?? [];
   }, [query, activeCategory]);
 
+  const rows = useMemo(() => {
+    const c = chunk(emojis, COLS);
+    while (c.length < ROWS_MIN) c.push([]);
+    return c;
+  }, [emojis]);
+
   if (!visible) return null;
 
   return (
     <>
-      {/* Backdrop — tap to close */}
       <AppPressable style={styles.backdrop} onPress={onClose} />
 
       <View style={[styles.popover, { backgroundColor: theme.background, borderColor: theme.border }]}>
@@ -191,22 +198,30 @@ export function EmojiPickerPopover({ visible, onClose, onEmojiSelected }: EmojiP
           </View>
         )}
 
-        {/* Emoji grid */}
-        <FlatList
-          data={emojis}
-          keyExtractor={(item, idx) => `${item}-${idx}`}
-          numColumns={numColumns}
-          style={styles.grid}
-          contentContainerStyle={styles.gridContent}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <AppPressable
-              onPress={() => onEmojiSelected(item)}
-              style={[styles.emojiCell, { width: cellSize, height: cellSize, backgroundColor: 'transparent' }]}>
-              <ThemedText style={[styles.emoji, { fontSize: emojiFontSize }]}>{item}</ThemedText>
-          </AppPressable>
-          )}
-        />
+        {/* Emoji grid — vertical scroll + horizontal scroll for all rows together */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.grid}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={styles.gridVertical}>
+            <View style={styles.gridInner}>
+              {rows.map((row, rowIdx) => (
+                <View key={`row-${rowIdx}`} style={styles.row}>
+                  {row.map((emoji, colIdx) => (
+                    <AppPressable
+                      key={`${emoji}-${colIdx}`}
+                      onPress={() => onEmojiSelected(emoji)}
+                      style={styles.emojiCell}>
+                      <ThemedText style={styles.emoji}>{emoji}</ThemedText>
+                    </AppPressable>
+                  ))}
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        </ScrollView>
       </View>
     </>
   );
@@ -239,7 +254,7 @@ const styles = StyleSheet.create({
     bottom: '100%',
     left: 0,
     right: 0,
-    maxHeight: 240,
+    maxHeight: 340,
     marginBottom: Spacing.one,
     borderRadius: Radii.lg,
     borderWidth: 1,
@@ -279,12 +294,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   grid: {
-    flex: 1,
+    maxHeight: 260,
   },
-  gridContent: {
-    paddingVertical: Spacing.half,
+  gridVertical: {
+    maxHeight: 260,
+  },
+  gridInner: {
+    paddingHorizontal: Spacing.one,
+    paddingVertical: Spacing.one,
+  },
+  row: {
+    flexDirection: 'row',
   },
   emojiCell: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
