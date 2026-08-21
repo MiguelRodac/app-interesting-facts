@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Dimensions, FlatList, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AppPressable } from '@/components/ui/app-pressable';
 import { ThemedText } from '@/components/themed-text';
@@ -48,88 +48,63 @@ const EMOJI_DATA: Record<string, { label: string; icon: string; emojis: string[]
     icon: '🐶',
     emojis: [
       '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨',
-      '🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐒',
-      '🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇',
-      '🐺','🐗','🐴','🦄','🐝','🪱','🐛','🦋','🐌','🐞',
+      '🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊',
+      '🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉',
+      '🦇','🐺','🐗','🐴','🦄','🐝','🪱','🐛','🦋','🐌',
+      '🐞','🐜','🪰','🪲','🪳','🦟','🦗','🕷️','🦂','🐢',
     ],
   },
   food: {
     label: 'Food',
-    icon: '🍔',
+    icon: '🍕',
     emojis: [
-      '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈',
-      '🍒','🍑','🥭','🍍','🥥','🥝','🍅','🥑','🍆','🥔',
-      '🥕','🌽','🌶️','🫑','🥒','🥬','🥦','🧄','🧅','🍄',
-      '🍔','🍕','🌮','🌯','🫔','🥙','🧆','🥚','🍳','🥘',
-      '🍲','🫕','🥣','🥗','🍿','🧈','🧂','🥫','🍱','🍘',
-      '🍙','🍚','🍛','🍜','🍝','🍠','🍢','🍣','🍤','🍥',
-      '🥮','🍡','🥟','🥠','🥡','🦀','🦞','🦐','🦑','🍩',
-      '🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','☕',
-    ],
-  },
-  activities: {
-    label: 'Activities',
-    icon: '⚽',
-    emojis: [
-      '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱',
-      '🪀','🏓','🏸','🏒','🥍','🏏','🪃','🥅','⛳','🪁',
-      '🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸️',
-      '🥌','🎿','🎯','🪀','🪁','🎮','🕹️','🎲','🧩','🎭',
-    ],
-  },
-  travel: {
-    label: 'Travel',
-    icon: '✈️',
-    emojis: [
-      '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐',
-      '🛻','🚚','🚛','🚜','🛵','🏍️','🛺','🚲','🛴','🛹',
-      '🛼','🚁','✈️','🛩️','🚀','🛸','🚢','⛵','🛶','🚤',
-      '🗼','🏰','🏯','🏟️','🎡','🎢','🎠','⛲','⛱️','🏖️',
+      '🍕','🍔','🍟','🌭','🍿','🧂','🥓','🥚','🍳','🧈',
+      '🥞','🧇','🥩','🍗','🍖','🦴','🌮','🌯','🫔','🥙',
+      '🧆','🥗','🥘','🫕','🥫','🍝','🍜','🍲','🍛','🍣',
+      '🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮',
     ],
   },
   objects: {
     label: 'Objects',
     icon: '💡',
     emojis: [
-      '⌚','📱','💻','⌨️','🖥️','🖨️','🖱️','🖲️','💽','💾',
-      '💿','📀','🎥','📷','📹','📺','📻','🎙️','🎚️','🎛️',
-      '💡','🔦','🕯️','🪔','🧯','🛢️','💸','💵','💴','💶',
-      '💷','🪙','💰','💳','🧾','💎','⚖️','🔧','🔨','⚒️',
-      '🛠️','⛏️','🪚','🔩','⚙️','🪤','🧰','🪛','🔗','📎',
+      '💡','🔦','🕯️','🧯','🛢️','💸','💵','💴','💶','💷',
+      '🪙','💰','💳','💎','⚖️','🪜','🧰','🪛','🔧','🔨',
+      '⚒️','🛠️','⛏️','🪚','🔩','⚙️','🪤','🧱','⛓️','🧲',
+      '🔫','💣','🧨','🪓','🔪','🗡️','⚔️','🛡️','🚬','⚰️',
     ],
   },
   symbols: {
     label: 'Symbols',
-    icon: '⭐',
+    icon: '♾️',
     emojis: [
-      '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔',
-      '❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️',
-      '✝️','☪️','🕉️','☸️','✡️','🔯','🕎','☯️','☦️','🛐',
-      '⛎','♈','♉','♊','♋','♌','♍','♎','♏','♐',
-      '♑','♒','♓','🆔','⚛️','🉑','☢️','☣️','📴','📳',
-      '🈶','🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️',
-      '㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️',
-      '🆘','❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️',
-      '🚷','🚯','🚳','🚱','🔞','📵','🚭','❗','❕','❓',
-      '❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️',
-      '🔰','♻️','✅','🈯','💹','❇️','✳️','❎','🌐','💠',
-      'Ⓜ️','🌀','💤','🏧','🚾','♿','🅿️','🛗','🈳','🈂️',
-      '🛂','🛃','🛄','🛅','🚹','🚺','🚼','⚧️','🚻','🚮',
-      '🎦','📶','🈁','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗',
-      '🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣',
-      '6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','⏏️','▶️',
-      '⏸️','⏯️','⏹️','⏺️','⏭️','⏮️','⏩','⏪','⏫','⏬',
-      '◀️','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️',
-      '↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂',
-      '🔄','🔃','🎵','🎶','➕','➖','➗','✖️','🟰','♾️',
-      '💲','💱','™️','©️','®️','〰️','➰','➿','🔚','🔙',
-      '🔛','🔝','🔜','✔️','☑️','🔘','🔴','🟠','🟡','🟢',
-      '🔵','🟣','⚫','⚪','🟤','🔺','🔻','🔸','🔹','🔶',
-      '🔷','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️','🟥',
-      '🟧','🟨','🟩','🟦','🟪','⬛','⬜','🟫','🔈','🔇',
-      '🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯️','♠️',
-      '♣️','♥️','♦️','🃏','🎴','🀄','🕐','🕑','🕒','🕓',
-      '🕔','🕕','🕖','🕗','🕘','🕙','🕚','🕛',
+      '♾️','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤',
+      '🔺','🔻','💠','🔶','🔷','🔳','🔲','▪️','▫️','◾',
+      '◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛',
+      '⬜','🟫','➕','➖','➗','✖️','🟰','♾️','‼️','⁉️',
+      '❓','❔','❕','❗','〰️','〽️','特权','㊗️','㊙️','🈶',
+      '🈚','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️',
+      '🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘',
+      '❌','⭕','🛑','⛔','📛','🚫','💯','💢','♨️','🚷',
+    ],
+  },
+  travel: {
+    label: 'Travel',
+    icon: '🚗',
+    emojis: [
+      '🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐',
+      '🛻','🚚','🚛','🚜','🏍️','🛵','🚲','🛴','🛹','🛼',
+      '🚁','🛸','✈️','🛩️','🛫','🛬','🪂','💺','🚀','🛸',
+      '🚉','🚊','🚝','🚞','🚋','🚃','🚋','🚆','🚇','🚈',
+    ],
+  },
+  flags: {
+    label: 'Flags',
+    icon: '🏁',
+    emojis: [
+      '🏁','🚩','🎌','🏴','🏳️','🏳️‍🌈','🏳️‍⚧️','🏴‍☠️','🇺🇸','🇬🇧',
+      '🇫🇷','🇩🇪','🇪🇸','🇮🇹','🇯🇵','🇰🇷','🇧🇷','🇮🇳','🇷🇺','🇨🇳',
+      '🇲🇽','🇨🇦','🇦🇺','🇦🇷','🇨🇴','🇨🇱','🇵🇪','🇪🇨','🇻🇪','🇧🇴',
     ],
   },
 };
@@ -142,17 +117,18 @@ interface EmojiPickerPopoverProps {
   onEmojiSelected: (emoji: string) => void;
 }
 
-/**
- * Cross-platform emoji picker — flat grid with search, no DOM dependencies.
- */
 export function EmojiPickerPopover({ visible, onClose, onEmojiSelected }: EmojiPickerPopoverProps) {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
 
+  const numColumns = width < 350 ? 5 : width < 420 ? 6 : 7;
+  const cellSize = width < 350 ? 38 : width < 420 ? 42 : 44;
+  const emojiFontSize = width < 350 ? 22 : width < 420 ? 24 : 26;
+
   const emojis = useMemo(() => {
     if (query.trim()) {
-      // Show all emojis from every category when searching
       return CATEGORIES.flatMap((c) => EMOJI_DATA[c].emojis);
     }
     return EMOJI_DATA[activeCategory]?.emojis ?? [];
@@ -161,79 +137,81 @@ export function EmojiPickerPopover({ visible, onClose, onEmojiSelected }: EmojiP
   if (!visible) return null;
 
   return (
-    <View style={[styles.popover, { backgroundColor: theme.background, borderColor: theme.border }]}>
-      {/* Search */}
-      <View style={[styles.searchRow, { borderBottomColor: theme.border }]}>
-        <Ionicons name="search" size={16} color={theme.muted} style={{ marginLeft: 4 }} />
-        <TextInput
-          style={[styles.searchInput, { color: theme.text }]}
-          placeholder="Search emojis..."
-          placeholderTextColor={theme.muted}
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="search"
-        />
-        {query.length > 0 && (
-          <AppPressable onPress={() => setQuery('')} hitSlop={6}>
-            <Ionicons name="close-circle" size={18} color={theme.muted} />
-          </AppPressable>
-        )}
-      </View>
+    <>
+      {/* Backdrop — tap to close */}
+      <AppPressable style={styles.backdrop} onPress={onClose} />
 
-      {/* Category tabs — emoji icon + label */}
-      {!query.trim() && (
-        <View style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
-          <FlatList
-            data={CATEGORIES}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(c) => c}
-            contentContainerStyle={styles.categoryList}
-            renderItem={({ item: cat }) => {
-              const isActive = activeCategory === cat;
-              return (
-                <AppPressable
-                  onPress={() => setActiveCategory(cat)}
-                  style={[
-                    styles.categoryTab,
-                    isActive && { backgroundColor: theme.primary + '20' },
-                  ]}>
-                  <ThemedText style={styles.categoryIcon}>{EMOJI_DATA[cat].icon}</ThemedText>
-                  <ThemedText
-                    type="small"
-                    style={{ color: isActive ? theme.primary : theme.muted, marginLeft: 4 }}>
-                    {EMOJI_DATA[cat].label}
-                  </ThemedText>
-                </AppPressable>
-              );
-            }}
+      <View style={[styles.popover, { backgroundColor: theme.background, borderColor: theme.border }]}>
+        {/* Search */}
+        <View style={[styles.searchRow, { borderBottomColor: theme.border }]}>
+          <Ionicons name="search" size={16} color={theme.muted} style={{ marginLeft: 4 }} />
+          <TextInput
+            style={[styles.searchInput, { color: theme.text }]}
+            placeholder="Search emojis..."
+            placeholderTextColor={theme.muted}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
           />
+          {query.length > 0 && (
+            <AppPressable onPress={() => setQuery('')} hitSlop={6}>
+              <Ionicons name="close-circle" size={18} color={theme.muted} />
+            </AppPressable>
+          )}
         </View>
-      )}
 
-      {/* Emoji grid — responsive columns */}
-      <FlatList
-        data={emojis}
-        keyExtractor={(item, idx) => `${item}-${idx}`}
-        numColumns={NUM_COLUMNS}
-        style={styles.grid}
-        contentContainerStyle={styles.gridContent}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <AppPressable
-            onPress={() => onEmojiSelected(item)}
-            style={[styles.emojiCell, { backgroundColor: 'transparent' }]}>
-            <ThemedText style={styles.emoji}>{item}</ThemedText>
-          </AppPressable>
+        {/* Category tabs */}
+        {!query.trim() && (
+          <View style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
+            <FlatList
+              data={CATEGORIES}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(c) => c}
+              contentContainerStyle={styles.categoryList}
+              renderItem={({ item: cat }) => {
+                const isActive = activeCategory === cat;
+                return (
+                  <AppPressable
+                    onPress={() => setActiveCategory(cat)}
+                    style={[
+                      styles.categoryTab,
+                      isActive && { backgroundColor: theme.primary + '20' },
+                    ]}>
+                    <ThemedText style={styles.categoryIcon}>{EMOJI_DATA[cat].icon}</ThemedText>
+                    <ThemedText
+                      type="small"
+                      style={{ color: isActive ? theme.primary : theme.muted, marginLeft: 4 }}>
+                      {EMOJI_DATA[cat].label}
+                    </ThemedText>
+                  </AppPressable>
+                );
+              }}
+            />
+          </View>
         )}
-      />
-    </View>
+
+        {/* Emoji grid */}
+        <FlatList
+          data={emojis}
+          keyExtractor={(item, idx) => `${item}-${idx}`}
+          numColumns={numColumns}
+          style={styles.grid}
+          contentContainerStyle={styles.gridContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <AppPressable
+              onPress={() => onEmojiSelected(item)}
+              style={[styles.emojiCell, { width: cellSize, height: cellSize, backgroundColor: 'transparent' }]}>
+              <ThemedText style={[styles.emoji, { fontSize: emojiFontSize }]}>{item}</ThemedText>
+          </AppPressable>
+          )}
+        />
+      </View>
+    </>
   );
 }
 
-/**
- * Emoji toggle button — place next to a TextInput.
- */
 export function EmojiButton({ onPress, active }: { onPress: () => void; active?: boolean }) {
   const theme = useTheme();
   return (
@@ -247,13 +225,15 @@ export function EmojiButton({ onPress, active }: { onPress: () => void; active?:
   );
 }
 
-const CELL_SIZE = 44;
-
-// Responsive columns: 5 on small screens, 7 on wider ones
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const NUM_COLUMNS = SCREEN_WIDTH < 380 ? 5 : SCREEN_WIDTH < 500 ? 6 : 7;
-
 const styles = StyleSheet.create({
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
   popover: {
     position: 'absolute',
     bottom: '100%',
@@ -305,8 +285,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.half,
   },
   emojiCell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
