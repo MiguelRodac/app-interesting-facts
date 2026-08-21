@@ -151,7 +151,7 @@ const handleSave = useCallback(async () => {
     }
 
     // Email changes go through Firebase (identity) — ask for the password
-    // first so we can re-authenticate before updateEmail.
+    // first so we can re-authenticate before sending the verification link.
     const emailChanged = user != null && pendingEmail.trim() !== (user.email ?? '').trim();
     if (emailChanged) {
       setPasswordValue('');
@@ -180,9 +180,10 @@ const handleSave = useCallback(async () => {
     setPasswordValue('');
   }, []);
 
-  // 1. Re-authenticate + updateEmail in Firebase (source of truth for the
-  //    identity — enforces email uniqueness across accounts).
-  // 2. Sync the new email to the backend so its user table matches.
+  // 1. Re-authenticate + send a verification link to the new email
+  //    (verifyBeforeUpdateEmail — the email is NOT changed yet).
+  // 2. Sync displayName/avatar only — the email must NOT be sent to the
+  //    backend until the user clicks the link and Firebase applies it.
   const handleConfirmEmailChange = useCallback(async () => {
     const newEmail = pendingEmail.trim();
     setIsConfirmingEmail(true);
@@ -192,9 +193,11 @@ const handleSave = useCallback(async () => {
         displayName: pendingDisplayName,
         avatarColor: pendingAvatarColor,
         avatarUrl: pendingAvatarUrl,
-        email: newEmail,
       });
-      showToast('Email changed successfully', 'success');
+      showToast(
+        'We sent a verification link to your new email. Your email will update once you verify it.',
+        'warning',
+      );
       router.replace('/(tabs)/profile');
     } catch (error) {
       setIsConfirmingEmail(false);
@@ -394,7 +397,7 @@ const handleSave = useCallback(async () => {
                 Confirm your email change
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                Enter your current password to update your email.
+                Enter your current password. A verification link will be sent to your new email.
               </ThemedText>
               <PasswordField
                 value={passwordValue}
