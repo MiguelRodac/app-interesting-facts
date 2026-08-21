@@ -15,12 +15,13 @@ import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useLikedFacts } from '@/data/hooks/useLikedFacts';
+import { useMentionedFacts } from '@/data/hooks/useMentionedFacts';
 import { useFactsStore } from '@/data/stores/factsStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
-type ProfileTab = 'mine' | 'liked';
+type ProfileTab = 'mine' | 'liked' | 'mentions';
 
 export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
@@ -31,6 +32,7 @@ const userFacts = useFactsStore((s) => s.userFacts);
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const toggleRepost = useFactsStore((s) => s.toggleRepost);
   const { likedFacts } = useLikedFacts();
+  const { mentionedFacts, mentionsLoading, mentionsCount } = useMentionedFacts();
   const userFactsCount = useFactsStore((s) => s.userFacts.length);
 const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
 const [avatarModalVisible, setAvatarModalVisible] = useState(false);
@@ -60,7 +62,7 @@ const [avatarModalVisible, setAvatarModalVisible] = useState(false);
     }, [user?.id, fetchUserFacts, userFactsCount]),
   );
 
-  const displayedFacts = activeTab === 'mine' ? userFacts : likedFacts;
+  const displayedFacts = activeTab === 'mine' ? userFacts : activeTab === 'liked' ? likedFacts : mentionedFacts;
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
@@ -106,14 +108,17 @@ const renderItem = useCallback(
   );
 
   const renderEmpty = useCallback(() => {
-    if (activeTab === 'mine' && userFactsLoading) {
+    if ((activeTab === 'mine' && userFactsLoading) || (activeTab === 'mentions' && mentionsLoading)) {
       return <LoadingSkeleton count={3} />;
     }
     if (activeTab === 'mine') {
       return <EmptyState title="No facts yet" subtitle="Your created facts will appear here" icon="create-outline" />;
     }
-    return <EmptyState title="No liked facts" subtitle="Facts you like will appear here" icon="heart-outline" />;
-  }, [activeTab, userFactsLoading]);
+    if (activeTab === 'liked') {
+      return <EmptyState title="No liked facts" subtitle="Facts you like will appear here" icon="heart-outline" />;
+    }
+    return <EmptyState title="No mentions yet" subtitle="Facts that mention you will appear here" icon="at-outline" />;
+  }, [activeTab, userFactsLoading, mentionsLoading]);
 
   if (!isAuthenticated || !user) {
     return (
@@ -192,6 +197,15 @@ const renderItem = useCallback(
             type="smallBold"
             style={{ color: activeTab === 'liked' ? theme.primary : theme.muted }}>
             Liked ({likedFacts.length})
+          </ThemedText>
+        </AppPressable>
+        <AppPressable
+          onPress={() => setActiveTab('mentions')}
+          style={[styles.tab, activeTab === 'mentions' && { borderBottomColor: theme.primary }]}>
+          <ThemedText
+            type="smallBold"
+            style={{ color: activeTab === 'mentions' ? theme.primary : theme.muted }}>
+            Mentions ({mentionsCount})
           </ThemedText>
         </AppPressable>
       </View>
