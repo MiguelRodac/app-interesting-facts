@@ -12,7 +12,7 @@ import { SegmentedTabs, type SegmentedTab } from '@/components/SegmentedTabs';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
-import { BottomTabInset, Radii, Spacing, TAB_BAR_HEIGHT } from '@/constants/theme';
+import { BottomTabInset, Radii, Spacing } from '@/constants/theme';
 import { useSearch } from '@/data/hooks/useSearch';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -347,7 +347,6 @@ const renderPostItem = useCallback(
         factId={likesFactId}
         visible={likesFactId !== null}
         onClose={() => setLikesFactId(null)}
-        bottomOffset={TAB_BAR_HEIGHT}
       />
     </ThemedView>
   );

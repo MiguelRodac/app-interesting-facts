@@ -17,11 +17,9 @@ interface LikesModalProps {
   factId: string | null;
   visible: boolean;
   onClose: () => void;
-  /** Offset from the bottom of the screen. Use TAB_BAR_HEIGHT on tab screens, 0 elsewhere. */
-  bottomOffset?: number;
 }
 
-export function LikesModal({ factId, visible, onClose, bottomOffset = 0 }: LikesModalProps) {
+export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
@@ -56,7 +54,7 @@ export function LikesModal({ factId, visible, onClose, bottomOffset = 0 }: Likes
     <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <AppPressable style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.sheet, { backgroundColor: theme.background, bottom: bottomOffset }]}>
+        <View style={[styles.sheet, { backgroundColor: theme.background }]}>
           <View style={[styles.handle, { backgroundColor: theme.muted }]} />
           <View style={styles.header}>
             <ThemedText type="small" themeColor="textSecondary">Likes</ThemedText>
@@ -113,6 +111,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    bottom: 0,
     borderTopLeftRadius: Radii.xl,
     borderTopRightRadius: Radii.xl,
     paddingTop: Spacing.two,

@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Radii, Spacing, TAB_BAR_HEIGHT } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useLikedFacts } from '@/data/hooks/useLikedFacts';
 import { useMentionedFacts } from '@/data/hooks/useMentionedFacts';
@@ -250,7 +250,6 @@ const renderItem = useCallback(
         factId={likesFactId}
         visible={likesFactId !== null}
         onClose={() => setLikesFactId(null)}
-        bottomOffset={TAB_BAR_HEIGHT}
       />
     </ThemedView>
   );
