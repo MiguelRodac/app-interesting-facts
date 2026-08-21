@@ -135,7 +135,7 @@ export function CommentItem({
                 ? `${comment.author.displayName} `
                 : `@${comment.author.username} `)}
             </Text>
-            <StyledContent content={comment.content} style={styles.content} />
+            <StyledContent content={comment.content} style={styles.content} enableHashtags={false} />
           </Text>
 
           {/* Compact actions: Reply · time · Edit · Delete   [♥ count] */}

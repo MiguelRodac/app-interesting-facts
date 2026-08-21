@@ -233,7 +233,7 @@ return (
             <ThemedText type="smallBold" style={{ color: theme.text }}>
               @{fact.commentPreview.author.username}
             </ThemedText>{' '}
-            <StyledContent content={fact.commentPreview.content} />
+            <StyledContent content={fact.commentPreview.content} enableHashtags={false} />
             {fact.commentPreview.replies > 0 && (
               <ThemedText type="smallBold" themeColor="primary">
                 {' '}+{fact.commentPreview.replies}{' '}
