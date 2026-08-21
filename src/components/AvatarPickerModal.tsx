@@ -61,6 +61,10 @@ export function AvatarPickerModal({
     setPendingColor(color);
   };
 
+  const handlePickNoColor = () => {
+    setPendingColor(null);
+  };
+
   const handlePickAvatar = (option: ApiAvatarOption) => {
     setPendingUrl(option.url);
     if (option.color) {
@@ -111,6 +115,14 @@ export function AvatarPickerModal({
                       Choose a color
                     </ThemedText>
                     <View style={styles.colorGrid}>
+                      <AppPressable
+                        onPress={handlePickNoColor}
+                        style={[
+                          styles.noColorOption,
+                          pendingColor === null && styles.optionSelected,
+                        ]}>
+                        <Ionicons name="close" size={20} color="#FFFFFF" />
+                      </AppPressable>
                       {colorOptions.map((option) => {
                         const isSelected = pendingColor === option.color;
                         return (
@@ -259,6 +271,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  noColorOption: {
+    width: '17.5%',
+    aspectRatio: 1,
+    borderRadius: 999,
+    backgroundColor: '#616161',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#999',
+  },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -272,7 +295,7 @@ const styles = StyleSheet.create({
   },
   optionSelected: {
     borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderColor: '#3c87f7',
     boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
     elevation: 4,
   },
