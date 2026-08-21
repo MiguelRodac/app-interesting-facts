@@ -9,6 +9,10 @@ import {
   EmailAuthProvider,
   updatePassword,
   verifyBeforeUpdateEmail,
+  applyActionCode,
+  checkActionCode,
+  confirmPasswordReset,
+  verifyPasswordResetCode,
   type User,
 } from '@/lib/firebase';
 
@@ -169,4 +173,33 @@ export async function changeEmail(
   const credential = EmailAuthProvider.credential(email, currentPassword);
   await reauthenticateWithCredential(user, credential);
   await verifyBeforeUpdateEmail(user, newEmail);
+}
+
+/**
+ * Confirm a password reset using a Firebase action link (oobCode).
+ * Validates the code first (returns the target email) and then applies the
+ * new password. Throws if the code is invalid or expired.
+ */
+export async function confirmPasswordResetAction(
+  oobCode: string,
+  newPassword: string,
+): Promise<void> {
+  // Validates the code is still valid; throws on an invalid/expired code.
+  await verifyPasswordResetCode(getAuth(), oobCode);
+  await confirmPasswordReset(getAuth(), oobCode, newPassword);
+}
+
+/**
+ * Apply an email-change action link (verifyBeforeUpdateEmail flow).
+ * `checkActionCode` reveals the pending NEW email (`result.data.email`);
+ * `applyActionCode` actually switches the account's email in Firebase.
+ *
+ * Returns the new email string so the caller can sync the backend. If the
+ * pending email is unavailable, falls back to the current user's email.
+ */
+export async function applyEmailActionCode(oobCode: string): Promise<string> {
+  const result = await checkActionCode(getAuth(), oobCode);
+  const newEmail = result.data.email;
+  await applyActionCode(getAuth(), oobCode);
+  return newEmail ?? getCurrentUser()?.email ?? '';
 }

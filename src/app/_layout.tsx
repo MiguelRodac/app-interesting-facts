@@ -64,9 +64,13 @@ function RootLayoutInner() {
   }
 
   const theme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
-  // The landing page is a normal (frame-less) website; everything else
-  // renders inside the phone frame on desktop web.
-  const isLanding = Platform.OS === 'web' && segments[0] === 'landing';
+  // Public, frame-less web pages (a normal website instead of the phone
+  // frame). Both the landing page and the Firebase action-link pages
+  // (email verification / password reset) render full-screen on desktop web;
+  // everything else renders inside the phone frame.
+  const isFramelessWeb =
+    Platform.OS === 'web' &&
+    (segments[0] === 'landing' || segments[0] === 'verify-email');
   const screenBackground = Colors[colorScheme === 'dark' ? 'dark' : 'light'].background;
 
   const appStack = (
@@ -115,7 +119,7 @@ function RootLayoutInner() {
 
   return (
     <ExpoThemeProvider value={theme}>
-      {Platform.OS === 'web' && !isLanding ? (
+      {Platform.OS === 'web' && !isFramelessWeb ? (
         <>
           {/* Web app: on desktop it renders inside a phone-sized frame so it
               always looks like an app; phone-sized viewports are full-screen.

@@ -10,6 +10,10 @@ import {
   EmailAuthProvider,
   updatePassword,
   verifyBeforeUpdateEmail,
+  applyActionCode,
+  checkActionCode,
+  confirmPasswordReset,
+  verifyPasswordResetCode,
   setPersistence,
   browserLocalPersistence,
   type User,
@@ -57,6 +61,10 @@ export {
   EmailAuthProvider,
   updatePassword,
   verifyBeforeUpdateEmail,
+  applyActionCode,
+  checkActionCode,
+  confirmPasswordReset,
+  verifyPasswordResetCode,
   getAuth,
 };
 export type { User };
