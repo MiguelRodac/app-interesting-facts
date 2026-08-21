@@ -38,11 +38,6 @@ export function AppModal({
   );
 }
 
-// Web only: a true fixed, full-viewport overlay so dialogs stay centered on
-// screen regardless of where they are mounted (e.g. inside a ScrollView or a
-// constrained flex container). `StyleSheet.absoluteFill` positions relative to
-// the nearest positioned ancestor, which makes a dialog mounted deep in a
-// scroll/flex tree appear off-center — this overlay escapes that flow.
 const styles = StyleSheet.create({
   webOverlay: {
     position: 'fixed',
@@ -51,5 +46,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
   },
 });

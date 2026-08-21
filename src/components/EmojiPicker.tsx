@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, View } from 'react-native';
+import { Dimensions, FlatList, Platform, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppPressable } from '@/components/ui/app-pressable';
 import { ThemedText } from '@/components/themed-text';
@@ -211,11 +211,11 @@ export function EmojiPickerPopover({ visible, onClose, onEmojiSelected }: EmojiP
         </View>
       )}
 
-      {/* Emoji grid — 7 columns, bigger cells */}
+      {/* Emoji grid — responsive columns */}
       <FlatList
         data={emojis}
         keyExtractor={(item, idx) => `${item}-${idx}`}
-        numColumns={7}
+        numColumns={NUM_COLUMNS}
         style={styles.grid}
         contentContainerStyle={styles.gridContent}
         showsVerticalScrollIndicator={false}
@@ -248,6 +248,10 @@ export function EmojiButton({ onPress, active }: { onPress: () => void; active?:
 }
 
 const CELL_SIZE = 44;
+
+// Responsive columns: 5 on small screens, 7 on wider ones
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const NUM_COLUMNS = SCREEN_WIDTH < 380 ? 5 : SCREEN_WIDTH < 500 ? 6 : 7;
 
 const styles = StyleSheet.create({
   popover: {
