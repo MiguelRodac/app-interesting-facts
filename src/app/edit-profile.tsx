@@ -45,6 +45,8 @@ const { user, updateProfile, isLoading } = useAuth();
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmLeaveVisible, setConfirmLeaveVisible] = useState(false);
+  // Subtle focus indicator — only a bottom underline lights up, not the whole box.
+  const [editingFocused, setEditingFocused] = useState(false);
 
   // Sync with user changes (only on initial load or user refresh)
   useEffect(() => {
@@ -289,15 +291,17 @@ const handleSave = useCallback(async () => {
                     {
                       backgroundColor: theme.backgroundElement,
                       color: theme.text,
-                      borderColor: theme.primary,
+                      borderBottomColor: editingFocused ? theme.primary : theme.border,
                     },
                   ]}
                   value={editNameValue}
-onChangeText={setEditNameValue}
+                  onChangeText={setEditNameValue}
                   maxLength={MAX_DISPLAY_NAME_LENGTH}
                   autoFocus
                   autoCapitalize="words"
                   editable={!isSubmitting}
+                  onFocus={() => setEditingFocused(true)}
+                  onBlur={() => setEditingFocused(false)}
                 />
                 <AppPressable
                   onPress={handleConfirmEditName}
@@ -347,7 +351,7 @@ onChangeText={setEditNameValue}
                     {
                       backgroundColor: theme.backgroundElement,
                       color: theme.text,
-                      borderColor: theme.primary,
+                      borderBottomColor: editingFocused ? theme.primary : theme.border,
                     },
                   ]}
                   value={editEmailValue}
@@ -357,6 +361,8 @@ onChangeText={setEditNameValue}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   editable={!isSubmitting}
+                  onFocus={() => setEditingFocused(true)}
+                  onBlur={() => setEditingFocused(false)}
                 />
                 <AppPressable
                   onPress={handleConfirmEditEmail}
@@ -550,8 +556,7 @@ const styles = StyleSheet.create({
   },
   nameInput: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: Radii.md,
+    borderBottomWidth: 1,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 16,
