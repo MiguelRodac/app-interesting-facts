@@ -121,6 +121,11 @@ export function AvatarPickerModal({
                           pendingColor === null && styles.optionSelected,
                         ]}>
                         <Ionicons name="close" size={20} color="#FFFFFF" />
+                        {pendingColor === null && (
+                          <View style={styles.checkBadge}>
+                            <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                          </View>
+                        )}
                       </AppPressable>
                       {colorOptions.map((option) => {
                         const isSelected = pendingColor === option.color;
@@ -132,8 +137,13 @@ export function AvatarPickerModal({
                               styles.colorCircle,
                               { backgroundColor: option.color! },
                               isSelected && styles.optionSelected,
-                            ]}
-                          />
+                            ]}>
+                            {isSelected && (
+                              <View style={styles.checkBadge}>
+                                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                              </View>
+                            )}
+                          </AppPressable>
                         );
                       })}
                     </View>
@@ -154,6 +164,11 @@ export function AvatarPickerModal({
                           pendingUrl === null && styles.optionSelected,
                         ]}>
                         <Ionicons name="person-outline" size={28} color="#FFFFFF" />
+                        {pendingUrl === null && (
+                          <View style={styles.checkBadge}>
+                            <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                          </View>
+                        )}
                       </AppPressable>
                       {avatarOptionsWithUrl.map((option) => {
                         const isSelected = pendingUrl === option.url;
@@ -171,6 +186,11 @@ export function AvatarPickerModal({
                               style={styles.avatarOptionImage}
                               resizeMode="cover"
                             />
+                            {isSelected && (
+                              <View style={styles.checkBadge}>
+                                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                              </View>
+                            )}
                           </AppPressable>
                         );
                       })}
@@ -297,6 +317,19 @@ const styles = StyleSheet.create({
     borderColor: '#3c87f7',
     boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
     elevation: 4,
+  },
+  checkBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#3c87f7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   actions: {
     flexDirection: 'row',
