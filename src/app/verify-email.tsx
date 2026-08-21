@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { PasswordField } from '@/components/PasswordField';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -13,7 +14,7 @@ import {
 } from '@/data/auth/firebaseAuth';
 import { useAuthStore } from '@/data/stores/authStore';
 import { useTheme } from '@/hooks/use-theme';
-import { MIN_PASSWORD_LENGTH } from '@/utils/validation';
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '@/utils/validation';
 
 type ActionStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -31,16 +32,21 @@ export default function VerifyEmailScreen() {
 
   const [status, setStatus] = useState<ActionStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const isVerifyEmailMode = VERIFY_EMAIL_MODES.includes(actionMode);
   const isResetPasswordMode = actionMode === RESET_PASSWORD_MODE;
   const isSupported = isVerifyEmailMode || isResetPasswordMode;
 
-  // A valid password requires both fields to match and meet the minimum length.
-  const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const passwordValid = passwordsMatch && password.length >= MIN_PASSWORD_LENGTH;
+  // Validation consistent with the app's auth screens (see change-password.tsx):
+  // both fields must meet the MIN/MAX range and match each other.
+  const passwordsMismatch = confirmPassword.length > 0 && confirmPassword !== newPassword;
+  const isValid =
+    newPassword.length >= MIN_PASSWORD_LENGTH &&
+    newPassword.length <= MAX_PASSWORD_LENGTH &&
+    confirmPassword.length >= MIN_PASSWORD_LENGTH &&
+    confirmPassword === newPassword;
 
   // Handle invalid / missing links before any side effects run.
   useEffect(() => {
@@ -85,11 +91,11 @@ export default function VerifyEmailScreen() {
   };
 
   const handleResetPassword = async () => {
-    if (!passwordValid || status === 'loading') return;
+    if (!isValid || status === 'loading') return;
     setStatus('loading');
     setErrorMessage('');
     try {
-      await confirmPasswordResetAction(code, password);
+      await confirmPasswordResetAction(code, newPassword);
       setStatus('success');
     } catch (error) {
       setStatus('error');
@@ -163,61 +169,29 @@ export default function VerifyEmailScreen() {
               Choose a new password for your account.
             </ThemedText>
             <View style={styles.form}>
-              <View style={styles.field}>
-                <ThemedText type="smallBold" themeColor="textSecondary">
-                  New Password
-                </ThemedText>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: theme.backgroundElement,
-                      color: theme.text,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                  placeholder="At least 6 characters"
-                  placeholderTextColor={theme.muted}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              <View style={styles.field}>
-                <ThemedText type="smallBold" themeColor="textSecondary">
-                  Confirm New Password
-                </ThemedText>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: theme.backgroundElement,
-                      color: theme.text,
-                      borderColor:
-                        confirmPassword.length > 0 && !passwordsMatch ? theme.destructive : theme.border,
-                    },
-                  ]}
-                  placeholder="Re-enter your new password"
-                  placeholderTextColor={theme.muted}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              {confirmPassword.length > 0 && !passwordsMatch && (
+              <PasswordField
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="New password (6-16 characters)"
+                label="New Password"
+                showStrength
+              />
+              <PasswordField
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Re-enter your new password"
+                label="Confirm Password"
+              />
+              {passwordsMismatch && (
                 <ThemedText type="small" style={{ color: theme.destructive }}>
                   Passwords do not match.
                 </ThemedText>
               )}
               <AppPressable
-                onPress={passwordValid ? handleResetPassword : undefined}
+                onPress={isValid ? handleResetPassword : undefined}
                 style={[
                   styles.button,
-                  { backgroundColor: passwordValid ? theme.primary : theme.muted },
+                  { backgroundColor: isValid ? theme.primary : theme.muted },
                 ]}>
                 <ThemedText type="smallBold" style={styles.buttonText}>
                   Reset Password
@@ -283,16 +257,6 @@ const styles = StyleSheet.create({
   form: {
     gap: Spacing.three,
     marginTop: Spacing.four,
-  },
-  field: {
-    gap: Spacing.two,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: Radii.md,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
   },
   button: {
     paddingVertical: Spacing.three,
