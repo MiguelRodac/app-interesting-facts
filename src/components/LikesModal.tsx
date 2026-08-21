@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: TAB_BAR_HEIGHT,
+    bottom: TAB_BAR_HEIGHT - Spacing.three,
     borderTopLeftRadius: Radii.xl,
     borderTopRightRadius: Radii.xl,
     paddingTop: Spacing.two,
