@@ -6,6 +6,7 @@ import { AppPressable } from '@/components/ui/app-pressable';
 import { StyledContent } from '@/components/StyledContent';
 import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
+import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { canEditComment, formatRelativeTime } from '@/utils/commentTime';
@@ -53,7 +54,12 @@ export function CommentItem({
   const theme = useTheme();
   const toggleCommentLike = useCommentsStore((s) => s.toggleCommentLike);
   const [repliesExpanded, setRepliesExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [canEdit, setCanEdit] = useState(() => canEditComment(comment.createdAt));
+
+  // Long comments collapse behind a "See more" toggle (mirrors the facts
+  // card). Snapped off per comment line length; short comments render fully.
+  const isCollapsible = comment.content.length > COLLAPSE_THRESHOLD;
 
   // Re-evaluate the edit window on an interval so `canEdit` flips to false
   // ~60s after the 1-hour mark. Edit controls render from this value.
@@ -135,8 +141,23 @@ export function CommentItem({
                 ? `${comment.author.displayName} `
                 : `@${comment.author.username} `)}
             </Text>
-            <StyledContent content={comment.content} style={styles.content} enableHashtags={false} />
+            <StyledContent
+              content={comment.content}
+              style={styles.content}
+              enableHashtags={false}
+              numberOfLines={isCollapsible && !expanded ? COLLAPSE_LINES : undefined}
+            />
           </Text>
+          {isCollapsible && (
+            <AppPressable
+              onPress={() => setExpanded((current) => !current)}
+              hitSlop={6}
+              style={styles.seeMore}>
+              <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                {expanded ? 'See less' : 'See more'}
+              </ThemedText>
+            </AppPressable>
+          )}
 
           {/* Compact actions: Reply · time · Edit · Delete   [♥ count] */}
           <View style={styles.actionsRow}>
@@ -261,6 +282,11 @@ const styles = StyleSheet.create({
   },
   actionLink: {
     fontWeight: 600,
+  },
+  seeMore: {
+    alignSelf: 'flex-start',
+    marginTop: -Spacing.half,
+    marginBottom: Spacing.half,
   },
   actionWithIcon: {
     flexDirection: 'row',
