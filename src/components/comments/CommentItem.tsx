@@ -102,36 +102,32 @@ export function CommentItem({
   const likesCount = comment.likesCount ?? 0;
   const liked = comment.liked ?? false;
 
-  // Right-aligned like heart. When signed in, tapping it toggles the like;
-  // anonymous viewers see a non-interactive count (backend only populates
-  // likesCount/liked for authenticated viewers anyway). The COUNT (not the
-  // heart) is tappable when likesCount > 0 to open the comment-likes modal.
-  const countNode =
-    isSignedIn && likesCount > 0 ? (
-      <AppPressable onPress={() => onOpenLikes?.(comment.id)} hitSlop={8}>
+  // Right-aligned like heart + count. Heart and count are SEPARATE sibling
+  // pressables (not nested) to avoid <button> inside <button> on web.
+  const likeNode = (
+    <View style={styles.like}>
+      {isSignedIn ? (
+        <AppPressable onPress={handleToggleLike} hitSlop={8}>
+          <Ionicons
+            name={liked ? 'heart' : 'heart-outline'}
+            size={17}
+            color={liked ? theme.destructive : theme.textSecondary}
+          />
+        </AppPressable>
+      ) : (
+        <Ionicons name="heart-outline" size={17} color={theme.textSecondary} />
+      )}
+      {isSignedIn && likesCount > 0 ? (
+        <AppPressable onPress={() => onOpenLikes?.(comment.id)} hitSlop={8}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {likesCount}
+          </ThemedText>
+        </AppPressable>
+      ) : (
         <ThemedText type="small" themeColor="textSecondary">
           {likesCount}
         </ThemedText>
-      </AppPressable>
-    ) : (
-      <ThemedText type="small" themeColor="textSecondary">
-        {likesCount}
-      </ThemedText>
-    );
-
-  const likeNode = isSignedIn ? (
-    <AppPressable onPress={handleToggleLike} hitSlop={8} style={styles.like}>
-      <Ionicons
-        name={liked ? 'heart' : 'heart-outline'}
-        size={17}
-        color={liked ? theme.destructive : theme.textSecondary}
-      />
-      {countNode}
-    </AppPressable>
-  ) : (
-    <View style={styles.like}>
-      <Ionicons name="heart-outline" size={17} color={theme.textSecondary} />
-      {countNode}
+      )}
     </View>
   );
 
