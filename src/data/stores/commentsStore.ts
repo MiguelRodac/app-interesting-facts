@@ -7,6 +7,7 @@ import {
   clearCommentsCache,
   getCachedComments,
   notifyFactCommentsChanged,
+  notifyCommentsOptimistic,
   setCachedComments,
 } from '@/data/hooks/useFactComments';
 import { notifyCommentLikesChanged } from '@/data/hooks/useCommentLikes';
@@ -196,13 +197,12 @@ export const useCommentsStore = create<CommentsState>(() => ({
           }
         : c;
 
-    // Optimistic flip of liked + count for both top-level entries and nested
-    // replies (mapComment searches both levels, same as edit/delete lookups).
+    // Optimistic flip of liked + count — lightweight notify (no refetch).
     setCachedComments(
       factId,
       mapComment(snapshot, comment.id, likeComment),
     );
-    notifyFactCommentsChanged(factId);
+    notifyCommentsOptimistic(factId);
 
     try {
       if (comment.liked) {

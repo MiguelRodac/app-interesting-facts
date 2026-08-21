@@ -17,7 +17,7 @@ const client = createApiClient(getIdToken);
  */
 const commentsCache = new Map<string, Comment[]>();
 
-type Listener = () => void;
+type Listener = (refetch: boolean) => void;
 const listeners = new Map<string, Set<Listener>>();
 
 /**
@@ -28,7 +28,16 @@ const listeners = new Map<string, Set<Listener>>();
  */
 export function notifyFactCommentsChanged(factId: string): void {
   commentsCache.delete(factId);
-  listeners.get(factId)?.forEach((listener) => listener());
+  listeners.get(factId)?.forEach((listener) => listener(true));
+}
+
+/**
+ * Lightweight notification for optimistic updates: pings mounted hooks so
+ * they re-read the cache WITHOUT triggering a network refetch. The cache is
+ * NOT deleted — the hooks just re-render from the updated cache entry.
+ */
+export function notifyCommentsOptimistic(factId: string): void {
+  listeners.get(factId)?.forEach((listener) => listener(false));
 }
 
 /** Store-facing read access to the cached thread for one fact. */
@@ -48,10 +57,10 @@ export function setCachedComments(factId: string, comments: Comment[]): void {
  */
 export function clearCommentsCache(): void {
   commentsCache.clear();
-  listeners.forEach((set) => set.forEach((listener) => listener()));
+  listeners.forEach((set) => set.forEach((listener) => listener(true)));
 }
 
-function subscribe(factId: string, listener: Listener): () => void {
+function subscribe(factId: string, listener: (refetch: boolean) => void): () => void {
   let set = listeners.get(factId);
   if (!set) {
     set = new Set();
@@ -114,8 +123,16 @@ export function useFactComments(
       return;
     }
     let active = true;
-    const onChanged = () => {
-      if (active) fetchFresh();
+    const onChanged = (refetch: boolean) => {
+      if (!active) return;
+      if (refetch) {
+        // Full invalidation: delete cache + fetch from API.
+        fetchFresh();
+      } else {
+        // Optimistic update: just re-read the cache (no network call).
+        const cached = commentsCache.get(factId);
+        if (cached) setComments(cached);
+      }
     };
     fetchFresh();
     const unsubscribe = subscribe(factId, onChanged);

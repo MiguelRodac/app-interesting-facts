@@ -105,7 +105,7 @@ const renderItem = useCallback(
         onPress={() => handleFactPress(item)}
         onLike={() => handleLike(item.id)}
         onRepost={() => handleRepost(item.id)}
-        onOpenLikes={() => setLikesFactId(item.id)}
+        onOpenLikes={() => setLikesFactId(item.originalFactId ?? item.id)}
       />
     ),
     [handleFactPress, handleLike, handleRepost],
@@ -277,7 +277,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   avatarModalOverlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
     alignItems: 'center',

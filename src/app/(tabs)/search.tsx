@@ -138,7 +138,7 @@ export default function SearchScreen() {
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
-      router.push(`/fact/${fact.id}?from=search`);
+      router.push(`/fact/${fact.originalFactId ?? fact.id}?from=search`);
     },
     [router],
   );
@@ -200,7 +200,7 @@ const renderPostItem = useCallback(
         fact={item}
         variant="preview"
         onPress={() => handleFactPress(item)}
-        onOpenLikes={() => setLikesFactId(item.id)}
+        onOpenLikes={() => setLikesFactId(item.originalFactId ?? item.id)}
       />
     ),
     [handleFactPress],

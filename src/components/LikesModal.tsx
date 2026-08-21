@@ -5,7 +5,6 @@ import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { LikedByLine } from '@/components/LikedByLine';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -58,10 +57,15 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
   return (
     <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <AppPressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <ThemedView type="backgroundElement" style={styles.sheet}>
-          <AppPressable style={StyleSheet.absoluteFill} onPress={() => {}} />
-          <View style={styles.handle} />
+        {/* Tap outside to close */}
+        <AppPressable style={styles.backdrop} onPress={onClose} />
+
+        {/* Sheet — absolute positioned at bottom, fixed height via percentages */}
+        <View style={[styles.sheet, { backgroundColor: theme.background }]}>
+          {/* Drag handle */}
+          <View style={[styles.handle, { backgroundColor: theme.muted }]} />
+
+          {/* Header */}
           <View style={styles.header}>
             <ThemedText type="small" themeColor="textSecondary">
               Likes
@@ -109,7 +113,7 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
               )}
             />
           )}
-        </ThemedView>
+        </View>
       </View>
     </AppModal>
   );
@@ -117,22 +121,33 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'flex-end',
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   sheet: {
     borderTopLeftRadius: Radii.xl,
     borderTopRightRadius: Radii.xl,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.three,
-    maxHeight: '80%',
+    maxHeight: '75%',
+    minHeight: 200,
   },
   handle: {
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#999',
     alignSelf: 'center',
     marginBottom: Spacing.three,
   },
@@ -151,7 +166,7 @@ const styles = StyleSheet.create({
   counterNumber: {
     fontSize: 32,
     lineHeight: 38,
-    fontWeight: 700,
+    fontWeight: '700',
   },
   center: {
     paddingVertical: Spacing.five,
@@ -159,28 +174,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   centerEmpty: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.five,
   },
-  // flexShrink lets the list scroll inside the sheet's maxHeight instead of
-  // overflowing the phone frame; the paddingBottom keeps the last user fully
-  // visible above the sheet's bottom edge (web scrollbars/clipping bug).
   list: {
-    flexShrink: 1,
+    flexShrink: 0,
   },
   listContent: {
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.four,
-    flexGrow: 1,
   },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
     paddingVertical: Spacing.two,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   userInfo: {
     flex: 1,

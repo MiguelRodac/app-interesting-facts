@@ -81,7 +81,7 @@ useEffect(() => {
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
-      router.push(`/fact/${fact.id}?from=user`);
+      router.push(`/fact/${fact.originalFactId ?? fact.id}?from=user`);
     },
     [router],
   );
@@ -212,7 +212,7 @@ if (isLoading || !profile) {
             onPress={() => handleFactPress(item)}
             onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
             onRepost={isAuthenticated ? () => handleRepost(item.id) : undefined}
-            onOpenLikes={isAuthenticated ? () => setLikesFactId(item.id) : undefined}
+            onOpenLikes={isAuthenticated ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
           />
         )}
         contentContainerStyle={[styles.list, { paddingTop: topInset }]}

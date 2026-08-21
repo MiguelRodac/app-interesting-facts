@@ -90,7 +90,7 @@ const handleLike = useCallback(
         onPress={() => handleFactPress(item)}
         onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
         onRepost={isAuthenticated ? () => handleRepost(item.id) : undefined}
-        onOpenLikes={isAuthenticated ? () => setLikesFactId(item.id) : undefined}
+        onOpenLikes={isAuthenticated ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
       />
     ),
     [isAuthenticated, handleFactPress, handleLike, handleRepost, handleRequireLogin],

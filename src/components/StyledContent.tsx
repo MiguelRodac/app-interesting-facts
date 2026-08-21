@@ -53,8 +53,19 @@ export function StyledContent({
     }
   };
 
+  // When numberOfLines is set (truncation mode), flatten all segments to a
+  // single plain string so React Native's numberOfLines actually truncates.
+  // Nested <Text> children break the ellipsis behavior.
+  if (numberOfLines != null) {
+    return (
+      <Text numberOfLines={numberOfLines} style={[{ color: theme.text }, style]}>
+        {content}
+      </Text>
+    );
+  }
+
   return (
-    <Text numberOfLines={numberOfLines} style={[{ color: theme.text }, style]}>
+    <Text style={[{ color: theme.text }, style]}>
       {segments.map((segment, index) => {
         if (segment.type === 'text') {
           return (
