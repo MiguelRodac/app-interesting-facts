@@ -25,6 +25,11 @@ const client = createApiClient(getIdToken);
 export const COMMENT_MIN_LENGTH = 1;
 export const COMMENT_MAX_LENGTH = 500;
 
+/** Single-line input height (matches one wrapped text line + vertical padding). */
+const INITIAL_LINE_HEIGHT = 34;
+/** Auto-expansion cap — beyond this the input scrolls internally instead of growing. */
+const MAX_HEIGHT = 96;
+
 const DROPDOWN_BG = '#26262E';
 const DROPDOWN_BORDER = '#3A3A46';
 
@@ -89,6 +94,20 @@ export function CommentComposer({
 
   const [content, setContent] = useState(initialValue);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-growing multiline + YouTube-style bottom-underline focus. The input
+  // starts one line tall, expands with content up to MAX_HEIGHT, then scrolls
+  // internally. Focus only lights up a bottom underline instead of the box.
+  const [inputHeight, setInputHeight] = useState(INITIAL_LINE_HEIGHT);
+  const [focused, setFocused] = useState(false);
+
+  const handleContentSizeChange = useCallback((event: {
+    nativeEvent: { contentSize: { height: number } };
+  }) => {
+    setInputHeight(Math.min(event.nativeEvent.contentSize.height, MAX_HEIGHT));
+  }, []);
+
+  const handleFocus = useCallback(() => setFocused(true), []);
 
   // Mention autocomplete state (mirrors create.tsx, mentions only).
   const [mentionResults, setMentionResults] = useState<ApiUserSearchResult[]>([]);
@@ -225,6 +244,7 @@ export function CommentComposer({
 
   const handleContentBlur = useCallback(() => {
     if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    setFocused(false);
     // Delay lets a suggestion-row tap register first (rows use
     // keyboardShouldPersistTaps="handled").
     blurTimeoutRef.current = setTimeout(() => {
@@ -303,21 +323,33 @@ export function CommentComposer({
         )}
 
         <View style={styles.inputWrap}>
-          <TextInput
-            ref={inputRef}
-            style={[styles.input, { color: theme.text }]}
-            placeholder={isEdit ? 'Edit your comment...' : 'Add a comment...'}
-            placeholderTextColor={theme.muted}
-            value={content}
-            onChangeText={handleContentChange}
-            onSelectionChange={handleSelectionChange}
-            onBlur={handleContentBlur}
-            maxLength={COMMENT_MAX_LENGTH}
-            multiline
-            textAlignVertical="top"
-            editable={!isSubmitting}
-            autoFocus={isEdit || !!replyTo}
-          />
+          <View
+            style={[
+              styles.inputUnderline,
+              { borderBottomColor: focused ? theme.primary : theme.border },
+            ]}>
+            <TextInput
+              ref={inputRef}
+              style={[
+                styles.input,
+                { color: theme.text, height: inputHeight },
+              ]}
+              placeholder={isEdit ? 'Edit your comment...' : 'Add a comment...'}
+              placeholderTextColor={theme.muted}
+              value={content}
+              onChangeText={handleContentChange}
+              onSelectionChange={handleSelectionChange}
+              onFocus={handleFocus}
+              onBlur={handleContentBlur}
+              onContentSizeChange={handleContentSizeChange}
+              maxLength={COMMENT_MAX_LENGTH}
+              multiline
+              scrollEnabled={inputHeight >= MAX_HEIGHT}
+              textAlignVertical="top"
+              editable={!isSubmitting}
+              autoFocus={isEdit || !!replyTo}
+            />
+          </View>
 
           {showMentions && (
             <View
@@ -442,11 +474,13 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
+  inputUnderline: {
+    borderBottomWidth: 1.5,
+    paddingBottom: Spacing.half,
+  },
   input: {
     fontSize: 15,
     lineHeight: 21,
-    minHeight: 32,
-    maxHeight: 96,
     paddingVertical: Spacing.one,
     paddingHorizontal: 0,
   },
