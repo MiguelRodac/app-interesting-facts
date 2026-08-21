@@ -29,6 +29,8 @@ interface CommentItemProps {
   onEdit?: (comment: Comment) => void;
   /** Tapped "Delete" (own comment). Parent opens the ConfirmDialog. */
   onDelete?: (comment: Comment) => void;
+  /** Tapped the like COUNT (signed-in, count > 0) — parent opens CommentLikesModal. */
+  onOpenLikes?: (commentId: string) => void;
 }
 
 // Re-check the 1-hour edit window every 60s so the (PR5) edit affordance
@@ -50,6 +52,7 @@ export function CommentItem({
   onReply,
   onEdit,
   onDelete,
+  onOpenLikes,
 }: CommentItemProps) {
   const theme = useTheme();
   const toggleCommentLike = useCommentsStore((s) => s.toggleCommentLike);
@@ -101,7 +104,21 @@ export function CommentItem({
 
   // Right-aligned like heart. When signed in, tapping it toggles the like;
   // anonymous viewers see a non-interactive count (backend only populates
-  // likesCount/liked for authenticated viewers anyway).
+  // likesCount/liked for authenticated viewers anyway). The COUNT (not the
+  // heart) is tappable when likesCount > 0 to open the comment-likes modal.
+  const countNode =
+    isSignedIn && likesCount > 0 ? (
+      <AppPressable onPress={() => onOpenLikes?.(comment.id)} hitSlop={8}>
+        <ThemedText type="small" themeColor="textSecondary">
+          {likesCount}
+        </ThemedText>
+      </AppPressable>
+    ) : (
+      <ThemedText type="small" themeColor="textSecondary">
+        {likesCount}
+      </ThemedText>
+    );
+
   const likeNode = isSignedIn ? (
     <AppPressable onPress={handleToggleLike} hitSlop={8} style={styles.like}>
       <Ionicons
@@ -109,16 +126,12 @@ export function CommentItem({
         size={17}
         color={liked ? theme.destructive : theme.textSecondary}
       />
-      <ThemedText type="small" themeColor="textSecondary">
-        {likesCount}
-      </ThemedText>
+      {countNode}
     </AppPressable>
   ) : (
     <View style={styles.like}>
       <Ionicons name="heart-outline" size={17} color={theme.textSecondary} />
-      <ThemedText type="small" themeColor="textSecondary">
-        {likesCount}
-      </ThemedText>
+      {countNode}
     </View>
   );
 
@@ -230,6 +243,7 @@ export function CommentItem({
                 onReply={onReply}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onOpenLikes={onOpenLikes}
               />
             ))}
         </View>

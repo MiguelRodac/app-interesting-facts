@@ -25,6 +25,8 @@ interface CommentSectionProps {
   /** Tapped "Edit" (own comment within the 1h window). Parent swaps the fixed
    *  bottom composer into edit mode. */
   onEdit?: (comment: Comment) => void;
+  /** Tapped a comment's like COUNT — parent opens CommentLikesModal. */
+  onOpenCommentLikes?: (commentId: string) => void;
 }
 
 // How long we show the loader for the initial fetch before yielding to the
@@ -49,6 +51,7 @@ export function CommentSection({
   isSignedIn: isSignedInProp,
   onReply,
   onEdit,
+  onOpenCommentLikes,
 }: CommentSectionProps) {
   const theme = useTheme();
   const { comments } = useFactComments(factId);
@@ -119,6 +122,7 @@ export function CommentSection({
               onReply={onReply}
               onEdit={onEdit}
               onDelete={handleDelete}
+              onOpenLikes={onOpenCommentLikes}
             />
           )}
         />

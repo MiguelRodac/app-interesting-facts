@@ -5,37 +5,37 @@ import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { LikedByLine } from '@/components/LikedByLine';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
 import { Radii, Spacing } from '@/constants/theme';
-import { useFactLikes } from '@/data/hooks/useFactLikes';
+import { useCommentLikes } from '@/data/hooks/useCommentLikes';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import type { ApiFactLike } from '@/data/api/types';
 
-interface LikesModalProps {
-  factId: string | null;
+interface CommentLikesModalProps {
+  factId: string;
+  commentId: string | null;
   visible: boolean;
   onClose: () => void;
 }
 
-/** Bottom sheet with the full list of users who liked a fact */
-export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
+/** Bottom sheet with the full list of users who liked a comment */
+export function CommentLikesModal({ factId, commentId, visible, onClose }: CommentLikesModalProps) {
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
-  const { likes, refetch } = useFactLikes(factId, visible);
+  const { likes, refetch } = useCommentLikes(factId, commentId, visible);
   const [loading, setLoading] = useState(false);
 
   // Fresh data every time the modal opens
   useEffect(() => {
-    if (visible && factId) {
+    if (visible && factId && commentId) {
       setLoading(true);
       refetch();
     }
-  }, [visible, factId, refetch]);
+  }, [visible, factId, commentId, refetch]);
 
   // When likes arrive we can stop loading
   useEffect(() => {

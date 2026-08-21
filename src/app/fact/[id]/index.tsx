@@ -12,6 +12,7 @@ import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { CommentComposer } from '@/components/comments/CommentComposer';
 import { CommentSection } from '@/components/comments/CommentSection';
+import { CommentLikesModal } from '@/components/CommentLikesModal';
 import { StyledContent } from '@/components/StyledContent';
 import { TabBar } from '@/components/TabBar';
 import { ThemedText } from '@/components/themed-text';
@@ -58,6 +59,8 @@ const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
 const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 const [likesModalVisible, setLikesModalVisible] = useState(false);
+  // Comment whose likers are shown in the CommentLikesModal (null = closed).
+  const [commentLikesId, setCommentLikesId] = useState<string | null>(null);
 
   // Fixed-bottom composer state (moved up from CommentSection so the detail
   // screen owns the single pinned composer for create/reply/edit).
@@ -234,6 +237,11 @@ const isOwner = fact && user?.id === fact.author.id;
     [user, router],
   );
 
+
+  // Comment like count tapped — open the CommentLikesModal for that comment.
+  const handleOpenCommentLikes = useCallback((commentId: string) => {
+    setCommentLikesId(commentId);
+  }, []);
 
   const handleLike = useCallback(() => {
     // View-mode guard: anonymous viewers can't like — route to the login gate.
@@ -461,6 +469,7 @@ const isOwner = fact && user?.id === fact.author.id;
             isSignedIn={isAuthenticated}
             onReply={handleCommentReply}
             onEdit={handleCommentEdit}
+            onOpenCommentLikes={handleOpenCommentLikes}
           />
         )}
       </ScrollView>
@@ -539,6 +548,16 @@ const isOwner = fact && user?.id === fact.author.id;
           factId={id}
           visible={likesModalVisible}
           onClose={() => setLikesModalVisible(false)}
+        />
+      )}
+
+      {/* Full comment-likes list — signed-in only */}
+      {user && (
+        <CommentLikesModal
+          factId={fact.id}
+          commentId={commentLikesId}
+          visible={commentLikesId !== null}
+          onClose={() => setCommentLikesId(null)}
         />
       )}
     </KeyboardAvoidingView>
