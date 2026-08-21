@@ -95,6 +95,10 @@ export interface Fact {
   commentPreview: CommentPreview | null;
   hashtags: Hashtag[];
   createdAt: string;
+  /** True when this feed entry is a repost (the inner fact belongs to another author). */
+  isRepost?: boolean;
+  /** Username of the user who reposted this fact (present when isRepost is true). */
+  reposterUsername?: string;
 }
 
 export interface PaginatedResult<T> {

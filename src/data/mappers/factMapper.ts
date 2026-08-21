@@ -55,10 +55,17 @@ export function mapFactsDtos(dtos: (ApiFact | ApiFactFeedItem)[]): Fact[] {
   const seen = new Set<string>();
   const facts: Fact[] = [];
   for (const item of dtos) {
-    const dto = 'fact' in (item as ApiFactFeedItem) ? (item as ApiFactFeedItem).fact : (item as ApiFact);
+    const envelope = 'fact' in (item as ApiFactFeedItem) ? (item as ApiFactFeedItem) : null;
+    const dto = envelope?.fact ?? (item as ApiFact);
     if (!dto?.id || seen.has(dto.id)) continue;
     seen.add(dto.id);
-    facts.push(mapFactDto(dto));
+    const fact = mapFactDto(dto);
+    // Pass through repost envelope info so the card can show "Reposted by @user".
+    if (envelope?.type === 'repost' && envelope.repostedBy) {
+      fact.isRepost = true;
+      fact.reposterUsername = envelope.repostedBy.username;
+    }
+    facts.push(fact);
   }
   return facts;
 }

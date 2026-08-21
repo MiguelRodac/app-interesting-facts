@@ -97,6 +97,19 @@ export function FactCard({
 
 return (
     <ThemedView type="backgroundElement" style={[styles.card, Shadows.sm]}>
+      {/* Repost indicator — Facebook-style "Reposted by @user" banner above
+          the author row, only for repost entries in the feed. */}
+      {fact.isRepost && fact.reposterUsername && (
+        <View style={styles.repostLine}>
+          <Ionicons name="repeat" size={14} color={theme.muted} />
+          <ThemedText type="small" themeColor="textSecondary">
+            {fact.reposterUsername === user?.username
+              ? 'You reposted this'
+              : `Reposted by @${fact.reposterUsername}`}
+          </ThemedText>
+        </View>
+      )}
+
       {/* Author row — hidden only for the true 'anon' variant (unused by feeds;
           anonymous view-mode now renders the row with @username only). */}
       {(isSignedIn || anonView) && (
@@ -255,6 +268,12 @@ const styles = StyleSheet.create({
 card: {
     padding: Spacing.three,
     borderRadius: Radii.md,
+    marginBottom: Spacing.two,
+  },
+  repostLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
     marginBottom: Spacing.two,
   },
   body: {
