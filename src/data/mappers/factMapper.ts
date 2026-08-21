@@ -45,11 +45,11 @@ export function mapFactDto(dto: ApiFact): Fact {
  *
  * Feed-style endpoints (/facts, /facts/author/:id) wrap every entry in a
  * timeline envelope { type, fact, repostedBy?, createdAt? } that mixes facts
- * with reposts; only the inner `fact` maps for card rendering (repost-in-feed
- * treatment is a separate feature). The same fact can appear twice in one page
- * (once as a fact, once as a repost) — dedupe by id, first occurrence wins, so
- * FlatList keys stay unique. The flat ApiFact shape is still tolerated for
- * older/other endpoints (e.g. search), where the unwrap is a no-op.
+ * with reposts. A repost is a SEPARATE feed entry — it appears as its own
+ * card with "Reposted by @user" above the original author. The same fact
+ * can appear multiple times (original + N reposts by different users), so
+ * we only dedupe reposts from the SAME reposter (duplicate repost events).
+ * FlatList keys use a composite key to keep them unique.
  */
 export function mapFactsDtos(dtos: (ApiFact | ApiFactFeedItem)[]): Fact[] {
   const seen = new Set<string>();
@@ -57,13 +57,28 @@ export function mapFactsDtos(dtos: (ApiFact | ApiFactFeedItem)[]): Fact[] {
   for (const item of dtos) {
     const envelope = 'fact' in (item as ApiFactFeedItem) ? (item as ApiFactFeedItem) : null;
     const dto = envelope?.fact ?? (item as ApiFact);
-    if (!dto?.id || seen.has(dto.id)) continue;
-    seen.add(dto.id);
+    if (!dto?.id) continue;
+
+    const isRepost = envelope?.type === 'repost' && !!envelope.repostedBy;
+    // Composite key: reposts by different users are separate entries;
+    // only drop exact duplicates (same fact + same reposter).
+    const key = isRepost
+      ? `repost-${dto.id}-${envelope!.repostedBy!.username}`
+      : `fact-${dto.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
     const fact = mapFactDto(dto);
-    // Pass through repost envelope info so the card can show "Reposted by @user".
-    if (envelope?.type === 'repost' && envelope.repostedBy) {
+    // FlatList key needs to be globally unique — reposts get a suffix.
+    if (isRepost) {
+      fact.originalFactId = dto.id;
+      fact.id = `${dto.id}-repost-${envelope!.repostedBy!.username}`;
       fact.isRepost = true;
-      fact.reposterUsername = envelope.repostedBy.username;
+      fact.reposterUsername = envelope!.repostedBy!.username;
+      // Use the repost timestamp, not the original fact's createdAt.
+      if (envelope!.createdAt) {
+        fact.createdAt = envelope!.createdAt;
+      }
     }
     facts.push(fact);
   }

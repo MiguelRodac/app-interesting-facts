@@ -203,6 +203,8 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     const fact = facts.find((f) => f.id === factId);
     if (!fact) return;
 
+    // Reposts have composite IDs — use the original fact ID for API calls.
+    const apiFactId = fact.originalFactId ?? factId;
     const wasLiked = fact.liked;
     const currentUser = useAuthStore.getState().user;
 
@@ -224,16 +226,16 @@ export const useFactsStore = create<FactsState>((set, get) => ({
 
     try {
       if (wasLiked) {
-        await client.del(`/facts/${factId}/likes`);
+        await client.del(`/facts/${apiFactId}/likes`);
       } else {
-        await client.post(`/facts/${factId}/likes`);
+        await client.post(`/facts/${apiFactId}/likes`);
       }
 
       // Reconcile with the backend's authoritative likeBy/commentsCount so
       // the "2 most recent likers" line matches reality after the rush.
       // On failure keep the optimistic state — the like/unlike succeeded.
       try {
-        const fresh = await get().fetchFactById(factId);
+        const fresh = await get().fetchFactById(apiFactId);
         set((state) => ({
           userFacts: state.userFacts.map((f) => (f.id === factId ? fresh : f)),
         }));
@@ -242,7 +244,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       }
 
       // Live-update "Liked by …" lines across every mounted screen
-      notifyFactLikesChanged(factId);
+      notifyFactLikesChanged(apiFactId);
     } catch (error) {
       // Rollback on error — restores the pre-optimistic snapshots, which
       // also reverts this action's likeBy change.
@@ -258,6 +260,8 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     const fact = facts.find((f) => f.id === factId);
     if (!fact) return;
 
+    // Reposts have composite IDs — use the original fact ID for API calls.
+    const apiFactId = fact.originalFactId ?? factId;
     const wasReposted = fact.repostedByMe;
     const currentUser = useAuthStore.getState().user;
 
@@ -279,16 +283,16 @@ export const useFactsStore = create<FactsState>((set, get) => ({
 
     try {
       if (wasReposted) {
-        await client.del(`/facts/${factId}/reposts`);
+        await client.del(`/facts/${apiFactId}/reposts`);
       } else {
-        await client.post(`/facts/${factId}/reposts`);
+        await client.post(`/facts/${apiFactId}/reposts`);
       }
 
       // Reconcile with the backend's authoritative repostBy so the
       // "2 most recent reposters" state matches reality after the rush.
       // On failure keep the optimistic state — the repost succeeded.
       try {
-        const fresh = await get().fetchFactById(factId);
+        const fresh = await get().fetchFactById(apiFactId);
         set((state) => ({
           userFacts: state.userFacts.map((f) => (f.id === factId ? fresh : f)),
         }));

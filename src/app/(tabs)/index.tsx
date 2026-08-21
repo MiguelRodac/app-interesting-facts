@@ -51,7 +51,9 @@ const { isAuthenticated } = useAuth();
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
-      router.push(`/fact/${fact.id}?from=feed`);
+      // Reposts use the original fact ID for detail navigation.
+      const factId = fact.originalFactId ?? fact.id;
+      router.push(`/fact/${factId}?from=feed`);
     },
     [router],
   );

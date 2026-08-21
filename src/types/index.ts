@@ -99,6 +99,8 @@ export interface Fact {
   isRepost?: boolean;
   /** Username of the user who reposted this fact (present when isRepost is true). */
   reposterUsername?: string;
+  /** Original fact ID (for reposts, use this for detail navigation / API calls). */
+  originalFactId?: string;
 }
 
 export interface PaginatedResult<T> {
