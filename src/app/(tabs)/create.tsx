@@ -649,6 +649,7 @@ const styles = StyleSheet.create({
   },
   field: {
     gap: Spacing.two,
+    position: 'relative',
   },
   fieldHeader: {
     flexDirection: 'row',

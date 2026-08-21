@@ -4,7 +4,7 @@ import { Dimensions, FlatList, Platform, StyleSheet, TextInput, View } from 'rea
 import { AppPressable } from '@/components/ui/app-pressable';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
-import { Spacing } from '@/constants/theme';
+import { Radii, Shadows, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const EMOJI_DATA: Record<string, { label: string; icon: string; emojis: string[] }> = {
@@ -255,11 +255,17 @@ const NUM_COLUMNS = SCREEN_WIDTH < 380 ? 5 : SCREEN_WIDTH < 500 ? 6 : 7;
 
 const styles = StyleSheet.create({
   popover: {
-    borderWidth: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-    maxHeight: 340,
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    maxHeight: 240,
     marginBottom: Spacing.one,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    zIndex: 1000,
+    overflow: 'hidden',
+    ...Shadows.lg,
   },
   searchRow: {
     flexDirection: 'row',
