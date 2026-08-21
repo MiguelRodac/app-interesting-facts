@@ -74,7 +74,6 @@ export function AvatarPickerModal({
 
   const handlePickNoAvatar = () => {
     setPendingUrl(null);
-    setPendingColor(null);
   };
 
   const handleDone = () => {
@@ -152,7 +151,7 @@ export function AvatarPickerModal({
                         onPress={handlePickNoAvatar}
                         style={[
                           styles.noAvatarOption,
-                          !pendingUrl && !pendingColor && styles.optionSelected,
+                          pendingUrl === null && styles.optionSelected,
                         ]}>
                         <Ionicons name="person-outline" size={28} color="#FFFFFF" />
                       </AppPressable>
