@@ -92,6 +92,7 @@ interface CommentsState {
   addComment: (factId: string, content: string, parentCommentId?: string | null) => Promise<void>;
   updateComment: (factId: string, commentId: string, content: string) => Promise<void>;
   deleteComment: (factId: string, commentId: string) => Promise<void>;
+  toggleCommentLike: (factId: string, comment: Comment) => Promise<void>;
   reset: () => void;
 }
 
@@ -178,6 +179,42 @@ export const useCommentsStore = create<CommentsState>(() => ({
       if (error && typeof error === 'object' && 'code' in error) {
         // The mapped AppError already carries the specific
         // DELETE_BLOCKED_HAS_REPLIES user message for 403s.
+        useUIStore.getState().setError(error as AppError);
+      }
+    }
+  },
+
+  toggleCommentLike: async (factId, comment) => {
+    const snapshot = getCachedComments(factId);
+    const likeComment = (c: Comment): Comment =>
+      c.id === comment.id
+        ? {
+            ...c,
+            liked: !comment.liked,
+            likesCount: (c.likesCount ?? 0) + (comment.liked ? -1 : 1),
+          }
+        : c;
+
+    // Optimistic flip of liked + count for both top-level entries and nested
+    // replies (mapComment searches both levels, same as edit/delete lookups).
+    setCachedComments(
+      factId,
+      mapComment(snapshot, comment.id, likeComment),
+    );
+    notifyFactCommentsChanged(factId);
+
+    try {
+      if (comment.liked) {
+        await client.del(`/facts/${factId}/comments/${comment.id}/likes`);
+      } else {
+        await client.post(`/facts/${factId}/comments/${comment.id}/likes`);
+      }
+      // Success — the optimistic liked/count flip is authoritative; leave it
+      // in place.
+    } catch (error) {
+      setCachedComments(factId, snapshot);
+      notifyFactCommentsChanged(factId);
+      if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as AppError);
       }
     }

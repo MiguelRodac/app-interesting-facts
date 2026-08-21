@@ -10,9 +10,12 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { canEditComment, formatRelativeTime } from '@/utils/commentTime';
 import type { Comment, CommentAuthor } from '@/types';
+import { useCommentsStore } from '@/data/stores/commentsStore';
 
 interface CommentItemProps {
   comment: Comment;
+  /** Parent fact id — required to call the comment-like endpoints. */
+  factId: string;
   /** Called when the author is pressed — parent decides profile deep-link. */
   onAuthorPress?: (author: CommentAuthor) => void;
   /** Current signed-in user's username, for editing/deleting own comments. */
@@ -39,6 +42,7 @@ const EDIT_RECHECK_MS = 60 * 1000;
  */
 export function CommentItem({
   comment,
+  factId,
   onAuthorPress,
   currentUsername,
   isSignedIn = false,
@@ -47,6 +51,7 @@ export function CommentItem({
   onDelete,
 }: CommentItemProps) {
   const theme = useTheme();
+  const toggleCommentLike = useCommentsStore((s) => s.toggleCommentLike);
   const [repliesExpanded, setRepliesExpanded] = useState(false);
   const [canEdit, setCanEdit] = useState(() => canEditComment(comment.createdAt));
 
@@ -66,6 +71,11 @@ export function CommentItem({
   const handleReply = useCallback(() => onReply?.(comment), [onReply, comment]);
   const handleEdit = useCallback(() => onEdit?.(comment), [onEdit, comment]);
   const handleDelete = useCallback(() => onDelete?.(comment), [onDelete, comment]);
+  const handleToggleLike = useCallback(() => {
+    if (isSignedIn) toggleCommentLike(factId, comment).catch(() => {
+      // Ignore — the store surfaces errors via uiStore.setError.
+    });
+  }, [isSignedIn, toggleCommentLike, factId, comment]);
 
   const replies = comment.replies ?? [];
 
@@ -77,13 +87,34 @@ export function CommentItem({
   const isOwn = currentUsername != null && comment.author.username === currentUsername;
   const canReply = isTopLevel && isSignedIn;
 
-  // Comment likes are NOT yet wired to the backend (no /comments/:id/likes
-  // endpoint; CommentResponse has no isLiked/likesCount). The heart is a
-  // visual placeholder: count comes from likesCount when the domain type has
-  // it, otherwise 0, and the button stays inert.
-  // TODO(backend): wire comment likes once /comments/:id/likes exists.
+  // Comment likes: backend-populated for authenticated viewers (likesCount,
+  // liked). Anonymous viewers see the count read-only; signed-in viewers get
+  // an interactive heart that toggles the like optimistically in the store.
   const likesCount = comment.likesCount ?? 0;
   const liked = comment.liked ?? false;
+
+  // Right-aligned like heart. When signed in, tapping it toggles the like;
+  // anonymous viewers see a non-interactive count (backend only populates
+  // likesCount/liked for authenticated viewers anyway).
+  const likeNode = isSignedIn ? (
+    <AppPressable onPress={handleToggleLike} hitSlop={8} style={styles.like}>
+      <Ionicons
+        name={liked ? 'heart' : 'heart-outline'}
+        size={17}
+        color={liked ? theme.destructive : theme.textSecondary}
+      />
+      <ThemedText type="small" themeColor="textSecondary">
+        {likesCount}
+      </ThemedText>
+    </AppPressable>
+  ) : (
+    <View style={styles.like}>
+      <Ionicons name="heart-outline" size={17} color={theme.textSecondary} />
+      <ThemedText type="small" themeColor="textSecondary">
+        {likesCount}
+      </ThemedText>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -140,18 +171,7 @@ export function CommentItem({
               )}
             </View>
 
-            {/* Visual-only like heart (backed by likesCount when present, else 0).
-                Non-interactive until the backend /comments/:id/likes contract lands. */}
-            <View style={styles.like}>
-              <Ionicons
-                name={liked ? 'heart' : 'heart-outline'}
-                size={17}
-                color={liked ? theme.destructive : theme.textSecondary}
-              />
-              <ThemedText type="small" themeColor="textSecondary">
-                {likesCount}
-              </ThemedText>
-            </View>
+            {likeNode}
           </View>
         </View>
       </View>
@@ -182,6 +202,7 @@ export function CommentItem({
               <CommentItem
                 key={reply.id}
                 comment={reply}
+                factId={factId}
                 onAuthorPress={onAuthorPress}
                 currentUsername={currentUsername}
                 isSignedIn={isSignedIn}

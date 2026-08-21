@@ -70,6 +70,12 @@ export interface ApiComment {
   edited: boolean;
   /** Present only in the threaded list (GET /facts/:factId/comments). */
   replies?: ApiComment[];
+  /** Like count for the comment (viewer-aware — populated only for authenticated viewers). */
+  likesCount?: number;
+  /** Whether the current viewer has liked this comment. */
+  liked?: boolean;
+  /** Up to 2 most recent likers (slim previews). */
+  likeBy?: ApiUserAvatarPreview[];
 }
 
 /** Paginated comments response. */

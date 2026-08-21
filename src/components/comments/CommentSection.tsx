@@ -112,6 +112,7 @@ export function CommentSection({
           renderItem={({ item }) => (
             <CommentItem
               comment={item}
+              factId={factId}
               onAuthorPress={onCommentAuthorPress}
               currentUsername={currentUsername}
               isSignedIn={isSignedIn}

@@ -59,6 +59,9 @@ export function mapCommentDto(dto: ApiComment): Comment {
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt ?? dto.createdAt,
     edited: dto.edited,
+    likesCount: dto.likesCount ?? 0,
+    liked: dto.liked ?? false,
+    likeBy: (dto.likeBy ?? []).map(mapLikePreviewDto),
     replies: dto.replies ? mapCommentsDtos(dto.replies) : undefined,
   };
 }

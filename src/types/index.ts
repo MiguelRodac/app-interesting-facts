@@ -74,8 +74,10 @@ export interface Comment {
    * lands — the UI renders 0 as a visual placeholder.
    */
   likesCount?: number;
-  /** Whether the current user has liked this comment (backend gap — undefined for now). */
+  /** Whether the current user has liked this comment — undefined for anonymous viewers. */
   liked?: boolean;
+  /** Up to 2 most recent likers (slim previews) — undefined for anonymous viewers. */
+  likeBy?: LikePreview[];
 }
 
 export interface Fact {
