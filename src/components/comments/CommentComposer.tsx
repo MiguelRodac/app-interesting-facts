@@ -18,6 +18,7 @@ import { useAuth } from '@/data/hooks/useAuth';
 import type { ApiUserSearchResult } from '@/data/api/types';
 import { useCommentsStore } from '@/data/stores/commentsStore';
 import { useTheme } from '@/hooks/use-theme';
+import { EmojiPickerPopover, EmojiButton } from '@/components/EmojiPicker';
 
 const client = createApiClient(getIdToken);
 
@@ -124,6 +125,8 @@ export function CommentComposer({
   const trimmedLength = content.trim().length;
   const canSubmit =
     trimmedLength >= COMMENT_MIN_LENGTH && trimmedLength <= COMMENT_MAX_LENGTH && !isSubmitting;
+
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const avatarUser = user
     ? {
@@ -296,6 +299,16 @@ export function CommentComposer({
     onCancelEdit?.();
   };
 
+  const handleEmojiPress = useCallback(() => setShowEmojiPicker((v) => !v), []);
+
+  const handleEmojiSelected = useCallback(
+    (emoji: string) => {
+      setContent((prev) => prev + emoji);
+      requestAnimationFrame(() => inputRef.current?.focus());
+    },
+    [],
+  );
+
   const postLabel = isEdit ? 'Save' : 'Post';
 
   return (
@@ -323,6 +336,11 @@ export function CommentComposer({
         )}
 
         <View style={styles.inputWrap}>
+          <EmojiPickerPopover
+            visible={showEmojiPicker}
+            onClose={() => setShowEmojiPicker(false)}
+            onEmojiSelected={handleEmojiSelected}
+          />
           <View
             style={[
               styles.inputUnderline,
@@ -412,6 +430,8 @@ export function CommentComposer({
               </ThemedText>
             </AppPressable>
           ) : null}
+          <View style={styles.actionsSpacer} />
+          <EmojiButton onPress={handleEmojiPress} active={showEmojiPicker} />
           <AppPressable
             onPress={canSubmit ? handleSubmit : undefined}
             disabled={!canSubmit}
@@ -543,5 +563,12 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 15,
+  },
+  actionsSpacer: {
+    flex: 1,
+  },
+  emojiButton: {
+    paddingHorizontal: Spacing.one,
+    paddingVertical: Spacing.half,
   },
 });

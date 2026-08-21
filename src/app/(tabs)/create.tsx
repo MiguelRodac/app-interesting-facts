@@ -8,6 +8,7 @@ import { CharCounter } from '@/components/CharCounter';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
+import { EmojiPickerPopover, EmojiButton } from '@/components/EmojiPicker';
 import { BottomTabInset, Radii, Spacing, MaxContentWidth, Shadows } from '@/constants/theme';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
@@ -49,6 +50,7 @@ export default function CreateFactScreen() {
   const latestMentionQueryRef = useRef('');
   const latestHashtagQueryRef = useRef('');
   const [confirmLeaveVisible, setConfirmLeaveVisible] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const { addFact } = useFacts();
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
@@ -331,6 +333,15 @@ export default function CreateFactScreen() {
     contentInputRef.current?.focus();
   }, [content]);
 
+  // Emoji picker.
+  const handleEmojiSelected = useCallback(
+    (emoji: string) => {
+      setContent((prev) => prev + emoji);
+      requestAnimationFrame(() => contentInputRef.current?.focus());
+    },
+    [],
+  );
+
   // Show loading while checking auth
   if (isLoading) {
     return (
@@ -429,8 +440,16 @@ export default function CreateFactScreen() {
               <ThemedText type="smallBold" themeColor="textSecondary">
                 Content
               </ThemedText>
-              <CharCounter current={content.trim().length} min={MIN_LENGTH} max={MAX_LENGTH} />
+              <View style={styles.fieldHeaderRight}>
+                <EmojiButton onPress={() => setShowEmojiPicker((v) => !v)} active={showEmojiPicker} />
+                <CharCounter current={content.trim().length} min={MIN_LENGTH} max={MAX_LENGTH} />
+              </View>
             </View>
+            <EmojiPickerPopover
+              visible={showEmojiPicker}
+              onClose={() => setShowEmojiPicker(false)}
+              onEmojiSelected={handleEmojiSelected}
+            />
             <View style={styles.contentContainer}>
               <TextInput
                 ref={contentInputRef}
@@ -635,6 +654,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  fieldHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   input: {
     borderWidth: 1,

@@ -2,10 +2,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Fact } from '@/types';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
-import type { ApiFactFeedItem, ApiPaginatedResponse } from '@/data/api/types';
+import type { ApiFact, ApiFactFeedItem, ApiPaginatedResponse } from '@/data/api/types';
 import { mapFactsDtos } from '@/data/mappers/factMapper';
 
 const client = createApiClient(getIdToken);
+
+/** Raw shape returned by GET /users/:username/mentions.
+ *  The backend wraps each mention as { id, type, author, createdAt, fact: { id, title, content } }.
+ *  The inner `fact` is SLIM — no likes, hashtags, etc. The `author` lives at the envelope level. */
+interface ApiMentionEnvelope {
+  id: string;
+  type: 'fact';
+  author: ApiFactFeedItem['fact']['author'];
+  createdAt: string;
+  fact: Pick<ApiFact, 'id' | 'title' | 'content'>;
+}
 
 /** Shape returned by the mentioned-facts hook. */
 export interface MentionedFactsState {
@@ -28,12 +39,28 @@ export function useMentionedFacts(username?: string): MentionedFactsState {
     if (!username) return;
     setMentionedLoading(true);
     client
-      .get<ApiPaginatedResponse<ApiFactFeedItem>>(`/users/${username}/mentions`, {
+      .get<ApiPaginatedResponse<ApiMentionEnvelope>>(`/users/${username}/mentions`, {
         page: '1',
         limit: '50',
       })
       .then((data) => {
-        const facts = mapFactsDtos(data.results ?? []);
+        // The backend returns slim envelopes: author is at envelope level,
+        // inner fact only has id/title/content. Merge into full ApiFactFeedItem
+        // so the mapper can process them correctly.
+        const feedItems: ApiFactFeedItem[] = (data.results ?? []).map((item) => ({
+          type: item.type,
+          createdAt: item.createdAt,
+          fact: {
+            id: item.fact.id,
+            title: item.fact.title ?? null,
+            content: item.fact.content,
+            author: item.author,
+            likes: 0,
+            hashtags: [],
+            createdAt: item.createdAt,
+          } as ApiFact,
+        }));
+        const facts = mapFactsDtos(feedItems);
         if (activeRef.current) setMentionedFacts(facts);
       })
       .catch(() => {

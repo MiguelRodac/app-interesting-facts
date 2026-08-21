@@ -32,7 +32,7 @@ const userFacts = useFactsStore((s) => s.userFacts);
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const toggleRepost = useFactsStore((s) => s.toggleRepost);
   const { likedFacts } = useLikedFacts();
-  const { mentionedFacts, mentionsLoading, mentionsCount } = useMentionedFacts(user?.username);
+  const { mentionedFacts, mentionsLoading, mentionsCount, refetch: refetchMentions } = useMentionedFacts(user?.username);
   const userFactsCount = useFactsStore((s) => s.userFacts.length);
 const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
 const [avatarModalVisible, setAvatarModalVisible] = useState(false);
@@ -46,12 +46,12 @@ const [avatarModalVisible, setAvatarModalVisible] = useState(false);
     if (!user?.id) return;
     setRefreshing(true);
     try {
-      // Silent refreshes: profile facts + feed (feeds the "Liked" tab)
-      await Promise.all([fetchUserFacts(user.id, true), fetchFacts(true)]);
+      // Silent refreshes: profile facts + feed + mentions
+      await Promise.all([fetchUserFacts(user.id, true), fetchFacts(true), refetchMentions()]);
     } finally {
       setRefreshing(false);
     }
-  }, [user?.id, fetchUserFacts, fetchFacts]);
+  }, [user?.id, fetchUserFacts, fetchFacts, refetchMentions]);
 
   // Fetch fresh user facts every time the profile gains focus (create/edit/delete happen elsewhere)
   useFocusEffect(
@@ -59,14 +59,18 @@ const [avatarModalVisible, setAvatarModalVisible] = useState(false);
       if (user?.id) {
         fetchUserFacts(user.id, userFactsCount > 0);
       }
-    }, [user?.id, fetchUserFacts, userFactsCount]),
+      // Also refetch mentions so the tab shows fresh data.
+      refetchMentions();
+    }, [user?.id, fetchUserFacts, userFactsCount, refetchMentions]),
   );
 
   const displayedFacts = activeTab === 'mine' ? userFacts : activeTab === 'liked' ? likedFacts : mentionedFacts;
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
-      router.push(`/fact/${fact.id}?from=profile`);
+      // Reposts use the original fact ID for detail navigation.
+      const factId = fact.originalFactId ?? fact.id;
+      router.push(`/fact/${factId}?from=profile`);
     },
     [router],
   );

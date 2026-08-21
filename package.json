@@ -3,6 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@expo/ui": "~57.0.11",
     "@expo/vector-icons": "^15.1.1",
     "@firebase/auth": "^1.13.4",
