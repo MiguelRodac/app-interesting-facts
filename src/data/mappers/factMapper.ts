@@ -1,5 +1,5 @@
 import type { Fact, Hashtag } from '@/types';
-import type { ApiFact, ApiHashtag } from '../api/types';
+import type { ApiFact, ApiFactFeedItem, ApiHashtag } from '../api/types';
 import { mapCommentPreviewDto, mapLikePreviewDto } from './commentMapper';
 import { mapAuthorDto } from './userMapper';
 
@@ -42,7 +42,23 @@ export function mapFactDto(dto: ApiFact): Fact {
 
 /**
  * Maps an array of API Facts to domain Facts.
+ *
+ * Feed-style endpoints (/facts, /facts/author/:id) wrap every entry in a
+ * timeline envelope { type, fact, repostedBy?, createdAt? } that mixes facts
+ * with reposts; only the inner `fact` maps for card rendering (repost-in-feed
+ * treatment is a separate feature). The same fact can appear twice in one page
+ * (once as a fact, once as a repost) — dedupe by id, first occurrence wins, so
+ * FlatList keys stay unique. The flat ApiFact shape is still tolerated for
+ * older/other endpoints (e.g. search), where the unwrap is a no-op.
  */
-export function mapFactsDtos(dtos: ApiFact[]): Fact[] {
-  return dtos.map((dto) => mapFactDto(dto));
+export function mapFactsDtos(dtos: (ApiFact | ApiFactFeedItem)[]): Fact[] {
+  const seen = new Set<string>();
+  const facts: Fact[] = [];
+  for (const item of dtos) {
+    const dto = 'fact' in (item as ApiFactFeedItem) ? (item as ApiFactFeedItem).fact : (item as ApiFact);
+    if (!dto?.id || seen.has(dto.id)) continue;
+    seen.add(dto.id);
+    facts.push(mapFactDto(dto));
+  }
+  return facts;
 }

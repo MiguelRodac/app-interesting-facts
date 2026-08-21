@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Author, Fact, FactLike } from '@/types';
 import { createApiClient } from '../api/client';
-import type { ApiFact, ApiPaginatedResponse } from '../api/types';
+import type { ApiFact, ApiFactFeedItem, ApiPaginatedResponse } from '../api/types';
 import { mapFactsDtos, mapFactDto } from '../mappers/factMapper';
 import { getIdToken } from '../auth/firebaseAuth';
 import { notifyFactLikesChanged } from '../hooks/useFactLikes';
@@ -103,7 +103,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     const isAnon = !useAuthStore.getState().user;
     if (!silent) set({ isLoading: true });
     try {
-      const { results, nextPage } = await client.get<ApiPaginatedResponse<ApiFact>>(
+      const { results, nextPage } = await client.get<ApiPaginatedResponse<ApiFactFeedItem>>(
         '/facts',
         {
           page: '1',
@@ -140,7 +140,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     set({ isLoading: true });
     try {
       const nextPage = page + 1;
-      const { results, nextPage: newNextPage } = await client.get<ApiPaginatedResponse<ApiFact>>(
+      const { results, nextPage: newNextPage } = await client.get<ApiPaginatedResponse<ApiFactFeedItem>>(
         '/facts',
         { page: String(nextPage), limit: String(PAGE_SIZE), order_by: 'createdAt', order_dir: 'desc' },
       );
@@ -179,7 +179,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     // Silent refresh skips the loading state and error banner (background refresh)
     if (!silent) set({ userFactsLoading: true });
     try {
-      const { results } = await client.get<ApiPaginatedResponse<ApiFact>>(
+      const { results } = await client.get<ApiPaginatedResponse<ApiFactFeedItem>>(
         `/facts/author/${userId}`,
         { page: '1', limit: String(PAGE_SIZE) },
       );
