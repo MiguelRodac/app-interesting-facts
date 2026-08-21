@@ -53,6 +53,23 @@ function optimisticLikeBy(likeBy: FactLike[], user: Author, liked: boolean): Fac
   return [entry, ...withoutUser].slice(0, 2);
 }
 
+/**
+ * Builds the optimistic reposted-by list for the current user's repost/
+ * un-repost. Same shape and policy as optimisticLikeBy: the user is
+ * prepended (most recent reposter first) capped at 2 on repost, removed on
+ * un-repost. The backend reconcile that follows the API call corrects drift.
+ */
+function optimisticRepostBy(repostBy: FactLike[], user: Author, reposted: boolean): FactLike[] {
+  const withoutUser = repostBy.filter((r) => r.username !== user.username);
+  if (!reposted) return withoutUser;
+  const entry: FactLike = {
+    username: user.username,
+    avatarUrl: user.avatarUrl,
+    avatarColor: user.avatarColor,
+  };
+  return [entry, ...withoutUser].slice(0, 2);
+}
+
 interface FactsState {
   facts: Fact[];
   userFacts: Fact[];
@@ -65,6 +82,7 @@ interface FactsState {
   fetchFactById: (factId: string) => Promise<Fact>;
   fetchUserFacts: (userId: string, silent?: boolean) => Promise<void>;
   toggleLike: (factId: string) => Promise<void>;
+  toggleRepost: (factId: string) => Promise<void>;
   addFact: (fact: { title?: string; content: string }) => Promise<Fact>;
   updateFact: (factId: string, data: { title?: string; content?: string }) => Promise<Fact>;
   deleteFact: (factId: string) => Promise<void>;
@@ -224,6 +242,58 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     } catch (error) {
       // Rollback on error — restores the pre-optimistic snapshots, which
       // also reverts this action's likeBy change.
+      set({ facts, userFacts });
+      if (error && typeof error === 'object' && 'code' in error) {
+        useUIStore.getState().setError(error as import('@/types').AppError);
+      }
+    }
+  },
+
+  toggleRepost: async (factId: string) => {
+    const { facts, userFacts } = get();
+    const fact = facts.find((f) => f.id === factId);
+    if (!fact) return;
+
+    const wasReposted = fact.repostedByMe;
+    const currentUser = useAuthStore.getState().user;
+
+    // Optimistic update — keep feed and user facts in sync, including the
+    // reposted-by line (mini avatars + usernames) so it feels instant.
+    const applyOptimistic = (f: Fact): Fact =>
+      f.id === factId
+        ? {
+            ...f,
+            repostedByMe: !wasReposted,
+            repostCount: f.repostCount + (wasReposted ? -1 : 1),
+            repostBy: currentUser
+              ? optimisticRepostBy(f.repostBy, currentUser, !wasReposted)
+              : f.repostBy,
+          }
+        : f;
+
+    set({ facts: facts.map(applyOptimistic), userFacts: userFacts.map(applyOptimistic) });
+
+    try {
+      if (wasReposted) {
+        await client.del(`/facts/${factId}/reposts`);
+      } else {
+        await client.post(`/facts/${factId}/reposts`);
+      }
+
+      // Reconcile with the backend's authoritative repostBy so the
+      // "2 most recent reposters" state matches reality after the rush.
+      // On failure keep the optimistic state — the repost succeeded.
+      try {
+        const fresh = await get().fetchFactById(factId);
+        set((state) => ({
+          userFacts: state.userFacts.map((f) => (f.id === factId ? fresh : f)),
+        }));
+      } catch {
+        // keep optimistic state
+      }
+    } catch (error) {
+      // Rollback on error — restores the pre-optimistic snapshots, which
+      // also reverts this action's repostBy change.
       set({ facts, userFacts });
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);

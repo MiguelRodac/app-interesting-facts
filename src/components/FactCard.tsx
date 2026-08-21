@@ -20,6 +20,7 @@ interface FactCardProps {
   fact: Fact;
   variant: 'anon' | 'preview' | 'full';
   onLike?: () => void;
+  onRepost?: () => void;
   onShare?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -43,6 +44,7 @@ export function FactCard({
   fact,
   variant,
   onLike,
+  onRepost,
   onShare,
   onEdit,
   onDelete,
@@ -182,11 +184,22 @@ return (
             </AppPressable>
           )}
 
-          {/* Repost placeholder — visual only while the backend builds the
-              repost module. Disabled on purpose: do not fake functionality.
-              TODO(backend): wire repost when /facts/:id/reposts exists */}
-          <AppPressable disabled hitSlop={8} style={styles.actionBtn}>
-            <Ionicons name="repeat" size={20} color={theme.muted} />
+          {/* Repost — optimistic toggle wired to the reposts module. Follows
+              the like button pattern: tinted+filled when repostedByMe, muted
+              otherwise; anonymous view-mode routes to the login gate. */}
+          <AppPressable
+            onPress={gate(onRepost)}
+            hitSlop={8}
+            style={styles.actionBtn}
+            disabled={!onRepost && !anonView}>
+            <Ionicons
+              name={fact.repostedByMe ? 'repeat' : 'repeat-outline'}
+              size={20}
+              color={fact.repostedByMe ? theme.primary : theme.muted}
+            />
+            <ThemedText type="small" themeColor="textSecondary">
+              {fact.repostCount}
+            </ThemedText>
           </AppPressable>
 
           {variant === 'full' && isOwner && (

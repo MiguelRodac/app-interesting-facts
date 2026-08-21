@@ -29,6 +29,7 @@ const userFacts = useFactsStore((s) => s.userFacts);
   const fetchUserFacts = useFactsStore((s) => s.fetchUserFacts);
   const fetchFacts = useFactsStore((s) => s.fetchFacts);
   const toggleLike = useFactsStore((s) => s.toggleLike);
+  const toggleRepost = useFactsStore((s) => s.toggleRepost);
   const { likedFacts } = useLikedFacts();
   const userFactsCount = useFactsStore((s) => s.userFacts.length);
 const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
@@ -68,11 +69,18 @@ const [avatarModalVisible, setAvatarModalVisible] = useState(false);
     [router],
   );
 
-  const handleLike = useCallback(
+const handleLike = useCallback(
     (factId: string) => {
       toggleLike(factId);
     },
     [toggleLike],
+  );
+
+  const handleRepost = useCallback(
+    (factId: string) => {
+      toggleRepost(factId);
+    },
+    [toggleRepost],
   );
 
   const handleSettings = useCallback(() => {
@@ -90,10 +98,11 @@ const renderItem = useCallback(
         variant="preview"
         onPress={() => handleFactPress(item)}
         onLike={() => handleLike(item.id)}
+        onRepost={() => handleRepost(item.id)}
         onOpenLikes={() => setLikesFactId(item.id)}
       />
     ),
-    [handleFactPress, handleLike],
+    [handleFactPress, handleLike, handleRepost],
   );
 
   const renderEmpty = useCallback(() => {

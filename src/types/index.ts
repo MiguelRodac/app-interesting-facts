@@ -86,6 +86,9 @@ export interface Fact {
   likesCount: number;
   liked: boolean;
   likeBy: LikePreview[];
+  repostCount: number;
+  repostedByMe: boolean;
+  repostBy: LikePreview[];
   commentsCount: number;
   commentPreview: CommentPreview | null;
   hashtags: Hashtag[];

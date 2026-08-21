@@ -32,7 +32,7 @@ export interface ApiHashtag {
   usageCount?: number;
 }
 
-/** Slim user avatar preview (no displayName) — used in likeBy and commentsDetails. */
+/** Slim user avatar preview (no displayName) — used in likeBy, repostBy and commentsDetails. */
 export interface ApiUserAvatarPreview {
   username: string;
   avatarUrl?: string | null;
@@ -88,6 +88,9 @@ export interface ApiFact {
   likes: number;
   liked?: boolean;
   likeBy?: ApiUserAvatarPreview[];
+  repostCount?: number;
+  repostedByMe?: boolean;
+  repostBy?: ApiUserAvatarPreview[];
   comments?: number;
   commentsDetails?: ApiCommentPreview | null;
   hashtags: ApiHashtag[];

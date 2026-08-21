@@ -34,7 +34,7 @@ interface CommentReplyTarget {
 
 export default function FactDetailScreen() {
 const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
-  const { facts, fetchFactById, toggleLike, deleteFact } = useFacts();
+  const { facts, fetchFactById, toggleLike, toggleRepost, deleteFact } = useFacts();
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
@@ -246,6 +246,17 @@ const isOwner = fact && user?.id === fact.author.id;
     }
   }, [fact, toggleLike, isAuthenticated, router]);
 
+  const handleRepost = useCallback(() => {
+    // View-mode guard: anonymous viewers can't repost — route to the login gate.
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+      return;
+    }
+    if (fact) {
+      toggleRepost(fact.id);
+    }
+  }, [fact, toggleRepost, isAuthenticated, router]);
+
   const handleShare = useCallback(async () => {
     if (!fact) return;
     try {
@@ -403,11 +414,16 @@ const isOwner = fact && user?.id === fact.author.id;
               </ThemedText>
             </AppPressable>
 
-            {/* Repost placeholder — visual only while the backend builds the
-                repost module. Disabled on purpose: do not fake functionality.
-                TODO(backend): wire repost when /facts/:id/reposts exists */}
-            <AppPressable disabled style={styles.actionBtn} hitSlop={8}>
-              <Ionicons name="repeat" size={24} color={theme.muted} />
+            {/* Repost — optimistic toggle; tinted when repostedByMe. */}
+            <AppPressable onPress={handleRepost} style={styles.actionBtn} hitSlop={8}>
+              <Ionicons
+                name={fact.repostedByMe ? 'repeat' : 'repeat-outline'}
+                size={24}
+                color={fact.repostedByMe ? theme.primary : theme.muted}
+              />
+              <ThemedText type="small" themeColor="textSecondary">
+                {fact.repostCount}
+              </ThemedText>
             </AppPressable>
 
             <AppPressable onPress={handleShare} style={styles.actionBtn} hitSlop={8}>

@@ -34,8 +34,9 @@ export default function UserProfileScreen() {
     isLoading,
     factsLoading,
     fetchProfile,
-    fetchUserFacts,
+fetchUserFacts,
     toggleLike,
+    toggleRepost,
     clearProfile,
   } = useUserProfile();
   const { isAuthenticated } = useAuth();
@@ -85,13 +86,22 @@ useEffect(() => {
     [router],
   );
 
-  const handleLike = useCallback(
+const handleLike = useCallback(
     (factId: string) => {
       if (isAuthenticated) {
         toggleLike(factId);
       }
     },
     [isAuthenticated, toggleLike],
+  );
+
+  const handleRepost = useCallback(
+    (factId: string) => {
+      if (isAuthenticated) {
+        toggleRepost(factId);
+      }
+    },
+    [isAuthenticated, toggleRepost],
   );
 
 const handleBack = useCallback(() => {
@@ -201,6 +211,7 @@ if (isLoading || !profile) {
             onRequireLogin={handleRequireLogin}
             onPress={() => handleFactPress(item)}
             onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
+            onRepost={isAuthenticated ? () => handleRepost(item.id) : undefined}
             onOpenLikes={isAuthenticated ? () => setLikesFactId(item.id) : undefined}
           />
         )}

@@ -12,6 +12,7 @@ export function useUserProfile() {
   const fetchProfile = useUserProfileStore((s) => s.fetchProfile);
   const fetchUserFacts = useUserProfileStore((s) => s.fetchUserFacts);
   const toggleLike = useUserProfileStore((s) => s.toggleLike);
+  const toggleRepost = useUserProfileStore((s) => s.toggleRepost);
   const clearProfile = useUserProfileStore((s) => s.clearProfile);
 
   return {
@@ -22,6 +23,7 @@ export function useUserProfile() {
     fetchProfile,
     fetchUserFacts,
     toggleLike,
+    toggleRepost,
     clearProfile,
   };
 }

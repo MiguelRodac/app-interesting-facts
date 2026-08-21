@@ -16,7 +16,7 @@ import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
 export default function FeedScreen() {
-  const { facts, isLoading, hasMore, fetchFacts, loadMore, toggleLike } = useFacts();
+  const { facts, isLoading, hasMore, fetchFacts, loadMore, toggleLike, toggleRepost } = useFacts();
 const { isAuthenticated } = useAuth();
   const router = useRouter();
   const theme = useTheme();
@@ -56,13 +56,22 @@ const { isAuthenticated } = useAuth();
     [router],
   );
 
-  const handleLike = useCallback(
+const handleLike = useCallback(
     (factId: string) => {
       if (isAuthenticated) {
         toggleLike(factId);
       }
     },
     [isAuthenticated, toggleLike],
+  );
+
+  const handleRepost = useCallback(
+    (factId: string) => {
+      if (isAuthenticated) {
+        toggleRepost(factId);
+      }
+    },
+    [isAuthenticated, toggleRepost],
   );
 
   const handleRequireLogin = useCallback(() => {
@@ -78,10 +87,11 @@ const { isAuthenticated } = useAuth();
         onRequireLogin={handleRequireLogin}
         onPress={() => handleFactPress(item)}
         onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
+        onRepost={isAuthenticated ? () => handleRepost(item.id) : undefined}
         onOpenLikes={isAuthenticated ? () => setLikesFactId(item.id) : undefined}
       />
     ),
-    [isAuthenticated, handleFactPress, handleLike, handleRequireLogin],
+    [isAuthenticated, handleFactPress, handleLike, handleRepost, handleRequireLogin],
   );
 
   const renderFooter = useCallback(

@@ -27,6 +27,9 @@ export function mapFactDto(dto: ApiFact): Fact {
     likesCount: dto.likes,
     liked: dto.liked ?? false,
     likeBy: (dto.likeBy ?? []).map(mapLikePreviewDto),
+    repostCount: dto.repostCount ?? 0,
+    repostedByMe: dto.repostedByMe ?? false,
+    repostBy: (dto.repostBy ?? []).map(mapLikePreviewDto),
     commentsCount: dto.comments ?? 0,
     commentPreview:
       dto.comments !== 0 && dto.commentsDetails
