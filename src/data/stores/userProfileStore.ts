@@ -59,7 +59,8 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
       );
       const raw = response?.results ?? (Array.isArray(response) ? response : []);
       const facts = mapFactsDtos(raw as ApiFact[]);
-      set({ facts, factsLoading: false });
+      const sorted = [...facts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      set({ facts: sorted, factsLoading: false });
     } catch (error) {
       if (!silent) set({ factsLoading: false, facts: [] });
       if (silent) return;
