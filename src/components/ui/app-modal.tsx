@@ -11,9 +11,9 @@ interface AppModalProps {
 
 /**
  * Modal wrapper that keeps RN `Modal` in native builds but renders an
- * inline absolute overlay on web. RN Web portals `Modal` to the app root,
- * OUTSIDE the phone frame used on desktop — this wrapper keeps every
- * dialog inside the frame, exactly like the rest of the app UI.
+ * inline absolute overlay on web. Uses position:absolute (not fixed) so
+ * the overlay stays INSIDE the phone frame on desktop web and doesn't
+ * escape the iframe.
  */
 export function AppModal({
   visible,
@@ -40,14 +40,11 @@ export function AppModal({
 
 const styles = StyleSheet.create({
   webOverlay: {
-    position: 'fixed',
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     zIndex: 1000,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'flex-end',
   },
 });

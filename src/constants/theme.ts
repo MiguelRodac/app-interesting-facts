@@ -104,5 +104,8 @@ export const Shadows = {
   },
 } as const;
 
+/** TabBar height in px: border(1) + paddingTop(8) + icon(24) + gap(2) + label(~14) + paddingBottom(16) */
+export const TAB_BAR_HEIGHT = 65;
+
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;

@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useCommentLikes } from '@/data/hooks/useCommentLikes';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,7 +20,6 @@ interface CommentLikesModalProps {
   onClose: () => void;
 }
 
-/** Bottom sheet with the full list of users who liked a comment */
 export function CommentLikesModal({ factId, commentId, visible, onClose }: CommentLikesModalProps) {
   const theme = useTheme();
   const router = useRouter();
@@ -59,14 +58,10 @@ export function CommentLikesModal({ factId, commentId, visible, onClose }: Comme
         <View style={[styles.sheet, { backgroundColor: theme.background }]}>
           <View style={[styles.handle, { backgroundColor: theme.muted }]} />
           <View style={styles.header}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Likes
-            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">Likes</ThemedText>
             <View style={styles.counterRow}>
               <Ionicons name="heart" size={28} color={theme.destructive} />
-              <ThemedText type="default" style={styles.counterNumber}>
-                {likes.length}
-              </ThemedText>
+              <ThemedText type="default" style={styles.counterNumber}>{likes.length}</ThemedText>
             </View>
           </View>
 
@@ -82,9 +77,7 @@ export function CommentLikesModal({ factId, commentId, visible, onClose }: Comme
               contentContainerStyle={styles.listContent}
               ListEmptyComponent={
                 <View style={styles.centerEmpty}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    No likes yet
-                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">No likes yet</ThemedText>
                 </View>
               }
               renderItem={({ item }) => (
@@ -93,12 +86,8 @@ export function CommentLikesModal({ factId, commentId, visible, onClose }: Comme
                   style={[styles.userRow, { borderBottomColor: theme.border }]}>
                   <UserAvatar user={item} size={40} />
                   <View style={styles.userInfo}>
-                    <ThemedText type="smallBold" numberOfLines={1}>
-                      {item.displayName}
-                    </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      @{item.username}
-                    </ThemedText>
+                    <ThemedText type="smallBold" numberOfLines={1}>{item.displayName}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">@{item.username}</ThemedText>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={theme.muted} />
                 </AppPressable>
@@ -114,13 +103,16 @@ export function CommentLikesModal({ factId, commentId, visible, onClose }: Comme
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: TAB_BAR_HEIGHT,
     borderTopLeftRadius: Radii.xl,
     borderTopRightRadius: Radii.xl,
     paddingTop: Spacing.two,
@@ -163,7 +155,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.five,
   },
   list: {
-    flexShrink: 0,
+    flexGrow: 0,
+    flexShrink: 1,
   },
   listContent: {
     paddingHorizontal: Spacing.four,

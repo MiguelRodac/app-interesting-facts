@@ -6,9 +6,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useFactLikes } from '@/data/hooks/useFactLikes';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,7 +19,6 @@ interface LikesModalProps {
   onClose: () => void;
 }
 
-/** Bottom sheet with the full list of users who liked a fact */
 export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
   const theme = useTheme();
   const router = useRouter();
@@ -28,7 +26,6 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
   const { likes, refetch } = useFactLikes(factId, visible);
   const [loading, setLoading] = useState(false);
 
-  // Fresh data every time the modal opens
   useEffect(() => {
     if (visible && factId) {
       setLoading(true);
@@ -36,7 +33,6 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
     }
   }, [visible, factId, refetch]);
 
-  // When likes arrive we can stop loading
   useEffect(() => {
     if (!visible) return;
     setLoading(false);
@@ -57,24 +53,14 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
   return (
     <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        {/* Tap outside to close */}
         <AppPressable style={styles.backdrop} onPress={onClose} />
-
-        {/* Sheet — absolute positioned at bottom, fixed height via percentages */}
         <View style={[styles.sheet, { backgroundColor: theme.background }]}>
-          {/* Drag handle */}
           <View style={[styles.handle, { backgroundColor: theme.muted }]} />
-
-          {/* Header */}
           <View style={styles.header}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Likes
-            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">Likes</ThemedText>
             <View style={styles.counterRow}>
               <Ionicons name="heart" size={28} color={theme.destructive} />
-              <ThemedText type="default" style={styles.counterNumber}>
-                {likes.length}
-              </ThemedText>
+              <ThemedText type="default" style={styles.counterNumber}>{likes.length}</ThemedText>
             </View>
           </View>
 
@@ -90,9 +76,7 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
               contentContainerStyle={styles.listContent}
               ListEmptyComponent={
                 <View style={styles.centerEmpty}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    No likes yet
-                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">No likes yet</ThemedText>
                 </View>
               }
               renderItem={({ item }) => (
@@ -101,12 +85,8 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
                   style={[styles.userRow, { borderBottomColor: theme.border }]}>
                   <UserAvatar user={item} size={40} />
                   <View style={styles.userInfo}>
-                    <ThemedText type="smallBold" numberOfLines={1}>
-                      {item.displayName}
-                    </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      @{item.username}
-                    </ThemedText>
+                    <ThemedText type="smallBold" numberOfLines={1}>{item.displayName}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">@{item.username}</ThemedText>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={theme.muted} />
                 </AppPressable>
@@ -122,13 +102,16 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: TAB_BAR_HEIGHT,
     borderTopLeftRadius: Radii.xl,
     borderTopRightRadius: Radii.xl,
     paddingTop: Spacing.two,
@@ -171,7 +154,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.five,
   },
   list: {
-    flexShrink: 0,
+    flexGrow: 0,
+    flexShrink: 1,
   },
   listContent: {
     paddingHorizontal: Spacing.four,

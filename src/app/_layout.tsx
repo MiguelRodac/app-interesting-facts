@@ -156,6 +156,7 @@ function RootLayoutInner() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    position: 'relative',
   },
   rootWeb: {
     flex: 1,
@@ -169,6 +170,7 @@ const styles = StyleSheet.create({
   phoneFrame: {
     flex: 1,
     width: '100%',
+    position: 'relative',
   },
   phoneFrameDesktop: {
     maxWidth: 430,

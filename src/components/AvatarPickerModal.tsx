@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
@@ -87,8 +87,7 @@ export function AvatarPickerModal({
   return (
     <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        {/* Tap outside to dismiss — like Cancel */}
-        <AppPressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <AppPressable style={styles.backdrop} onPress={onClose} />
         <ThemedView type="backgroundElement" style={styles.sheet}>
           {/* Blocks the dismiss layer — taps inside the sheet do not close */}
           <AppPressable style={StyleSheet.absoluteFill} onPress={() => {}} />
@@ -197,10 +196,16 @@ export function AvatarPickerModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
   },
   sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: TAB_BAR_HEIGHT,
     borderTopLeftRadius: Radii.xl,
     borderTopRightRadius: Radii.xl,
     paddingTop: Spacing.two,
