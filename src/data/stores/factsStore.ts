@@ -113,14 +113,16 @@ export const useFactsStore = create<FactsState>((set, get) => ({
         },
       );
       const fetched = mapFactsDtos(results);
+      // Always sort descending (newest first) regardless of backend order.
+      const sorted = [...fetched].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       if (isAnon) {
-        set({ facts: fetched.slice(0, 5), page: 1, hasMore: false, isLoading: false });
+        set({ facts: sorted.slice(0, 5), page: 1, hasMore: false, isLoading: false });
       } else if (silent) {
         // Background refresh: merge so new facts appear on top, existing
         // ones get fresh data, and the scroll position is preserved.
         set({ facts: mergeFacts(get().facts, fetched), hasMore: nextPage !== null });
       } else {
-        set({ facts: fetched, page: 1, hasMore: nextPage !== null, isLoading: false });
+        set({ facts: sorted, page: 1, hasMore: nextPage !== null, isLoading: false });
       }
     } catch (error) {
       if (!silent) set({ isLoading: false });
@@ -145,8 +147,9 @@ export const useFactsStore = create<FactsState>((set, get) => ({
         { page: String(nextPage), limit: String(PAGE_SIZE), order_by: 'createdAt', order_dir: 'desc' },
       );
       const newFacts = mapFactsDtos(results);
+      const merged = [...facts, ...newFacts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       set({
-        facts: [...facts, ...newFacts],
+        facts: merged,
         page: nextPage,
         hasMore: newNextPage !== null,
         isLoading: false,
@@ -184,7 +187,8 @@ export const useFactsStore = create<FactsState>((set, get) => ({
         { page: '1', limit: String(PAGE_SIZE) },
       );
       const userFacts = mapFactsDtos(results);
-      set({ userFacts, userFactsLoading: false });
+      const sorted = [...userFacts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      set({ userFacts: sorted, userFactsLoading: false });
     } catch (error) {
       set({ userFactsLoading: false });
       if (silent) return;
