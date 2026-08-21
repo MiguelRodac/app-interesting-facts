@@ -32,7 +32,7 @@ const userFacts = useFactsStore((s) => s.userFacts);
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const toggleRepost = useFactsStore((s) => s.toggleRepost);
   const { likedFacts } = useLikedFacts();
-  const { mentionedFacts, mentionsLoading, mentionsCount } = useMentionedFacts();
+  const { mentionedFacts, mentionsLoading, mentionsCount } = useMentionedFacts(user?.username);
   const userFactsCount = useFactsStore((s) => s.userFacts.length);
 const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
 const [avatarModalVisible, setAvatarModalVisible] = useState(false);

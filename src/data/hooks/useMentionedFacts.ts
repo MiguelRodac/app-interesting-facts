@@ -1,32 +1,61 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Fact } from '@/types';
+import { createApiClient } from '@/data/api/client';
+import { getIdToken } from '@/data/auth/firebaseAuth';
+import type { ApiFactFeedItem, ApiPaginatedResponse } from '@/data/api/types';
+import { mapFactsDtos } from '@/data/mappers/factMapper';
+
+const client = createApiClient(getIdToken);
 
 /** Shape returned by the mentioned-facts hook. */
 export interface MentionedFactsState {
-  /** Facts that mention the current user. Empty until the backend endpoint ships. */
   mentionedFacts: Fact[];
-  /** True while the mentions list is loading (always false in the mock). */
   mentionsLoading: boolean;
-  /** Count of mentioned facts, used for the "Mentions" tab label. */
   mentionsCount: number;
+  refetch: () => void;
 }
 
 /**
- * Mentioned facts — MOCK implementation.
- *
- * The backend mentions endpoint is not available yet, so this hook returns an
- * empty list and the profile "Mentions" tab renders its empty state. Wiring the
- * real endpoint means updating only this function (mirroring useFactComments:
- * fetch on mount/focus, expose loading + cached list).
- *
- * TODO(backend): replace the constant return with a real fetch when the backend
- * ships the mentions endpoint. Endpoint name TBD — candidates:
- *   - `GET /facts/mentioned-by-me`
- *   - `GET /users/:id/mentions`
+ * Fetches facts that mention the current user via GET /users/:username/mentions.
+ * The hook fetches on mount/focus and exposes loading + cached list.
  */
-export function useMentionedFacts(): MentionedFactsState {
+export function useMentionedFacts(username?: string): MentionedFactsState {
+  const [mentionedFacts, setMentionedFacts] = useState<Fact[]>([]);
+  const [mentionsLoading, setMentionedLoading] = useState(false);
+  const activeRef = useRef(true);
+
+  const fetchMentions = useCallback(() => {
+    if (!username) return;
+    setMentionedLoading(true);
+    client
+      .get<ApiPaginatedResponse<ApiFactFeedItem>>(`/users/${username}/mentions`, {
+        page: '1',
+        limit: '50',
+      })
+      .then((data) => {
+        const facts = mapFactsDtos(data.results ?? []);
+        if (activeRef.current) setMentionedFacts(facts);
+      })
+      .catch(() => {
+        if (activeRef.current) setMentionedFacts([]);
+      })
+      .finally(() => {
+        if (activeRef.current) setMentionedLoading(false);
+      });
+  }, [username]);
+
+  useEffect(() => {
+    activeRef.current = true;
+    fetchMentions();
+    return () => {
+      activeRef.current = false;
+    };
+  }, [fetchMentions]);
+
   return {
-    mentionedFacts: [],
-    mentionsLoading: false,
-    mentionsCount: 0,
+    mentionedFacts,
+    mentionsLoading,
+    mentionsCount: mentionedFacts.length,
+    refetch: fetchMentions,
   };
 }
