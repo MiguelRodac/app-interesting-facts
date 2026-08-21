@@ -11,7 +11,7 @@ import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
-import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radii, Shadows, Spacing, TAB_BAR_HEIGHT } from '@/constants/theme';
 import { useUserProfile } from '@/data/hooks/useUserProfile';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -231,6 +231,7 @@ if (isLoading || !profile) {
         factId={likesFactId}
         visible={likesFactId !== null}
         onClose={() => setLikesFactId(null)}
+        bottomOffset={TAB_BAR_HEIGHT}
       />
     </ThemedView>
   );

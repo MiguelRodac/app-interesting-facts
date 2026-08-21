@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
-import { Radii, Spacing, TAB_BAR_HEIGHT } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
 import { useFactLikes } from '@/data/hooks/useFactLikes';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -17,9 +17,11 @@ interface LikesModalProps {
   factId: string | null;
   visible: boolean;
   onClose: () => void;
+  /** Offset from the bottom of the screen. Use TAB_BAR_HEIGHT on tab screens, 0 elsewhere. */
+  bottomOffset?: number;
 }
 
-export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
+export function LikesModal({ factId, visible, onClose, bottomOffset = 0 }: LikesModalProps) {
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
@@ -54,7 +56,7 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
     <AppModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <AppPressable style={styles.backdrop} onPress={onClose} />
-        <View style={[styles.sheet, { backgroundColor: theme.background }]}>
+        <View style={[styles.sheet, { backgroundColor: theme.background, bottom: bottomOffset }]}>
           <View style={[styles.handle, { backgroundColor: theme.muted }]} />
           <View style={styles.header}>
             <ThemedText type="small" themeColor="textSecondary">Likes</ThemedText>
@@ -111,7 +113,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: TAB_BAR_HEIGHT,
     borderTopLeftRadius: Radii.xl,
     borderTopRightRadius: Radii.xl,
     paddingTop: Spacing.two,
