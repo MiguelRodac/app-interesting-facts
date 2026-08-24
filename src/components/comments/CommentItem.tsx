@@ -29,7 +29,7 @@ interface CommentItemProps {
   onEdit?: (comment: Comment) => void;
   /** Tapped "Delete" (own comment). Parent opens the ConfirmDialog. */
   onDelete?: (comment: Comment) => void;
-  /** Tapped the like COUNT (signed-in, count > 0) — parent opens CommentLikesModal. */
+  /** Tapped the like COUNT (signed-in, count > 0) — parent opens LikesModal with commentId. */
   onOpenLikes?: (commentId: string) => void;
 }
 

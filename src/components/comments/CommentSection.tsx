@@ -25,7 +25,7 @@ interface CommentSectionProps {
   /** Tapped "Edit" (own comment within the 1h window). Parent swaps the fixed
    *  bottom composer into edit mode. */
   onEdit?: (comment: Comment) => void;
-  /** Tapped a comment's like COUNT — parent opens CommentLikesModal. */
+  /** Tapped a comment's like COUNT — parent opens LikesModal with commentId. */
   onOpenCommentLikes?: (commentId: string) => void;
 }
 

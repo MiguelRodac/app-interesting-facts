@@ -58,10 +58,10 @@ export function useCommentLikes(
     cacheKey ? (likesCache.get(cacheKey) ?? []) : [],
   );
 
-  const fetchFresh = useCallback(() => {
-    if (!factId || !commentId) return;
+  const fetchFresh = useCallback((): Promise<void> => {
+    if (!factId || !commentId) return Promise.resolve();
     const key = `${factId}:${commentId}`;
-    client
+    return client
       .get<ApiFactLike[] | { results?: ApiFactLike[] }>(
         `/facts/${factId}/comments/${commentId}/likes`,
       )

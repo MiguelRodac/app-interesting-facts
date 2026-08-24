@@ -118,13 +118,17 @@ function chunk<T>(arr: T[], size: number): T[][] {
 const COLS = 8;
 const ROWS_MIN = 5;
 
-interface EmojiPickerPopoverProps {
+interface EmojiPickerProps {
   visible: boolean;
   onClose: () => void;
-  onEmojiSelected: (emoji: string) => void;
+  onSelect: (emoji: string) => void;
 }
 
-export function EmojiPickerPopover({ visible, onClose, onEmojiSelected }: EmojiPickerPopoverProps) {
+/**
+ * Reusable emoji picker — always opens centered on screen as a modal.
+ * Use the same component everywhere: create, comments, profile, etc.
+ */
+export function EmojiPicker({ visible, onClose, onSelect }: EmojiPickerProps) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
@@ -148,7 +152,7 @@ export function EmojiPickerPopover({ visible, onClose, onEmojiSelected }: EmojiP
     <>
       <AppPressable style={styles.backdrop} onPress={onClose} />
 
-      <View style={[styles.popover, { backgroundColor: theme.background, borderColor: theme.border }]}>
+      <View style={[styles.modal, { backgroundColor: theme.background, borderColor: theme.border }]}>
         {/* Search */}
         <View style={[styles.searchRow, { borderBottomColor: theme.border }]}>
           <Ionicons name="search" size={16} color={theme.muted} style={{ marginLeft: 4 }} />
@@ -198,21 +202,23 @@ export function EmojiPickerPopover({ visible, onClose, onEmojiSelected }: EmojiP
           </View>
         )}
 
-        {/* Emoji grid — vertical scroll + horizontal scroll for all rows together */}
+        {/* Emoji grid — horizontal + vertical scroll for small screens */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.grid}>
+          style={styles.grid}
+          nestedScrollEnabled>
           <ScrollView
             showsVerticalScrollIndicator={false}
-            style={styles.gridVertical}>
+            style={styles.gridVertical}
+            nestedScrollEnabled>
             <View style={styles.gridInner}>
               {rows.map((row, rowIdx) => (
                 <View key={`row-${rowIdx}`} style={styles.row}>
                   {row.map((emoji, colIdx) => (
                     <AppPressable
                       key={`${emoji}-${colIdx}`}
-                      onPress={() => onEmojiSelected(emoji)}
+                      onPress={() => onSelect(emoji)}
                       style={styles.emojiCell}>
                       <ThemedText style={styles.emoji}>{emoji}</ThemedText>
                     </AppPressable>
@@ -247,18 +253,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 999,
+    zIndex: 9998,
   },
-  popover: {
+  modal: {
     position: 'absolute',
-    bottom: '100%',
-    left: 0,
-    right: 0,
-    maxHeight: 340,
-    marginBottom: Spacing.one,
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: '-50%' }, { translateY: '-50%' }],
+    width: '90%',
+    maxWidth: 380,
+    height: 340,
     borderRadius: Radii.lg,
     borderWidth: 1,
-    zIndex: 1000,
+    zIndex: 9999,
     overflow: 'hidden',
     ...Shadows.lg,
   },
@@ -294,10 +301,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   grid: {
-    maxHeight: 260,
+    flex: 1,
   },
   gridVertical: {
-    maxHeight: 260,
+    flex: 1,
   },
   gridInner: {
     paddingHorizontal: Spacing.one,

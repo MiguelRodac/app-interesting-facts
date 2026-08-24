@@ -9,34 +9,40 @@ import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
 import { Radii, Spacing } from '@/constants/theme';
 import { useFactLikes } from '@/data/hooks/useFactLikes';
+import { useCommentLikes } from '@/data/hooks/useCommentLikes';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import type { ApiFactLike } from '@/data/api/types';
 
 interface LikesModalProps {
   factId: string | null;
+  /** If provided, fetches comment likes instead of fact likes. */
+  commentId?: string | null;
   visible: boolean;
   onClose: () => void;
 }
 
-export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
+/**
+ * Reusable likes modal — shows who liked a fact or a comment.
+ * Pass `commentId` to show comment likes; omit for fact likes.
+ */
+export function LikesModal({ factId, commentId, visible, onClose }: LikesModalProps) {
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
-  const { likes, refetch } = useFactLikes(factId, visible);
+
+  const factLikes = useFactLikes(commentId ? null : factId, visible && !commentId);
+  const commentLikes = useCommentLikes(factId, commentId ?? null, visible && !!commentId);
+
+  const { likes, refetch } = commentId ? commentLikes : factLikes;
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (visible && factId) {
       setLoading(true);
-      refetch();
+      refetch().finally(() => setLoading(false));
     }
   }, [visible, factId, refetch]);
-
-  useEffect(() => {
-    if (!visible) return;
-    setLoading(false);
-  }, [likes, visible]);
 
   const handleUserPress = useCallback(
     (like: ApiFactLike) => {
@@ -56,42 +62,43 @@ export function LikesModal({ factId, visible, onClose }: LikesModalProps) {
         <AppPressable style={styles.backdrop} onPress={onClose} />
         <View style={[styles.sheet, { backgroundColor: theme.background }]}>
           <View style={[styles.handle, { backgroundColor: theme.muted }]} />
-          <View style={styles.header}>
-            <ThemedText type="small" themeColor="textSecondary">Likes</ThemedText>
-            <View style={styles.counterRow}>
-              <Ionicons name="heart" size={28} color={theme.destructive} />
-              <ThemedText type="default" style={styles.counterNumber}>{likes.length}</ThemedText>
-            </View>
-          </View>
-
           {loading && likes.length === 0 ? (
             <View style={styles.center}>
               <ActivityIndicator size="small" color={theme.primary} />
             </View>
           ) : (
-            <FlatList
-              data={likes}
-              keyExtractor={(item) => item.id}
-              style={styles.list}
-              contentContainerStyle={styles.listContent}
-              ListEmptyComponent={
-                <View style={styles.centerEmpty}>
-                  <ThemedText type="small" themeColor="textSecondary">No likes yet</ThemedText>
+            <>
+              <View style={styles.header}>
+                <ThemedText type="small" themeColor="textSecondary">Likes</ThemedText>
+                <View style={styles.counterRow}>
+                  <Ionicons name="heart" size={28} color={theme.destructive} />
+                  <ThemedText type="default" style={styles.counterNumber}>{likes.length}</ThemedText>
                 </View>
-              }
-              renderItem={({ item }) => (
-                <AppPressable
-                  onPress={() => handleUserPress(item)}
-                  style={[styles.userRow, { borderBottomColor: theme.border }]}>
-                  <UserAvatar user={item} size={40} />
-                  <View style={styles.userInfo}>
-                    <ThemedText type="smallBold" numberOfLines={1}>{item.displayName}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">@{item.username}</ThemedText>
+              </View>
+              <FlatList
+                data={likes}
+                keyExtractor={(item) => item.id}
+                style={styles.list}
+                contentContainerStyle={styles.listContent}
+                ListEmptyComponent={
+                  <View style={styles.centerEmpty}>
+                    <ThemedText type="small" themeColor="textSecondary">No likes yet</ThemedText>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={theme.muted} />
-                </AppPressable>
-              )}
-            />
+                }
+                renderItem={({ item }) => (
+                  <AppPressable
+                    onPress={() => handleUserPress(item)}
+                    style={[styles.userRow, { borderBottomColor: theme.border }]}>
+                    <UserAvatar user={item} size={40} />
+                    <View style={styles.userInfo}>
+                      <ThemedText type="smallBold" numberOfLines={1}>{item.displayName}</ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">@{item.username}</ThemedText>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={theme.muted} />
+                  </AppPressable>
+                )}
+              />
+            </>
           )}
         </View>
       </View>

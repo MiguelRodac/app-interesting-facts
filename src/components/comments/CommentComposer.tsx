@@ -18,7 +18,7 @@ import { useAuth } from '@/data/hooks/useAuth';
 import type { ApiUserSearchResult } from '@/data/api/types';
 import { useCommentsStore } from '@/data/stores/commentsStore';
 import { useTheme } from '@/hooks/use-theme';
-import { EmojiPickerPopover, EmojiButton } from '@/components/EmojiPicker';
+import { EmojiPicker, EmojiButton } from '@/components/EmojiPicker';
 
 const client = createApiClient(getIdToken);
 
@@ -312,7 +312,13 @@ export function CommentComposer({
   const postLabel = isEdit ? 'Save' : 'Post';
 
   return (
-    <View style={[styles.wrap, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
+    <>
+      <EmojiPicker
+        visible={showEmojiPicker}
+        onClose={() => setShowEmojiPicker(false)}
+        onSelect={handleEmojiSelected}
+      />
+      <View style={[styles.wrap, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
       {/* Subtle reply-to chip, only in create/reply mode with an active target. */}
       {replyTo && !isEdit ? (
         <View style={styles.replyChipRow}>
@@ -336,11 +342,6 @@ export function CommentComposer({
         )}
 
         <View style={styles.inputWrap}>
-          <EmojiPickerPopover
-            visible={showEmojiPicker}
-            onClose={() => setShowEmojiPicker(false)}
-            onEmojiSelected={handleEmojiSelected}
-          />
           <View
             style={[
               styles.inputUnderline,
@@ -450,6 +451,7 @@ export function CommentComposer({
         </View>
       </View>
     </View>
+    </>
   );
 }
 
@@ -549,7 +551,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    justifyContent: 'flex-end',
+    flexShrink: 0,
   },
   textButton: {
     minWidth: 40,
@@ -565,7 +567,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   actionsSpacer: {
-    flex: 1,
+    width: Spacing.one,
   },
   emojiButton: {
     paddingHorizontal: Spacing.one,

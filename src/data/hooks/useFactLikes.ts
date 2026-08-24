@@ -51,9 +51,9 @@ export function useFactLikes(factId: string | null | undefined, enabled = true) 
     factId ? (likesCache.get(factId) ?? []) : [],
   );
 
-  const fetchFresh = useCallback(() => {
-    if (!factId) return;
-    client
+  const fetchFresh = useCallback((): Promise<void> => {
+    if (!factId) return Promise.resolve();
+    return client
       .get<ApiFactLike[] | { results?: ApiFactLike[] }>(`/facts/${factId}/likes`)
       .then((data) => {
         const list = normalize(data);

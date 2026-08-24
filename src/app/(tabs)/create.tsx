@@ -8,7 +8,7 @@ import { CharCounter } from '@/components/CharCounter';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
-import { EmojiPickerPopover, EmojiButton } from '@/components/EmojiPicker';
+import { EmojiPicker, EmojiButton } from '@/components/EmojiPicker';
 import { BottomTabInset, Radii, Spacing, MaxContentWidth, Shadows } from '@/constants/theme';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
@@ -445,11 +445,6 @@ export default function CreateFactScreen() {
                 <CharCounter current={content.trim().length} min={MIN_LENGTH} max={MAX_LENGTH} />
               </View>
             </View>
-            <EmojiPickerPopover
-              visible={showEmojiPicker}
-              onClose={() => setShowEmojiPicker(false)}
-              onEmojiSelected={handleEmojiSelected}
-            />
             <View style={styles.contentContainer}>
               <TextInput
                 ref={contentInputRef}
@@ -592,6 +587,12 @@ export default function CreateFactScreen() {
           </View>
         </View>
       </ThemedView>
+
+      <EmojiPicker
+        visible={showEmojiPicker}
+        onClose={() => setShowEmojiPicker(false)}
+        onSelect={handleEmojiSelected}
+      />
 
       {/* Unsaved changes confirmation modal (Android hardware back) */}
       <AppModal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
