@@ -1,8 +1,9 @@
 import { useFactsStore } from '../stores/factsStore';
+import { useRepostsStore } from '../stores/repostsStore';
 
 /**
- * Facts hook — thin wrapper over factsStore for component consumption.
- * Provides stable selectors to minimize re-renders.
+ * Facts hook — thin wrapper over factsStore + repostsStore for component
+ * consumption. Provides stable selectors to minimize re-renders.
  */
 export function useFacts() {
   const facts = useFactsStore((s) => s.facts);
@@ -18,6 +19,11 @@ export function useFacts() {
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const toggleRepost = useFactsStore((s) => s.toggleRepost);
   const fetchUserFacts = useFactsStore((s) => s.fetchUserFacts);
+  const toggleRepostLike = useRepostsStore((s) => s.toggleRepostLike);
+  const addRepostComment = useRepostsStore((s) => s.addRepostComment);
+  const updateRepostComment = useRepostsStore((s) => s.updateRepostComment);
+  const deleteRepostComment = useRepostsStore((s) => s.deleteRepostComment);
+  const toggleRepostCommentLike = useRepostsStore((s) => s.toggleRepostCommentLike);
 
   return {
     facts,
@@ -33,5 +39,10 @@ export function useFacts() {
     toggleLike,
     toggleRepost,
     fetchUserFacts,
+    toggleRepostLike,
+    addRepostComment,
+    updateRepostComment,
+    deleteRepostComment,
+    toggleRepostCommentLike,
   };
 }

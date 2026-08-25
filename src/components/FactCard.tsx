@@ -26,6 +26,10 @@ interface FactCardProps {
   onDelete?: () => void;
   onPress?: () => void;
   onOpenLikes?: () => void;
+  /** Like a repost (separate from fact like). */
+  onRepostLike?: () => void;
+  /** Open the repost likes modal. */
+  onOpenRepostLikes?: () => void;
   isOwner?: boolean;
   /** Whether the viewer is signed in. When false the card shows the full
    *  read-only surface (author, liked-by, action bar, comment preview) but
@@ -50,6 +54,8 @@ export function FactCard({
   onDelete,
   onPress,
   onOpenLikes,
+  onRepostLike,
+  onOpenRepostLikes,
   isOwner = false,
   isSignedIn = true,
   onRequireLogin,
@@ -97,16 +103,17 @@ export function FactCard({
 
 return (
     <ThemedView type="backgroundElement" style={[styles.card, Shadows.sm]}>
-      {/* Repost indicator — Facebook-style "Reposted by @user" banner above
+      {/* Repost indicator — Reposter avatar + "Reposted by @user" banner above
           the author row, only for repost entries in the feed. */}
-      {fact.isRepost && fact.reposterUsername && (
+      {fact.isRepost && fact.reposter && (
         <View style={styles.repostLine}>
-          <Ionicons name="repeat" size={14} color={theme.muted} />
+          <UserAvatar user={fact.reposter} size={20} />
           <ThemedText type="small" themeColor="textSecondary">
-            {fact.reposterUsername === user?.username
+            {fact.reposter.isMe
               ? 'You reposted this'
-              : `Reposted by @${fact.reposterUsername}`}
+              : `Reposted by @${fact.reposter.username}`}
           </ThemedText>
+          <Ionicons name="repeat" size={14} color={theme.muted} />
         </View>
       )}
 
@@ -161,9 +168,9 @@ return (
           true 'anon' variant; anonymous view-mode taps route to login. */}
       {(isSignedIn || anonView) && (
         <LikedByLine
-          likes={fact.likeBy}
-          likesCount={fact.likesCount}
-          onPress={gate(onOpenLikes)}
+          likes={fact.isRepost ? [] : fact.likeBy}
+          likesCount={fact.isRepost ? (fact.repostLikeCount ?? 0) : fact.likesCount}
+          onPress={gate(fact.isRepost ? onOpenRepostLikes : onOpenLikes)}
         />
       )}
 
@@ -171,13 +178,13 @@ return (
       {(isSignedIn || anonView) && (
         <View style={styles.actionsRow}>
           <LikeButton
-            liked={fact.liked}
-            likesCount={fact.likesCount}
-            onPress={gate(onLike)}
-            disabled={!onLike && !anonView}
+            liked={fact.isRepost ? (fact.repostLiked ?? false) : fact.liked}
+            likesCount={fact.isRepost ? (fact.repostLikeCount ?? 0) : fact.likesCount}
+            onPress={gate(fact.isRepost ? onRepostLike : onLike)}
+            disabled={fact.isRepost ? (!onRepostLike && !anonView) : (!onLike && !anonView)}
           />
           <ThemedText type="small" themeColor="textSecondary">
-            {fact.likesCount}
+            {fact.isRepost ? (fact.repostLikeCount ?? 0) : fact.likesCount}
           </ThemedText>
 
           <AppPressable
@@ -187,7 +194,7 @@ return (
             disabled={!onPress && !anonView}>
             <Ionicons name="chatbubble-outline" size={18} color={theme.muted} />
             <ThemedText type="small" themeColor="textSecondary">
-              {fact.commentsCount}
+              {fact.isRepost ? (fact.repostCommentCount ?? 0) : fact.commentsCount}
             </ThemedText>
           </AppPressable>
 
@@ -235,8 +242,8 @@ return (
       {/* Comment preview line — BELOW the action bar. Private comment content:
           only shown to signed-in viewers. Anonymous users see the count badge
           but not the preview text (backend will 401 comment reads without a
-          token). */}
-      {isSignedIn && fact.commentsCount > 0 && fact.commentPreview && (
+          token). Reposts don't have a comment preview from the API. */}
+      {isSignedIn && !fact.isRepost && fact.commentsCount > 0 && fact.commentPreview && (
         <AppPressable
           onPress={onPress}
           hitSlop={8}

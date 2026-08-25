@@ -82,7 +82,7 @@ interface FactsState {
   fetchFactById: (factId: string) => Promise<Fact>;
   fetchUserFacts: (userId: string, silent?: boolean) => Promise<void>;
   toggleLike: (factId: string) => Promise<void>;
-  toggleRepost: (factId: string) => Promise<void>;
+  toggleRepost: (factId: string) => Promise<boolean>;
   addFact: (fact: { title?: string; content: string }) => Promise<Fact>;
   updateFact: (factId: string, data: { title?: string; content?: string }) => Promise<Fact>;
   deleteFact: (factId: string) => Promise<void>;
@@ -147,7 +147,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
         { page: String(nextPage), limit: String(PAGE_SIZE), order_by: 'createdAt', order_dir: 'desc' },
       );
       const newFacts = mapFactsDtos(results);
-      const merged = [...facts, ...newFacts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      const merged = mergeFacts(facts, newFacts);
       set({
         facts: merged,
         page: nextPage,
@@ -255,20 +255,25 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     }
   },
 
-  toggleRepost: async (factId: string) => {
+  toggleRepost: async (originalFactId: string): Promise<boolean> => {
     const { facts, userFacts } = get();
-    const fact = facts.find((f) => f.id === factId);
-    if (!fact) return;
+    // Find the fact to read current state — could be the original fact entry
+    // or a repost entry that references it.
+    const fact = facts.find(
+      (f) => f.id === originalFactId || f.originalFactId === originalFactId,
+    );
+    if (!fact) return false;
 
-    // Reposts have composite IDs — use the original fact ID for API calls.
-    const apiFactId = fact.originalFactId ?? factId;
     const wasReposted = fact.repostedByMe;
     const currentUser = useAuthStore.getState().user;
 
-    // Optimistic update — keep feed and user facts in sync, including the
-    // reposted-by line (mini avatars + usernames) so it feels instant.
+    // Matches any entry that IS the original fact or references it as a repost.
+    const matches = (f: Fact) =>
+      f.id === originalFactId || f.originalFactId === originalFactId;
+
+    // Optimistic update — sync all related entries across feed + user facts.
     const applyOptimistic = (f: Fact): Fact =>
-      f.id === factId
+      matches(f)
         ? {
             ...f,
             repostedByMe: !wasReposted,
@@ -283,29 +288,31 @@ export const useFactsStore = create<FactsState>((set, get) => ({
 
     try {
       if (wasReposted) {
-        await client.del(`/facts/${apiFactId}/reposts`);
+        await client.del(`/facts/${originalFactId}/reposts`);
       } else {
-        await client.post(`/facts/${apiFactId}/reposts`);
+        await client.post(`/facts/${originalFactId}/reposts`);
       }
 
       // Reconcile with the backend's authoritative repostBy so the
       // "2 most recent reposters" state matches reality after the rush.
-      // On failure keep the optimistic state — the repost succeeded.
       try {
-        const fresh = await get().fetchFactById(apiFactId);
+        const fresh = await get().fetchFactById(originalFactId);
+        const reconcile = (f: Fact): Fact =>
+          matches(f) ? { ...f, repostBy: fresh.repostBy, repostCount: fresh.repostCount } : f;
         set((state) => ({
-          userFacts: state.userFacts.map((f) => (f.id === factId ? fresh : f)),
+          facts: state.facts.map(reconcile),
+          userFacts: state.userFacts.map(reconcile),
         }));
       } catch {
         // keep optimistic state
       }
+      return true;
     } catch (error) {
-      // Rollback on error — restores the pre-optimistic snapshots, which
-      // also reverts this action's repostBy change.
       set({ facts, userFacts });
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
+      return false;
     }
   },
 

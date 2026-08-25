@@ -91,6 +91,12 @@ export interface Fact {
   repostCount: number;
   repostedByMe: boolean;
   repostBy: LikePreview[];
+  /** Number of likes on the repost itself (separate from fact likes). */
+  repostLikeCount: number;
+  /** Whether the current user liked this repost. */
+  repostLiked: boolean;
+  /** Number of comments on the repost itself (separate from fact comments). */
+  repostCommentCount: number;
   commentsCount: number;
   commentPreview: CommentPreview | null;
   hashtags: Hashtag[];
@@ -99,7 +105,15 @@ export interface Fact {
   isRepost?: boolean;
   /** Username of the user who reposted this fact (present when isRepost is true). */
   reposterUsername?: string;
-  /** Original fact ID (for reposts, use this for detail navigation / API calls). */
+  /** Reposter's full profile info for avatar display. */
+  reposter?: {
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+    avatarColor: string | null;
+    isMe: boolean;
+  };
+  /** Original fact ID (for reposts, use this to navigate to the original fact). */
   originalFactId?: string;
 }
 

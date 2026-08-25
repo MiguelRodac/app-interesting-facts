@@ -108,6 +108,12 @@ function RootLayoutInner() {
         }}
       />
       <Stack.Screen
+        name="repost/[id]"
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
         name="edit-profile"
         options={{
           presentation: 'modal',

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Fact } from '@/types';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
-import type { ApiFact, ApiFactFeedItem, ApiPaginatedResponse } from '@/data/api/types';
+import type { ApiAuthor, ApiFact, ApiFactFeedItem, ApiPaginatedResponse } from '@/data/api/types';
 import { mapFactsDtos } from '@/data/mappers/factMapper';
 
 const client = createApiClient(getIdToken);
@@ -13,7 +13,7 @@ const client = createApiClient(getIdToken);
 interface ApiMentionEnvelope {
   id: string;
   type: 'fact';
-  author: ApiFactFeedItem['fact']['author'];
+  author: ApiAuthor;
   createdAt: string;
   fact: Pick<ApiFact, 'id' | 'title' | 'content'>;
 }
@@ -48,7 +48,7 @@ export function useMentionedFacts(username?: string): MentionedFactsState {
         // inner fact only has id/title/content. Merge into full ApiFactFeedItem
         // so the mapper can process them correctly.
         const feedItems: ApiFactFeedItem[] = (data.results ?? []).map((item) => ({
-          type: item.type,
+          type: 'fact' as const,
           createdAt: item.createdAt,
           fact: {
             id: item.fact.id,

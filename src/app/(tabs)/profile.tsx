@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -17,6 +17,7 @@ import { useAuth } from '@/data/hooks/useAuth';
 import { useLikedFacts } from '@/data/hooks/useLikedFacts';
 import { useMentionedFacts } from '@/data/hooks/useMentionedFacts';
 import { useFactsStore } from '@/data/stores/factsStore';
+import { useRepostsStore } from '@/data/stores/repostsStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
@@ -37,6 +38,7 @@ const userFacts = useFactsStore((s) => s.userFacts);
 const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
 const [avatarModalVisible, setAvatarModalVisible] = useState(false);
   const [likesFactId, setLikesFactId] = useState<string | null>(null);
+  const [likesRepostId, setLikesRepostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const theme = useTheme();
@@ -68,9 +70,11 @@ const [avatarModalVisible, setAvatarModalVisible] = useState(false);
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
-      // Reposts use the original fact ID for detail navigation.
-      const factId = fact.originalFactId ?? fact.id;
-      router.push(`/fact/${factId}?from=profile`);
+      if (fact.isRepost) {
+        router.push(`/repost/${fact.id}?from=profile` as any);
+      } else {
+        router.push(`/fact/${fact.id}?from=profile`);
+      }
     },
     [router],
   );
@@ -83,10 +87,19 @@ const handleLike = useCallback(
   );
 
   const handleRepost = useCallback(
-    (factId: string) => {
-      toggleRepost(factId);
+    async (factId: string) => {
+      const ok = await toggleRepost(factId);
+      if (ok) Alert.alert('Listo', 'Repost publicado');
     },
     [toggleRepost],
+  );
+
+  const toggleRepostLike = useRepostsStore((s) => s.toggleRepostLike);
+  const handleRepostLike = useCallback(
+    (repostEntryId: string) => {
+      toggleRepostLike(repostEntryId);
+    },
+    [toggleRepostLike],
   );
 
   const handleSettings = useCallback(() => {
@@ -103,12 +116,14 @@ const renderItem = useCallback(
         fact={item}
         variant="preview"
         onPress={() => handleFactPress(item)}
-        onLike={() => handleLike(item.id)}
-        onRepost={() => handleRepost(item.id)}
-        onOpenLikes={() => setLikesFactId(item.originalFactId ?? item.id)}
+        onLike={!item.isRepost ? () => handleLike(item.originalFactId ?? item.id) : undefined}
+        onRepost={() => handleRepost(item.originalFactId ?? item.id)}
+        onRepostLike={item.isRepost ? () => handleRepostLike(item.id) : undefined}
+        onOpenLikes={!item.isRepost ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
+        onOpenRepostLikes={item.isRepost ? () => setLikesRepostId(item.id) : undefined}
       />
     ),
-    [handleFactPress, handleLike, handleRepost],
+    [handleFactPress, handleLike, handleRepost, handleRepostLike],
   );
 
   const renderEmpty = useCallback(() => {
@@ -250,6 +265,13 @@ const renderItem = useCallback(
         factId={likesFactId}
         visible={likesFactId !== null}
         onClose={() => setLikesFactId(null)}
+      />
+
+      {/* Repost likes list */}
+      <LikesModal
+        repostId={likesRepostId}
+        visible={likesRepostId !== null}
+        onClose={() => setLikesRepostId(null)}
       />
     </ThemedView>
   );

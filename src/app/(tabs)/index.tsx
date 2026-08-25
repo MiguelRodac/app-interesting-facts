@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 
 import { FactCard } from '@/components/FactCard';
@@ -16,12 +16,13 @@ import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
 export default function FeedScreen() {
-  const { facts, isLoading, hasMore, fetchFacts, loadMore, toggleLike, toggleRepost } = useFacts();
+  const { facts, isLoading, hasMore, fetchFacts, loadMore, toggleLike, toggleRepost, toggleRepostLike } = useFacts();
 const { isAuthenticated } = useAuth();
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
   const [likesFactId, setLikesFactId] = useState<string | null>(null);
+  const [likesRepostId, setLikesRepostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const firstFocusRef = useRef(true);
 
@@ -51,9 +52,11 @@ const { isAuthenticated } = useAuth();
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
-      // Reposts use the original fact ID for detail navigation.
-      const factId = fact.originalFactId ?? fact.id;
-      router.push(`/fact/${factId}?from=feed`);
+      if (fact.isRepost) {
+        router.push(`/repost/${fact.id}?from=feed` as any);
+      } else {
+        router.push(`/fact/${fact.id}?from=feed`);
+      }
     },
     [router],
   );
@@ -68,12 +71,21 @@ const handleLike = useCallback(
   );
 
   const handleRepost = useCallback(
-    (factId: string) => {
-      if (isAuthenticated) {
-        toggleRepost(factId);
-      }
+    async (factId: string) => {
+      if (!isAuthenticated) return;
+      const ok = await toggleRepost(factId);
+      if (ok) Alert.alert('Listo', 'Repost publicado');
     },
     [isAuthenticated, toggleRepost],
+  );
+
+  const handleRepostLike = useCallback(
+    (repostEntryId: string) => {
+      if (isAuthenticated) {
+        toggleRepostLike(repostEntryId);
+      }
+    },
+    [isAuthenticated, toggleRepostLike],
   );
 
   const handleRequireLogin = useCallback(() => {
@@ -88,12 +100,14 @@ const handleLike = useCallback(
         isSignedIn={isAuthenticated}
         onRequireLogin={handleRequireLogin}
         onPress={() => handleFactPress(item)}
-        onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
-        onRepost={isAuthenticated ? () => handleRepost(item.id) : undefined}
-        onOpenLikes={isAuthenticated ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
+        onLike={isAuthenticated && !item.isRepost ? () => handleLike(item.originalFactId ?? item.id) : undefined}
+        onRepost={isAuthenticated ? () => handleRepost(item.originalFactId ?? item.id) : undefined}
+        onRepostLike={isAuthenticated && item.isRepost ? () => handleRepostLike(item.id) : undefined}
+        onOpenLikes={isAuthenticated && !item.isRepost ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
+        onOpenRepostLikes={isAuthenticated && item.isRepost ? () => setLikesRepostId(item.id) : undefined}
       />
     ),
-    [isAuthenticated, handleFactPress, handleLike, handleRepost, handleRequireLogin],
+    [isAuthenticated, handleFactPress, handleLike, handleRepost, handleRepostLike, handleRequireLogin],
   );
 
   const renderFooter = useCallback(
@@ -141,6 +155,13 @@ const handleLike = useCallback(
         factId={likesFactId}
         visible={likesFactId !== null}
         onClose={() => setLikesFactId(null)}
+      />
+
+      {/* Repost likes list */}
+      <LikesModal
+        repostId={likesRepostId}
+        visible={likesRepostId !== null}
+        onClose={() => setLikesRepostId(null)}
       />
     </ThemedView>
   );

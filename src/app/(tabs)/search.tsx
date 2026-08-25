@@ -52,6 +52,7 @@ export default function SearchScreen() {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [likesFactId, setLikesFactId] = useState<string | null>(null);
+  const [likesRepostId, setLikesRepostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = useCallback(async () => {
@@ -138,7 +139,11 @@ export default function SearchScreen() {
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
-      router.push(`/fact/${fact.originalFactId ?? fact.id}?from=search`);
+      if (fact.isRepost) {
+        router.push(`/repost/${fact.id}?from=search` as any);
+      } else {
+        router.push(`/fact/${fact.id}?from=search`);
+      }
     },
     [router],
   );
@@ -200,7 +205,8 @@ const renderPostItem = useCallback(
         fact={item}
         variant="preview"
         onPress={() => handleFactPress(item)}
-        onOpenLikes={() => setLikesFactId(item.originalFactId ?? item.id)}
+        onOpenLikes={!item.isRepost ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
+        onOpenRepostLikes={item.isRepost ? () => setLikesRepostId(item.id) : undefined}
       />
     ),
     [handleFactPress],
@@ -347,6 +353,13 @@ const renderPostItem = useCallback(
         factId={likesFactId}
         visible={likesFactId !== null}
         onClose={() => setLikesFactId(null)}
+      />
+
+      {/* Repost likes list */}
+      <LikesModal
+        repostId={likesRepostId}
+        visible={likesRepostId !== null}
+        onClose={() => setLikesRepostId(null)}
       />
     </ThemedView>
   );

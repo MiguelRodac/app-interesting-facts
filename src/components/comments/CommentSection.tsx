@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 
 import { CommentItem } from '@/components/comments/CommentItem';
@@ -7,13 +7,18 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useFactComments } from '@/data/hooks/useFactComments';
+import { useRepostComments } from '@/data/hooks/useRepostComments';
 import { useCommentsStore } from '@/data/stores/commentsStore';
+import { useRepostsStore } from '@/data/stores/repostsStore';
 import { useTheme } from '@/hooks/use-theme';
 import type { Comment, CommentAuthor } from '@/types';
 
 interface CommentSectionProps {
-  factId: string;
-  /** Author deep-link routing — handled by the parent (fact detail screen). */
+  /** Fact id — used for fact comments. Mutually exclusive with repostEntryId. */
+  factId?: string;
+  /** Repost entry id — used for repost comments. Mutually exclusive with factId. */
+  repostEntryId?: string;
+  /** Author deep-link routing — handled by the parent (detail screen). */
   onCommentAuthorPress?: (author: CommentAuthor) => void;
   /** Whether the viewer is signed in. Anonymous viewers see comments
    *  read-only with @username author names (no displayName). Defaults to the
@@ -29,12 +34,6 @@ interface CommentSectionProps {
   onOpenCommentLikes?: (commentId: string) => void;
 }
 
-// How long we show the loader for the initial fetch before yielding to the
-// (possibly empty) state. useFactComments doesn't surface a loading flag, so
-// a short debounce avoids a flash of "No comments yet" on the very first visit
-// while keeping a warm cache from showing a spinner.
-const INITIAL_LOADING_MS = 250;
-
 /**
  * Threaded comments section. Mounted inside the fact detail ScrollView —
  * FlatList with scrollEnabled={false} so the outer ScrollView scrolls.
@@ -47,6 +46,7 @@ const INITIAL_LOADING_MS = 250;
  */
 export function CommentSection({
   factId,
+  repostEntryId,
   onCommentAuthorPress,
   isSignedIn: isSignedInProp,
   onReply,
@@ -54,22 +54,26 @@ export function CommentSection({
   onOpenCommentLikes,
 }: CommentSectionProps) {
   const theme = useTheme();
-  const { comments } = useFactComments(factId);
+  const isRepost = !!repostEntryId;
+  const entityId = repostEntryId ?? factId ?? '';
+
+  // Use the appropriate hook based on whether this is a repost or fact.
+  const factCommentsResult = useFactComments(isRepost ? null : entityId);
+  const repostCommentsResult = useRepostComments(isRepost ? entityId : null);
+  const { comments, loading: factLoading } = isRepost ? repostCommentsResult : factCommentsResult;
+
   const { user } = useAuth();
-  const deleteComment = useCommentsStore((s) => s.deleteComment);
+  const deleteFactComment = useCommentsStore((s) => s.deleteComment);
+  const deleteRepostComment = useRepostsStore((s) => s.deleteRepostComment);
 
   const [deleteTarget, setDeleteTarget] = useState<Comment | null>(null);
 
-  const [loading, setLoading] = useState(() => comments.length === 0);
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), INITIAL_LOADING_MS);
-    return () => clearTimeout(timer);
-  }, []);
+  // If the cache already has comments, skip the loading spinner (warm cache).
+  const loading = factLoading && comments.length === 0;
 
   const isSignedIn = isSignedInProp ?? !!user;
   const currentUsername = user?.username;
 
-  // Delete: hold the target until the ConfirmDialog resolves.
   const handleDelete = useCallback((comment: Comment) => {
     setDeleteTarget(comment);
   }, []);
@@ -77,14 +81,13 @@ export function CommentSection({
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
     const targetId = deleteTarget.id;
-    // Clear the pending target eagerly so the dialog closes immediately.
     setDeleteTarget(null);
-    // The store optimistically removes the comment and surfaces errors (e.g.
-    // DELETE_BLOCKED_HAS_REPLIES 403) via uiStore.setError → global banner.
-    deleteComment(factId, targetId).catch(() => {
-      // Ignore — store handles error surfacing.
-    });
-  }, [deleteTarget, factId, deleteComment]);
+    if (isRepost && repostEntryId) {
+      deleteRepostComment(repostEntryId, targetId).catch(() => {});
+    } else if (factId) {
+      deleteFactComment(factId, targetId).catch(() => {});
+    }
+  }, [deleteTarget, factId, repostEntryId, isRepost, deleteFactComment, deleteRepostComment]);
 
   const handleCancelDelete = useCallback(() => {
     setDeleteTarget(null);
@@ -116,6 +119,7 @@ export function CommentSection({
             <CommentItem
               comment={item}
               factId={factId}
+              repostEntryId={repostEntryId}
               onAuthorPress={onCommentAuthorPress}
               currentUsername={currentUsername}
               isSignedIn={isSignedIn}

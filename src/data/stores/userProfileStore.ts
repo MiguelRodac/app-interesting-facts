@@ -19,7 +19,7 @@ interface UserProfileState {
   fetchProfile: (username: string, silent?: boolean) => Promise<void>;
   fetchUserFacts: (authorId: string, silent?: boolean) => Promise<void>;
   toggleLike: (factId: string) => Promise<void>;
-  toggleRepost: (factId: string) => Promise<void>;
+  toggleRepost: (factId: string) => Promise<boolean>;
   clearProfile: () => void;
 }
 
@@ -99,10 +99,10 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
     }
   },
 
-  toggleRepost: async (factId: string) => {
+  toggleRepost: async (factId: string): Promise<boolean> => {
     const { facts } = get();
     const fact = facts.find((f) => f.id === factId);
-    if (!fact) return;
+    if (!fact) return false;
 
     const wasReposted = fact.repostedByMe;
     const nextFacts = facts.map((f) =>
@@ -122,11 +122,13 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
       } else {
         await client.post(`/facts/${factId}/reposts`);
       }
+      return true;
     } catch (error) {
       set({ facts });
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
+      return false;
     }
   },
 

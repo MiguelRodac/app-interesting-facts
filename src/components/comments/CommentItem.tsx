@@ -12,11 +12,14 @@ import { useTheme } from '@/hooks/use-theme';
 import { canEditComment, formatRelativeTime } from '@/utils/commentTime';
 import type { Comment, CommentAuthor } from '@/types';
 import { useCommentsStore } from '@/data/stores/commentsStore';
+import { useRepostsStore } from '@/data/stores/repostsStore';
 
 interface CommentItemProps {
   comment: Comment;
-  /** Parent fact id — required to call the comment-like endpoints. */
-  factId: string;
+  /** Parent fact id — required for fact comment-like endpoints. */
+  factId?: string;
+  /** Parent repost entry id — required for repost comment-like endpoints. */
+  repostEntryId?: string;
   /** Called when the author is pressed — parent decides profile deep-link. */
   onAuthorPress?: (author: CommentAuthor) => void;
   /** Current signed-in user's username, for editing/deleting own comments. */
@@ -46,6 +49,7 @@ const EDIT_RECHECK_MS = 60 * 1000;
 export function CommentItem({
   comment,
   factId,
+  repostEntryId,
   onAuthorPress,
   currentUsername,
   isSignedIn = false,
@@ -56,6 +60,8 @@ export function CommentItem({
 }: CommentItemProps) {
   const theme = useTheme();
   const toggleCommentLike = useCommentsStore((s) => s.toggleCommentLike);
+  const toggleRepostCommentLike = useRepostsStore((s) => s.toggleRepostCommentLike);
+  const isRepost = !!repostEntryId;
   const [repliesExpanded, setRepliesExpanded] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [canEdit, setCanEdit] = useState(() => canEditComment(comment.createdAt));
@@ -81,10 +87,13 @@ export function CommentItem({
   const handleEdit = useCallback(() => onEdit?.(comment), [onEdit, comment]);
   const handleDelete = useCallback(() => onDelete?.(comment), [onDelete, comment]);
   const handleToggleLike = useCallback(() => {
-    if (isSignedIn) toggleCommentLike(factId, comment).catch(() => {
-      // Ignore — the store surfaces errors via uiStore.setError.
-    });
-  }, [isSignedIn, toggleCommentLike, factId, comment]);
+    if (!isSignedIn) return;
+    if (isRepost && repostEntryId) {
+      toggleRepostCommentLike(repostEntryId, comment).catch(() => {});
+    } else if (factId) {
+      toggleCommentLike(factId, comment).catch(() => {});
+    }
+  }, [isSignedIn, isRepost, repostEntryId, factId, toggleCommentLike, toggleRepostCommentLike, comment]);
 
   const replies = comment.replies ?? [];
 
@@ -233,6 +242,7 @@ export function CommentItem({
                 key={reply.id}
                 comment={reply}
                 factId={factId}
+                repostEntryId={repostEntryId}
                 onAuthorPress={onAuthorPress}
                 currentUsername={currentUsername}
                 isSignedIn={isSignedIn}

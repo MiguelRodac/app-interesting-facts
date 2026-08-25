@@ -1,5 +1,5 @@
 import type { Fact, Hashtag } from '@/types';
-import type { ApiFact, ApiFactFeedItem, ApiHashtag } from '../api/types';
+import type { ApiFact, ApiFactFeedItem, ApiHashtag, ApiRepostResponse } from '../api/types';
 import { mapCommentPreviewDto, mapLikePreviewDto } from './commentMapper';
 import { mapAuthorDto } from './userMapper';
 
@@ -30,6 +30,9 @@ export function mapFactDto(dto: ApiFact): Fact {
     repostCount: dto.repostCount ?? 0,
     repostedByMe: dto.repostedByMe ?? false,
     repostBy: (dto.repostBy ?? []).map(mapLikePreviewDto),
+    repostLikeCount: 0,
+    repostLiked: false,
+    repostCommentCount: 0,
     commentsCount: dto.comments ?? 0,
     commentPreview:
       dto.comments !== 0 && dto.commentsDetails
@@ -41,46 +44,70 @@ export function mapFactDto(dto: ApiFact): Fact {
 }
 
 /**
- * Maps an array of API Facts to domain Facts.
+ * Maps an API Repost DTO to a domain Fact.
+ * The repost's own data becomes the Fact's data, with the original fact's
+ * author shown as the card author and the reposter shown in the banner.
+ */
+function mapRepostDto(repost: ApiRepostResponse): Fact {
+  return {
+    id: repost.id,
+    title: repost.title ?? undefined,
+    content: repost.content,
+    author: mapAuthorDto(repost.author),
+    likesCount: 0,
+    liked: false,
+    likeBy: [],
+    repostCount: repost.repostCount ?? 0,
+    repostedByMe: repost.repostedBy.isMe,
+    repostBy: [],
+    repostLikeCount: repost.repostLikeCount ?? 0,
+    repostLiked: false,
+    repostCommentCount: repost.repostCommentCount ?? 0,
+    commentsCount: 0,
+    commentPreview: null,
+    hashtags: repost.hashtags?.map(mapHashtagDto) ?? [],
+    createdAt: repost.createdAt,
+    isRepost: true,
+    reposterUsername: repost.repostedBy.username,
+    reposter: {
+      username: repost.repostedBy.username,
+      displayName: repost.repostedBy.displayName,
+      avatarUrl: repost.repostedBy.avatarUrl,
+      avatarColor: repost.repostedBy.avatarColor,
+      isMe: repost.repostedBy.isMe,
+    },
+    originalFactId: repost.factId,
+  };
+}
+
+/**
+ * Maps an array of API feed entries to domain Facts.
  *
  * Feed-style endpoints (/facts, /facts/author/:id) wrap every entry in a
- * timeline envelope { type, fact, repostedBy?, createdAt? } that mixes facts
- * with reposts. A repost is a SEPARATE feed entry — it appears as its own
- * card with "Reposted by @user" above the original author. The same fact
- * can appear multiple times (original + N reposts by different users), so
- * we only dedupe reposts from the SAME reposter (duplicate repost events).
- * FlatList keys use a composite key to keep them unique.
+ * timeline envelope { type, fact | repost, createdAt }.
+ * - type: 'fact' → the inner `fact` is a FactResponse
+ * - type: 'repost' → the inner `repost` is a RepostResponse with its own ID
  */
 export function mapFactsDtos(dtos: (ApiFact | ApiFactFeedItem)[]): Fact[] {
   const seen = new Set<string>();
   const facts: Fact[] = [];
   for (const item of dtos) {
-    const envelope = 'fact' in (item as ApiFactFeedItem) ? (item as ApiFactFeedItem) : null;
-    const dto = envelope?.fact ?? (item as ApiFact);
-    if (!dto?.id) continue;
+    const entry = item as ApiFactFeedItem;
 
-    const isRepost = envelope?.type === 'repost' && !!envelope.repostedBy;
-    // Composite key: reposts by different users are separate entries;
-    // only drop exact duplicates (same fact + same reposter).
-    const key = isRepost
-      ? `repost-${dto.id}-${envelope!.repostedBy!.username}`
-      : `fact-${dto.id}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    const fact = mapFactDto(dto);
-    // FlatList key needs to be globally unique — reposts get a suffix.
-    if (isRepost) {
-      fact.originalFactId = dto.id;
-      fact.id = `${dto.id}-repost-${envelope!.repostedBy!.username}`;
-      fact.isRepost = true;
-      fact.reposterUsername = envelope!.repostedBy!.username;
-      // Use the repost timestamp, not the original fact's createdAt.
-      if (envelope!.createdAt) {
-        fact.createdAt = envelope!.createdAt;
-      }
+    if (entry.type === 'repost' && 'repost' in entry) {
+      const repost = entry.repost;
+      if (!repost?.id) continue;
+      // Dedupe by repost ID
+      if (seen.has(repost.id)) continue;
+      seen.add(repost.id);
+      facts.push(mapRepostDto(repost));
+    } else {
+      const dto = ('fact' in entry ? entry.fact : entry) as ApiFact;
+      if (!dto?.id) continue;
+      if (seen.has(dto.id)) continue;
+      seen.add(dto.id);
+      facts.push(mapFactDto(dto));
     }
-    facts.push(fact);
   }
   return facts;
 }

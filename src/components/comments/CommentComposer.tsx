@@ -17,6 +17,7 @@ import { getIdToken } from '@/data/auth/firebaseAuth';
 import { useAuth } from '@/data/hooks/useAuth';
 import type { ApiUserSearchResult } from '@/data/api/types';
 import { useCommentsStore } from '@/data/stores/commentsStore';
+import { useRepostsStore } from '@/data/stores/repostsStore';
 import { useTheme } from '@/hooks/use-theme';
 import { EmojiPicker, EmojiButton } from '@/components/EmojiPicker';
 
@@ -42,7 +43,10 @@ interface ReplyTarget {
 type ComposerMode = 'create' | 'edit';
 
 interface CommentComposerProps {
-  factId: string;
+  /** Fact id — used for fact comments. Mutually exclusive with repostEntryId. */
+  factId?: string;
+  /** Repost entry id — used for repost comments. Mutually exclusive with factId. */
+  repostEntryId?: string;
   /** Set (create mode) → reply to another author's comment; empty → new top-level comment. */
   replyTo?: ReplyTarget | null;
   /** Fired when the inline replying chip's cancel (X) is tapped. */
@@ -78,6 +82,7 @@ interface CommentComposerProps {
  */
 export function CommentComposer({
   factId,
+  repostEntryId,
   replyTo,
   onCancelReply,
   onDone,
@@ -90,8 +95,11 @@ export function CommentComposer({
   const theme = useTheme();
   const { user } = useAuth();
   const isEdit = mode === 'edit';
+  const isRepost = !!repostEntryId;
   const addComment = useCommentsStore((s) => s.addComment);
   const updateComment = useCommentsStore((s) => s.updateComment);
+  const addRepostComment = useRepostsStore((s) => s.addRepostComment);
+  const updateRepostComment = useRepostsStore((s) => s.updateRepostComment);
 
   const [content, setContent] = useState(initialValue);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -277,9 +285,17 @@ export function CommentComposer({
     setIsSubmitting(true);
     try {
       if (isEdit && commentId) {
-        await updateComment(factId, commentId, content.trim());
+        if (isRepost && repostEntryId) {
+          await updateRepostComment(repostEntryId, commentId, content.trim());
+        } else if (factId) {
+          await updateComment(factId, commentId, content.trim());
+        }
       } else {
-        await addComment(factId, content.trim(), replyTo?.commentId);
+        if (isRepost && repostEntryId) {
+          await addRepostComment(repostEntryId, content.trim(), replyTo?.commentId);
+        } else if (factId) {
+          await addComment(factId, content.trim(), replyTo?.commentId);
+        }
       }
       setContent('');
       setShowMentions(false);

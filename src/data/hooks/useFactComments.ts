@@ -95,13 +95,15 @@ function normalize(data: ApiCommentsResponse): Comment[] {
 export function useFactComments(
   factId: string | null | undefined,
   enabled = true,
-): { comments: Comment[]; refetch: () => void } {
+): { comments: Comment[]; loading: boolean; refetch: () => void } {
   const [comments, setComments] = useState<Comment[]>(() =>
     factId ? (commentsCache.get(factId) ?? []) : [],
   );
+  const [loading, setLoading] = useState(() => !!factId && enabled);
 
   const fetchFresh = useCallback(() => {
     if (!factId) return;
+    setLoading(true);
     client
       .get<ApiCommentsResponse>(`/facts/${factId}/comments`)
       .then((data) => {
@@ -110,8 +112,10 @@ export function useFactComments(
         setComments(list);
       })
       .catch(() => {
-        // Backend unavailable — keep whatever the cache has
         setComments(commentsCache.get(factId) ?? []);
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }, [factId]);
 
@@ -142,5 +146,5 @@ export function useFactComments(
     };
   }, [factId, enabled, fetchFresh]);
 
-  return { comments, refetch: fetchFresh };
+  return { comments, loading, refetch: fetchFresh };
 }

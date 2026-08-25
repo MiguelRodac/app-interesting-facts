@@ -27,15 +27,33 @@ export interface ApiPaginatedResponse<T> {
 }
 
 /** Feed timeline item — the backend wraps every feed entry (a fact or a
- *  repost) in an envelope: { type, fact, repostedBy?, createdAt? }. Only the
- *  inner `fact` is used for card rendering; `repostedBy` belongs to the
- *  repost-in-feed UI (not yet built). */
-export interface ApiFactFeedItem {
-  type: 'fact' | 'repost';
-  fact: ApiFact;
-  /** Present only for repost entries — the user who reposted the fact. */
-  repostedBy?: ApiUserAvatarPreview;
-  createdAt?: string;
+ *  repost) in an envelope: { type, fact| repost, createdAt }. */
+export type ApiFactFeedItem =
+  | { type: 'fact'; fact: ApiFact; createdAt: string }
+  | { type: 'repost'; repost: ApiRepostResponse; createdAt: string };
+
+export interface ApiRepostAuthor {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  avatarColor: string | null;
+  isMe: boolean;
+}
+
+/** Repost response from the feed — contains the repost metadata + original fact data. */
+export interface ApiRepostResponse {
+  id: string;
+  factId: string;
+  author: ApiAuthor;
+  title: string | null;
+  content: string;
+  hashtags: ApiHashtag[];
+  repostCount: number;
+  repostedBy: ApiRepostAuthor;
+  repostLikeCount: number;
+  repostCommentCount: number;
+  repostCommentsDetails?: ApiCommentPreview | null;
+  createdAt: string;
 }
 
 export interface ApiHashtag {

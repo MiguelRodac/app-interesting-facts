@@ -10,39 +10,54 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { Radii, Spacing } from '@/constants/theme';
 import { useFactLikes } from '@/data/hooks/useFactLikes';
 import { useCommentLikes } from '@/data/hooks/useCommentLikes';
+import { useRepostLikes } from '@/data/hooks/useRepostLikes';
+import { useRepostCommentLikes } from '@/data/hooks/useRepostCommentLikes';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import type { ApiFactLike } from '@/data/api/types';
 
 interface LikesModalProps {
-  factId: string | null;
+  factId?: string | null;
   /** If provided, fetches comment likes instead of fact likes. */
   commentId?: string | null;
+  /** If provided, fetches repost likes instead of fact likes. */
+  repostId?: string | null;
+  /** If provided with repostId, fetches repost comment likes. */
+  repostCommentId?: string | null;
   visible: boolean;
   onClose: () => void;
 }
 
 /**
- * Reusable likes modal — shows who liked a fact or a comment.
- * Pass `commentId` to show comment likes; omit for fact likes.
+ * Reusable likes modal — shows who liked a fact, comment, repost, or
+ * repost comment. Pass `commentId` for fact comment likes, `repostId`
+ * for repost likes, or `repostCommentId` for repost comment likes.
  */
-export function LikesModal({ factId, commentId, visible, onClose }: LikesModalProps) {
+export function LikesModal({ factId, commentId, repostId, repostCommentId, visible, onClose }: LikesModalProps) {
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
 
-  const factLikes = useFactLikes(commentId ? null : factId, visible && !commentId);
+  const factLikes = useFactLikes(commentId ? null : factId, visible && !commentId && !repostId && !repostCommentId);
   const commentLikes = useCommentLikes(factId, commentId ?? null, visible && !!commentId);
+  const repostLikes = useRepostLikes(repostId ?? null, visible && !!repostId && !repostCommentId);
+  const repostCommentLikes = useRepostCommentLikes(repostId ?? null, repostCommentId ?? null, visible && !!repostCommentId);
 
-  const { likes, refetch } = commentId ? commentLikes : factLikes;
+  const { likes, refetch } = repostCommentId
+    ? repostCommentLikes
+    : repostId
+      ? repostLikes
+      : commentId
+        ? commentLikes
+        : factLikes;
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (visible && factId) {
+    if (visible && (factId || repostId)) {
       setLoading(true);
       refetch().finally(() => setLoading(false));
     }
-  }, [visible, factId, refetch]);
+  }, [visible, factId, repostId, refetch]);
 
   const handleUserPress = useCallback(
     (like: ApiFactLike) => {
