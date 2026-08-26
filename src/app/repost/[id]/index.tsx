@@ -32,7 +32,7 @@ interface CommentReplyTarget {
 
 export default function RepostDetailScreen() {
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
-  const { facts, fetchFactById, fetchRepostById, toggleLike, toggleRepostLike, toggleRepost } = useFacts();
+  const { facts, fetchFactById, fetchRepostById, toggleRepostLike, toggleRepost } = useFacts();
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
@@ -225,16 +225,6 @@ export default function RepostDetailScreen() {
     }
   }, [fact, repostEntryId, toggleRepostLike, isAuthenticated, router]);
 
-  const handleFactLike = useCallback(() => {
-    if (!isAuthenticated) {
-      router.push('/auth/login');
-      return;
-    }
-    if (fact) {
-      toggleLike(fact.originalFactId ?? fact.id);
-    }
-  }, [fact, toggleLike, isAuthenticated, router]);
-
   const handleRepost = useCallback(async () => {
     if (!isAuthenticated) {
       router.push('/auth/login');
@@ -402,18 +392,6 @@ export default function RepostDetailScreen() {
               </ThemedText>
             </AppPressable>
 
-            {/* Fact like (original fact) */}
-            <AppPressable onPress={handleFactLike} style={styles.actionBtn} hitSlop={8}>
-              <Ionicons
-                name={fact.liked ? 'heart' : 'heart-outline'}
-                size={22}
-                color={fact.liked ? theme.destructive : theme.muted}
-              />
-              <ThemedText type="small" themeColor="textSecondary">
-                {fact.likesCount}
-              </ThemedText>
-            </AppPressable>
-
             {/* Repost toggle */}
             <AppPressable onPress={handleRepost} style={styles.actionBtn} hitSlop={8}>
               <Ionicons
@@ -553,6 +531,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   authorInfo: {
+    flex: 1,
     gap: Spacing.half,
   },
   title: {

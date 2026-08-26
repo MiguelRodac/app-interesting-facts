@@ -157,10 +157,10 @@ const handleBack = useCallback(() => {
         {/* Profile card */}
         <ThemedView type="backgroundElement" style={[styles.profileCard, Shadows.md]}>
           <UserAvatar user={profile} size={72} />
-          <ThemedText type="subtitle" style={styles.displayName}>
+          <ThemedText type="subtitle" numberOfLines={2} ellipsizeMode="tail" style={styles.displayName}>
             {profile.displayName}
           </ThemedText>
-          <ThemedText type="default" themeColor="textSecondary">
+          <ThemedText type="default" themeColor="textSecondary" numberOfLines={1} ellipsizeMode="tail" style={styles.username}>
             @{profile.username}
           </ThemedText>
           <ThemedText type="small" themeColor="muted" style={styles.joinedDate}>
@@ -288,6 +288,11 @@ const styles = StyleSheet.create({
   displayName: {
     marginTop: Spacing.three,
     textAlign: 'center',
+    width: '100%',
+  },
+  username: {
+    textAlign: 'center',
+    width: '100%',
   },
   joinedDate: {
     marginTop: Spacing.one,

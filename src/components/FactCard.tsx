@@ -131,9 +131,9 @@ return (
           <UserAvatar user={fact.author} size={32} />
           <View style={styles.authorInfo}>
             {anonView ? (
-              <ThemedText type="smallBold">@{fact.author.username}</ThemedText>
+              <ThemedText type="smallBold" numberOfLines={1} ellipsizeMode="tail">@{fact.author.username}</ThemedText>
             ) : (
-              <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
+              <ThemedText type="smallBold" numberOfLines={1} ellipsizeMode="tail">{fact.author.displayName}</ThemedText>
             )}
             <ThemedText type="small" themeColor="textSecondary">
               @{fact.author.username} · {formatDate(fact.createdAt)}

@@ -38,10 +38,12 @@ const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
+  const scrollViewRef = useRef<ScrollView>(null);
   const theme = useTheme();
   const topInset = useTopInset();
   const [fact, setFact] = useState<Fact | null>(null);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [overflowVisible, setOverflowVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const isCollapsible = fact ? fact.content.length > COLLAPSE_THRESHOLD : false;
   const handleConfirmDelete = useCallback(async () => {
@@ -243,7 +245,6 @@ const isOwner = fact && user?.id === fact.author.id;
   }, []);
 
   const handleLike = useCallback(() => {
-    // View-mode guard: anonymous viewers can't like — route to the login gate.
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
@@ -274,6 +275,10 @@ const isOwner = fact && user?.id === fact.author.id;
       // User cancelled share — ignore
     }
   }, [fact]);
+
+  const handleScrollToComments = useCallback(() => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  }, []);
 
   const handleDelete = useCallback(() => {
     setConfirmDeleteVisible(true);
@@ -332,6 +337,7 @@ const isOwner = fact && user?.id === fact.author.id;
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={0}>
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={[styles.scroll, { paddingTop: topInset }]}
         refreshControl={
           <RefreshControl
@@ -348,20 +354,54 @@ const isOwner = fact && user?.id === fact.author.id;
 
         {/* Fact detail card */}
         <ThemedView type="backgroundElement" style={[styles.card, Shadows.md]}>
-          {/* Author */}
-          <AppPressable onPress={handleAuthorPress} style={styles.authorRow} hitSlop={8}>
-            <UserAvatar user={fact.author} size={44} />
-            <View style={styles.authorInfo}>
-              {isAuthenticated ? (
-                <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
-              ) : (
-                <ThemedText type="smallBold">@{fact.author.username}</ThemedText>
-              )}
-              <ThemedText type="small" themeColor="textSecondary">
-                @{fact.author.username}
-              </ThemedText>
-            </View>
-          </AppPressable>
+          {/* Author + overflow menu */}
+          <View style={styles.headerRow}>
+            <AppPressable onPress={handleAuthorPress} style={[styles.authorRow, { flex: 1 }]} hitSlop={8}>
+              <UserAvatar user={fact.author} size={44} />
+              <View style={styles.authorInfo}>
+                {isAuthenticated ? (
+                  <ThemedText type="smallBold">{fact.author.displayName}</ThemedText>
+                ) : (
+                  <ThemedText type="smallBold">@{fact.author.username}</ThemedText>
+                )}
+                <ThemedText type="small" themeColor="textSecondary">
+                  @{fact.author.username}
+                </ThemedText>
+              </View>
+            </AppPressable>
+            {isOwner ? (
+              <View style={styles.overflowContainer}>
+                <AppPressable
+                  onPress={() => setOverflowVisible((v) => !v)}
+                  hitSlop={8}
+                  style={styles.overflowBtn}>
+                  <Ionicons name="ellipsis-horizontal" size={22} color={theme.muted} />
+                </AppPressable>
+                {overflowVisible && (
+                  <View style={[styles.tooltip, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                    <AppPressable
+                      onPress={() => { setOverflowVisible(false); handleEdit(); }}
+                      style={styles.tooltipItem}
+                      hitSlop={8}>
+                      <Ionicons name="create-outline" size={16} color={theme.primary} />
+                      <ThemedText type="small" style={{ color: theme.primary }}>Edit</ThemedText>
+                    </AppPressable>
+                    <View style={[styles.tooltipDivider, { backgroundColor: theme.border }]} />
+                    <AppPressable
+                      onPress={() => { setOverflowVisible(false); handleDelete(); }}
+                      style={styles.tooltipItem}
+                      hitSlop={8}>
+                      <Ionicons name="trash-outline" size={16} color={theme.destructive} />
+                      <ThemedText type="small" style={{ color: theme.destructive }}>Delete</ThemedText>
+                    </AppPressable>
+                    {/* Arrow */}
+                    <View style={[styles.tooltipArrow, { borderTopColor: theme.border }]} />
+                    <View style={[styles.tooltipArrowInner, { borderTopColor: theme.background }]} />
+                  </View>
+                )}
+              </View>
+            ) : null}
+          </View>
 
           {/* Title */}
           {fact.title ? (
@@ -421,6 +461,14 @@ const isOwner = fact && user?.id === fact.author.id;
               </ThemedText>
             </AppPressable>
 
+            {/* Comment — scroll to the comment thread below */}
+            <AppPressable onPress={handleScrollToComments} style={styles.actionBtn} hitSlop={8}>
+              <Ionicons name="chatbubble-outline" size={24} color={theme.muted} />
+              <ThemedText type="small" themeColor="textSecondary">
+                {fact.commentsCount}
+              </ThemedText>
+            </AppPressable>
+
             {/* Repost — optimistic toggle; tinted when repostedByMe. */}
             <AppPressable onPress={handleRepost} style={styles.actionBtn} hitSlop={8}>
               <Ionicons
@@ -436,23 +484,6 @@ const isOwner = fact && user?.id === fact.author.id;
             <AppPressable onPress={handleShare} style={styles.actionBtn} hitSlop={8}>
               <Ionicons name="share-outline" size={24} color={theme.muted} />
             </AppPressable>
-
-            {isOwner ? (
-              <View style={styles.ownerActions}>
-                <AppPressable
-                  onPress={handleEdit}
-                  style={[styles.editButton, { borderColor: theme.primary }]}
-                  hitSlop={8}>
-                  <Ionicons name="create-outline" size={18} color={theme.primary} />
-                  <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                    Edit
-                  </ThemedText>
-                </AppPressable>
-                <AppPressable onPress={handleDelete} style={styles.actionBtn} hitSlop={8}>
-                  <Ionicons name="trash-outline" size={24} color={theme.destructive} />
-                </AppPressable>
-              </View>
-            ) : null}
           </View>
         </ThemedView>
 
@@ -589,6 +620,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   authorInfo: {
+    flex: 1,
     gap: Spacing.half,
   },
   title: {
@@ -623,19 +655,63 @@ actions: {
     gap: Spacing.one,
     padding: Spacing.one,
   },
-  editButton: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    marginBottom: Spacing.two,
+  },
+  overflowContainer: {
+    position: 'relative',
+    marginLeft: Spacing.one,
+  },
+  overflowBtn: {
+    padding: Spacing.one,
+  },
+  tooltip: {
+    position: 'absolute',
+    bottom: '100%',
+    right: 0,
+    marginBottom: 6,
+    borderRadius: Radii.sm,
+    borderWidth: 1,
+    minWidth: 120,
+    ...Shadows.md,
+    zIndex: 10,
+  },
+  tooltipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    borderRadius: Radii.md,
-    borderWidth: 1,
   },
-  ownerActions: {
-    flexDirection: 'row',
-    marginLeft: 'auto',
-    gap: Spacing.two,
+  tooltipDivider: {
+    height: 1,
+    marginHorizontal: Spacing.two,
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: -7,
+    right: 10,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  tooltipArrowInner: {
+    position: 'absolute',
+    bottom: -5,
+    right: 11,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 5,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
   // Full-screen (flex:1), no-scroll confirm overlay — mirrors the create-tab guard
   modalOverlay: {
