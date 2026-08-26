@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, ScrollView, ActivityIndicator, Image } from 'react-native';
+import { StyleSheet, View, ScrollView, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
@@ -184,7 +185,8 @@ export function AvatarPickerModal({
                             <Image
                               source={{ uri: option.url! }}
                               style={styles.avatarOptionImage}
-                              resizeMode="cover"
+                              contentFit="cover"
+                              transition={150}
                             />
                             {isSelected && (
                               <View style={styles.checkBadge}>
@@ -220,9 +222,11 @@ export function AvatarPickerModal({
           </View>
         </ThemedView>
       </View>
-</AppModal>
+    </AppModal>
   );
 }
+
+const CIRCLE_SIZE = 52;
 
 const styles = StyleSheet.create({
   overlay: {
@@ -270,12 +274,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    gap: Spacing.two + 2,
+    gap: 12,
   },
   avatarOption: {
-    width: '17.5%',
-    aspectRatio: 1,
-    borderRadius: 999,
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
     overflow: 'hidden',
   },
   avatarOptionImage: {
@@ -283,17 +287,17 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   noAvatarOption: {
-    width: '17.5%',
-    aspectRatio: 1,
-    borderRadius: 999,
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
     backgroundColor: '#B0BEC5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   noColorOption: {
-    width: '17.5%',
-    aspectRatio: 1,
-    borderRadius: 999,
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
     backgroundColor: '#616161',
     alignItems: 'center',
     justifyContent: 'center',
@@ -305,26 +309,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
-    gap: Spacing.two + 2,
+    gap: 12,
   },
   colorCircle: {
-    width: '17.5%',
-    aspectRatio: 1,
-    borderRadius: 999,
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
   },
   optionSelected: {
     borderWidth: 3,
     borderColor: '#3c87f7',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
     elevation: 4,
   },
   checkBadge: {
     position: 'absolute',
     bottom: -2,
     right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: '#3c87f7',
     alignItems: 'center',
     justifyContent: 'center',

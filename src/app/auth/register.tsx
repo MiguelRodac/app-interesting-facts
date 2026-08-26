@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -154,162 +154,167 @@ const isValid =
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
-      <ThemedView style={[styles.container, { paddingTop: topInset }]}>
-        {/* Close button - go back to previous screen */}
-        <AppPressable
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace('/');
-            }
-          }}
-          style={styles.closeButton}
-          hitSlop={8}>
-          <Ionicons name="close" size={28} color={theme.text} />
-        </AppPressable>
+      <ThemedView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + Spacing.three }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          {/* Close button - go back to previous screen */}
+          <AppPressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/');
+              }
+            }}
+            style={styles.closeButton}
+            hitSlop={8}>
+            <Ionicons name="close" size={28} color={theme.text} />
+          </AppPressable>
 
-        {/* Header */}
-        <View style={styles.header}>
-          <ThemedText type="title">Create Account</ThemedText>
-          <ThemedText type="default" themeColor="textSecondary">
-            Join the community
-          </ThemedText>
-        </View>
-
-        {/* Form */}
-        <View style={styles.form}>
-          <View style={styles.field}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Display Name
+          {/* Header */}
+          <View style={styles.header}>
+            <ThemedText type="title">Create Account</ThemedText>
+            <ThemedText type="default" themeColor="textSecondary">
+              Join the community
             </ThemedText>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder="Your name"
-              placeholderTextColor={theme.muted}
-              value={displayName}
-onChangeText={setDisplayName}
-              maxLength={MAX_DISPLAY_NAME_LENGTH}
-              autoCorrect={false}
-              editable={!isSubmitting}
-            />
           </View>
 
-<View style={styles.field}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Username
-            </ThemedText>
-            <View
-              style={[
-                styles.usernameInputShell,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: getUsernameBorderColor(),
-                },
-              ]}>
-              {/* Visual @ prefix — the stored username has no @ */}
-              <ThemedText type="smallBold" style={[styles.usernamePrefix, { color: theme.text }]}>
-                @
+          {/* Form */}
+          <View style={styles.form}>
+            <View style={styles.field}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Display Name
               </ThemedText>
               <TextInput
-                style={[styles.usernameField, { color: theme.text }]}
-                placeholder="your_username"
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    color: theme.text,
+                    borderColor: theme.border,
+                  },
+                ]}
+                placeholder="Your name"
                 placeholderTextColor={theme.muted}
-                value={username}
-                onChangeText={setUsername}
-                maxLength={30}
+                value={displayName}
+                onChangeText={setDisplayName}
+                maxLength={MAX_DISPLAY_NAME_LENGTH}
+                autoCorrect={false}
+                editable={!isSubmitting}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Username
+              </ThemedText>
+              <View
+                style={[
+                  styles.usernameInputShell,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: getUsernameBorderColor(),
+                  },
+                ]}>
+                {/* Visual @ prefix — the stored username has no @ */}
+                <ThemedText type="smallBold" style={[styles.usernamePrefix, { color: theme.text }]}>
+                  @
+                </ThemedText>
+                <TextInput
+                  style={[styles.usernameField, { color: theme.text }]}
+                  placeholder="your_username"
+                  placeholderTextColor={theme.muted}
+                  value={username}
+                  onChangeText={setUsername}
+                  maxLength={30}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isSubmitting}
+                />
+                {usernameStatus === 'checking' && (
+                  <ActivityIndicator size="small" color={theme.primary} style={styles.usernameIndicator} />
+                )}
+                {usernameStatus === 'available' && (
+                  <Ionicons name="checkmark-circle" size={20} color={theme.success} style={styles.usernameIndicator} />
+                )}
+                {usernameStatus === 'taken' && (
+                  <Ionicons name="close-circle" size={20} color={theme.destructive} style={styles.usernameIndicator} />
+                )}
+                {usernameStatus === 'invalid' && (
+                  <Ionicons name="close-circle" size={20} color={theme.destructive} style={styles.usernameIndicator} />
+                )}
+              </View>
+              {helperText && (
+                <ThemedText type="small" style={{ color: helperColor }}>
+                  {helperText}
+                </ThemedText>
+              )}
+            </View>
+
+            <View style={styles.field}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Email
+              </ThemedText>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    color: theme.text,
+                    borderColor: emailInvalid ? theme.destructive : theme.border,
+                  },
+                ]}
+                placeholder="your@email.com"
+                placeholderTextColor={theme.muted}
+                value={email}
+                onChangeText={setEmail}
+                maxLength={254}
+                keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 editable={!isSubmitting}
               />
-              {usernameStatus === 'checking' && (
-                <ActivityIndicator size="small" color={theme.primary} style={styles.usernameIndicator} />
-              )}
-              {usernameStatus === 'available' && (
-                <Ionicons name="checkmark-circle" size={20} color={theme.success} style={styles.usernameIndicator} />
-              )}
-              {usernameStatus === 'taken' && (
-                <Ionicons name="close-circle" size={20} color={theme.destructive} style={styles.usernameIndicator} />
-              )}
-              {usernameStatus === 'invalid' && (
-                <Ionicons name="close-circle" size={20} color={theme.destructive} style={styles.usernameIndicator} />
+              {emailInvalid && (
+                <ThemedText type="small" style={{ color: theme.destructive }}>
+                  {'Enter a valid email'}
+                </ThemedText>
               )}
             </View>
-            {helperText && (
-              <ThemedText type="small" style={{ color: helperColor }}>
-                {helperText}
-              </ThemedText>
-            )}
-          </View>
 
-          <View style={styles.field}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Email
-            </ThemedText>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  color: theme.text,
-                  borderColor: emailInvalid ? theme.destructive : theme.border,
-                },
-              ]}
-              placeholder="your@email.com"
-              placeholderTextColor={theme.muted}
-              value={email}
-              onChangeText={setEmail}
-              maxLength={254}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
+            <PasswordField
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Choose a password"
               editable={!isSubmitting}
+              showStrength
             />
-            {emailInvalid && (
-              <ThemedText type="small" style={{ color: theme.destructive }}>
-                {'Enter a valid email'}
+
+            <AppPressable
+              onPress={isValid && !isSubmitting ? handleSubmit : undefined}
+              style={[
+                styles.submitButton,
+                {
+                  backgroundColor: isValid ? theme.primary : theme.muted,
+                  opacity: isSubmitting ? 0.7 : 1,
+                },
+              ]}>
+              <ThemedText type="smallBold" style={styles.submitText}>
+                {isSubmitting ? 'Creating account...' : 'Create Account'}
               </ThemedText>
-            )}
+            </AppPressable>
+
+            <AppPressable onPress={goToLogin} style={styles.linkButton}>
+              <ThemedText type="small" themeColor="textSecondary">
+                Already have an account?{' '}
+              </ThemedText>
+              <ThemedText type="smallBold" style={{ color: theme.primary }}>
+                Sign In
+              </ThemedText>
+            </AppPressable>
           </View>
-
-          <PasswordField
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Choose a password"
-            editable={!isSubmitting}
-            showStrength
-          />
-
-          <AppPressable
-            onPress={isValid && !isSubmitting ? handleSubmit : undefined}
-            style={[
-              styles.submitButton,
-              {
-                backgroundColor: isValid ? theme.primary : theme.muted,
-                opacity: isSubmitting ? 0.7 : 1,
-              },
-            ]}>
-            <ThemedText type="smallBold" style={styles.submitText}>
-              {isSubmitting ? 'Creating account...' : 'Create Account'}
-            </ThemedText>
-          </AppPressable>
-
-          <AppPressable onPress={goToLogin} style={styles.linkButton}>
-            <ThemedText type="small" themeColor="textSecondary">
-              Already have an account?{' '}
-            </ThemedText>
-            <ThemedText type="smallBold" style={{ color: theme.primary }}>
-              Sign In
-            </ThemedText>
-          </AppPressable>
-        </View>
+        </ScrollView>
       </ThemedView>
     </KeyboardAvoidingView>
   );
@@ -321,16 +326,19 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.five,
+    paddingBottom: Spacing.six,
   },
   closeButton: {
     alignSelf: 'flex-end',
     padding: Spacing.one,
   },
   header: {
-    marginTop: Spacing.five,
-    marginBottom: Spacing.five,
+    marginTop: Spacing.three,
+    marginBottom: Spacing.four,
     gap: Spacing.one,
   },
   form: {
@@ -349,7 +357,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     fontSize: 16,
   },
-usernameInputShell: {
+  usernameInputShell: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,

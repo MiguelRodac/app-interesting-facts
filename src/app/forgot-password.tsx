@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,75 +59,80 @@ export default function ForgotPasswordScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
-      <ThemedView style={[styles.container, { paddingTop: topInset }]}>
-        {/* Close button - go back to previous screen */}
-        <AppPressable
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace('/auth/login');
-            }
-          }}
-          style={styles.closeButton}
-          hitSlop={8}>
-          <Ionicons name="close" size={28} color={theme.text} />
-        </AppPressable>
+      <ThemedView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + Spacing.three }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          {/* Close button - go back to previous screen */}
+          <AppPressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/auth/login');
+              }
+            }}
+            style={styles.closeButton}
+            hitSlop={8}>
+            <Ionicons name="close" size={28} color={theme.text} />
+          </AppPressable>
 
-        {/* Header */}
-        <View style={styles.header}>
-          <ThemedText type="title">Reset Password</ThemedText>
-          <ThemedText type="default" themeColor="textSecondary">
-            Enter your email and we'll send you a link to reset your password.
-          </ThemedText>
-        </View>
-
-        {/* Form */}
-        <View style={styles.form}>
-          <View style={styles.field}>
-            <ThemedText type="smallBold" themeColor="textSecondary">
-              Email
+          {/* Header */}
+          <View style={styles.header}>
+            <ThemedText type="title">Reset Password</ThemedText>
+            <ThemedText type="default" themeColor="textSecondary">
+              Enter your email and we'll send you a link to reset your password.
             </ThemedText>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  color: theme.text,
-                  borderColor: emailInvalid ? theme.destructive : theme.border,
-                },
-              ]}
-              placeholder="your@email.com"
-              placeholderTextColor={theme.muted}
-              value={email}
-              onChangeText={setEmail}
-              maxLength={254}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isSending}
-            />
-            {emailInvalid && (
-              <ThemedText type="small" style={{ color: theme.destructive }}>
-                {'Enter a valid email'}
-              </ThemedText>
-            )}
           </View>
 
-          <AppPressable
-            onPress={isValid ? handleSend : undefined}
-            style={[
-              styles.submitButton,
-              {
-                backgroundColor: isValid ? theme.primary : theme.muted,
-                opacity: isSending ? 0.7 : 1,
-              },
-            ]}>
-            <ThemedText type="smallBold" style={styles.submitText}>
-              {isSending ? 'Sending...' : 'Send Reset Link'}
-            </ThemedText>
-          </AppPressable>
-        </View>
+          {/* Form */}
+          <View style={styles.form}>
+            <View style={styles.field}>
+              <ThemedText type="smallBold" themeColor="textSecondary">
+                Email
+              </ThemedText>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    color: theme.text,
+                    borderColor: emailInvalid ? theme.destructive : theme.border,
+                  },
+                ]}
+                placeholder="your@email.com"
+                placeholderTextColor={theme.muted}
+                value={email}
+                onChangeText={setEmail}
+                maxLength={254}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isSending}
+              />
+              {emailInvalid && (
+                <ThemedText type="small" style={{ color: theme.destructive }}>
+                  {'Enter a valid email'}
+                </ThemedText>
+              )}
+            </View>
+
+            <AppPressable
+              onPress={isValid ? handleSend : undefined}
+              style={[
+                styles.submitButton,
+                {
+                  backgroundColor: isValid ? theme.primary : theme.muted,
+                  opacity: isSending ? 0.7 : 1,
+                },
+              ]}>
+              <ThemedText type="smallBold" style={styles.submitText}>
+                {isSending ? 'Sending...' : 'Send Reset Link'}
+              </ThemedText>
+            </AppPressable>
+          </View>
+        </ScrollView>
       </ThemedView>
     </KeyboardAvoidingView>
   );
@@ -139,16 +144,19 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.five,
+    paddingBottom: Spacing.six,
   },
   closeButton: {
     alignSelf: 'flex-end',
     padding: Spacing.one,
   },
   header: {
-    marginTop: Spacing.five,
-    marginBottom: Spacing.five,
+    marginTop: Spacing.three,
+    marginBottom: Spacing.four,
     gap: Spacing.one,
   },
   form: {

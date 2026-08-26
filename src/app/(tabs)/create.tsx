@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, FlatList, BackHandler } from 'react-native';
+import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, FlatList, BackHandler, ScrollView } from 'react-native';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter, useSegments } from 'expo-router';
@@ -398,16 +398,20 @@ export default function CreateFactScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
       <ThemedView style={styles.container}>
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: topInset }]}>
-          <ThemedText type="subtitle">Create Fact</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            Share something interesting with the world
-          </ThemedText>
-        </View>
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingTop: topInset }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={styles.header}>
+            <ThemedText type="subtitle">Create Fact</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              Share something interesting with the world
+            </ThemedText>
+          </View>
 
-        {/* Form */}
-        <View style={styles.form}>
+          {/* Form */}
+          <View style={styles.form}>
           {/* Title field */}
           <View style={styles.field}>
             <View style={styles.fieldHeader}>
@@ -586,44 +590,45 @@ export default function CreateFactScreen() {
             </AppPressable>
           </View>
         </View>
-      </ThemedView>
+      </ScrollView>
+    </ThemedView>
 
-      <EmojiPicker
-        visible={showEmojiPicker}
-        onClose={() => setShowEmojiPicker(false)}
-        onSelect={handleEmojiSelected}
-      />
+    <EmojiPicker
+      visible={showEmojiPicker}
+      onClose={() => setShowEmojiPicker(false)}
+      onSelect={handleEmojiSelected}
+    />
 
-      {/* Unsaved changes confirmation modal (Android hardware back) */}
-      <AppModal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
-        <View style={styles.modalOverlay}>
-          <ThemedView type="backgroundElement" style={styles.modalContent}>
-            <ThemedText type="subtitle" style={styles.modalTitle}>
-              ¿Perder los cambios?
-            </ThemedText>
-            <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-              Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?
-            </ThemedText>
-            <View style={styles.modalButtons}>
-              <AppPressable
-                onPress={handleCancelLeave}
-                style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
-                <ThemedText type="smallBold" style={styles.cancelModalText}>
-                  Cancelar
-                </ThemedText>
-              </AppPressable>
-              <AppPressable
-                onPress={handleConfirmLeave}
-                style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
-                <ThemedText type="smallBold" style={styles.confirmModalText}>
-                  Salir
-                </ThemedText>
-              </AppPressable>
-            </View>
-          </ThemedView>
-        </View>
-</AppModal>
-    </KeyboardAvoidingView>
+    {/* Unsaved changes confirmation modal (Android hardware back) */}
+    <AppModal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
+      <View style={styles.modalOverlay}>
+        <ThemedView type="backgroundElement" style={styles.modalContent}>
+          <ThemedText type="subtitle" style={styles.modalTitle}>
+            ¿Perder los cambios?
+          </ThemedText>
+          <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
+            Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?
+          </ThemedText>
+          <View style={styles.modalButtons}>
+            <AppPressable
+              onPress={handleCancelLeave}
+              style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
+              <ThemedText type="smallBold" style={styles.cancelModalText}>
+                Cancelar
+              </ThemedText>
+            </AppPressable>
+            <AppPressable
+              onPress={handleConfirmLeave}
+              style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
+              <ThemedText type="smallBold" style={styles.confirmModalText}>
+                Salir
+              </ThemedText>
+            </AppPressable>
+          </View>
+        </ThemedView>
+      </View>
+    </AppModal>
+  </KeyboardAvoidingView>
   );
 }
 
@@ -634,10 +639,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: BottomTabInset + Spacing.four,
+  },
   header: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.six,
-    paddingBottom: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
     gap: Spacing.one,
   },
   form: {
