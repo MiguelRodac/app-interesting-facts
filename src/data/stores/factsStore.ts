@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import type { Author, Fact, FactLike } from '@/types';
 import { createApiClient } from '../api/client';
-import type { ApiFact, ApiFactFeedItem, ApiPaginatedResponse } from '../api/types';
-import { mapFactsDtos, mapFactDto } from '../mappers/factMapper';
+import type { ApiFact, ApiFactFeedItem, ApiPaginatedResponse, ApiRepostResponse } from '../api/types';
+import { mapFactsDtos, mapFactDto, mapRepostDto } from '../mappers/factMapper';
 import { getIdToken } from '../auth/firebaseAuth';
 import { notifyFactLikesChanged } from '../hooks/useFactLikes';
 import { useAuthStore } from './authStore';
@@ -80,6 +80,7 @@ interface FactsState {
   fetchFacts: (silent?: boolean) => Promise<void>;
   loadMore: () => Promise<void>;
   fetchFactById: (factId: string) => Promise<Fact>;
+  fetchRepostById: (repostId: string) => Promise<Fact>;
   fetchUserFacts: (userId: string, silent?: boolean) => Promise<void>;
   toggleLike: (factId: string) => Promise<void>;
   toggleRepost: (factId: string) => Promise<boolean>;
@@ -166,6 +167,22 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     try {
       const dto = await client.get<ApiFact>(`/facts/${factId}`);
       const fact = mapFactDto(dto);
+      set((state) => ({
+        facts: upsertFact(state.facts, fact),
+      }));
+      return fact;
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error) {
+        useUIStore.getState().setError(error as import('@/types').AppError);
+      }
+      throw error;
+    }
+  },
+
+  fetchRepostById: async (repostId: string) => {
+    try {
+      const dto = await client.get<ApiRepostResponse>(`/reposts/${repostId}`);
+      const fact = mapRepostDto(dto);
       set((state) => ({
         facts: upsertFact(state.facts, fact),
       }));

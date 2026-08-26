@@ -14,6 +14,7 @@ export function useFacts() {
   const fetchFacts = useFactsStore((s) => s.fetchFacts);
   const loadMore = useFactsStore((s) => s.loadMore);
   const fetchFactById = useFactsStore((s) => s.fetchFactById);
+  const fetchRepostById = useFactsStore((s) => s.fetchRepostById);
   const addFact = useFactsStore((s) => s.addFact);
   const deleteFact = useFactsStore((s) => s.deleteFact);
   const toggleLike = useFactsStore((s) => s.toggleLike);
@@ -34,6 +35,7 @@ export function useFacts() {
     fetchFacts,
     loadMore,
     fetchFactById,
+    fetchRepostById,
     addFact,
     deleteFact,
     toggleLike,

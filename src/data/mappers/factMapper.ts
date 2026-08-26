@@ -48,7 +48,7 @@ export function mapFactDto(dto: ApiFact): Fact {
  * The repost's own data becomes the Fact's data, with the original fact's
  * author shown as the card author and the reposter shown in the banner.
  */
-function mapRepostDto(repost: ApiRepostResponse): Fact {
+export function mapRepostDto(repost: ApiRepostResponse): Fact {
   return {
     id: repost.id,
     title: repost.title ?? undefined,
@@ -61,7 +61,7 @@ function mapRepostDto(repost: ApiRepostResponse): Fact {
     repostedByMe: repost.repostedBy.isMe,
     repostBy: [],
     repostLikeCount: repost.repostLikeCount ?? 0,
-    repostLiked: false,
+    repostLiked: repost.liked,
     repostCommentCount: repost.repostCommentCount ?? 0,
     commentsCount: 0,
     commentPreview: null,

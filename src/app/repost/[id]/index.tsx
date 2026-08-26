@@ -32,7 +32,7 @@ interface CommentReplyTarget {
 
 export default function RepostDetailScreen() {
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
-  const { facts, fetchFactById, toggleLike, toggleRepostLike, toggleRepost } = useFacts();
+  const { facts, fetchFactById, fetchRepostById, toggleLike, toggleRepostLike, toggleRepost } = useFacts();
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
@@ -147,7 +147,7 @@ export default function RepostDetailScreen() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Load the fact from store or fetch it
+  // Load the repost from store or fetch it
   useEffect(() => {
     if (!id) return;
     const found = facts.find((f) => f.id === id);
@@ -165,7 +165,7 @@ export default function RepostDetailScreen() {
     }
     let active = true;
     setLoading(true);
-    fetchFactById(id)
+    fetchRepostById(id)
       .then((fetched) => {
         if (active) setFact(fetched);
       })
@@ -178,18 +178,18 @@ export default function RepostDetailScreen() {
     return () => {
       active = false;
     };
-  }, [id, facts, fetchFactById]);
+  }, [id, facts, fetchRepostById]);
 
   const handleRefresh = useCallback(async () => {
     if (!id || !repostEntryId) return;
     setRefreshing(true);
     try {
-      await fetchFactById(fact?.originalFactId ?? id);
+      await fetchRepostById(id);
       notifyRepostCommentsChanged(repostEntryId);
     } finally {
       setRefreshing(false);
     }
-  }, [id, fact, repostEntryId, fetchFactById]);
+  }, [id, repostEntryId, fetchRepostById]);
 
   const handleAuthorPress = useCallback(() => {
     if (!fact) return;

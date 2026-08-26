@@ -50,6 +50,7 @@ export interface ApiRepostResponse {
   hashtags: ApiHashtag[];
   repostCount: number;
   repostedBy: ApiRepostAuthor;
+  liked: boolean;
   repostLikeCount: number;
   repostCommentCount: number;
   repostCommentsDetails?: ApiCommentPreview | null;
