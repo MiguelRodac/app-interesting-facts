@@ -27,11 +27,13 @@
 ### ✨ Características Principales
 
 - 🔐 **Autenticación Firebase** — Login seguro con email/password
-- 📰 **Feed Social** — Descubre facts de otros usuarios con infinite scroll
-- 🔍 **Búsqueda Avanzada** — Busca por personas, posts o hashtags
-- 💬 **Interacciones** — Dale like a los facts que te gusten
+- 📰 **Feed Social** — Facts y reposts con infinite scroll y dedup
+- 🔁 **Reposts** — Repostea con un tap, detalle propio con likes y comentarios independientes
+- 🔍 **Búsqueda Avanzada** — Busca por personas, posts (facts + reposts) o hashtags
+- 💬 **Interacciones** — Likes con avatares inline, comentarios anidados y reposts
 - 🏷️ **Menciones y Hashtags** — autocomplete en vivo al escribir `@usuario` o `#tema`
-- 👤 **Perfil Personalizable** — Avatar con colores e imágenes provistos por la API
+- 👤 **Perfil Personalizable** — Tabs My Facts / Liked / Mentions con live-updates
+- 🛡️ **Gate de Versión** — El backend valida `X-App-Version`; si está desactualizada, bloquea la app con link de descarga
 - 🌙 **Tema Claro/Oscuro** — Toggle con persistencia y detección del sistema
 - 🔄 **Pull-to-Refresh** — Actualiza el feed en cualquier pantalla
 - ⚡ **Optimizado** — React Compiler habilitado, lazy loading, cache inteligente
@@ -148,6 +150,15 @@ Edita `.env` con tus credenciales:
 # API Backend
 EXPO_PUBLIC_API_URL=https://api-interesting-facts-mu.vercel.app
 
+# Versión de la app — se envía como header X-App-Version (version check del backend)
+EXPO_PUBLIC_APP_VERSION=1.0.0
+
+# URL de la landing web — el gate de versión enlaza aquí para descargar la última APK
+EXPO_PUBLIC_WEB_URL=
+
+# Fallback de descarga directa de APK (opcional)
+EXPO_PUBLIC_APK_URL=
+
 # Firebase (obtener del Firebase Console)
 EXPO_PUBLIC_FIREBASE_API_KEY=tu_api_key
 EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=tu_project.firebaseapp.com
@@ -222,6 +233,13 @@ npx eas-cli build -p ios --profile production
 ---
 
 ## 🎯 Características Destacadas
+
+### Gate de Versión (Version Check)
+
+- Cada request envía el header `X-App-Version` (de `EXPO_PUBLIC_APP_VERSION`)
+- El backend compara contra `MIN_APP_VERSION` y responde `426` si el cliente está desactualizado
+- El client detecta la respuesta y activa un gate a pantalla completa con link directo a la landing para descargar la última versión
+- Configuración requerida en Vercel: `MIN_APP_VERSION=1.0.0` y `STRICT_VERSION_CHECK=true`
 
 ### Sistema de Temas
 

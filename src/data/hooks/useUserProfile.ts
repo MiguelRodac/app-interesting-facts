@@ -3,6 +3,7 @@ import { useUserProfileStore } from '../stores/userProfileStore';
 /**
  * User profile hook — thin wrapper over userProfileStore for component consumption.
  * Provides stable selectors to minimize re-renders.
+ * Liked entries live in useUserLikes (shared by own + visited profiles).
  */
 export function useUserProfile() {
   const profile = useUserProfileStore((s) => s.profile);

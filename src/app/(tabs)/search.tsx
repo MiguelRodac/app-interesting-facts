@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, TextInput, View, ActivityIndicator } from 'react-native';
+import { Alert, FlatList, RefreshControl, StyleSheet, TextInput, View, ActivityIndicator } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useSegments, useFocusEffect } from 'expo-router';
@@ -14,6 +14,8 @@ import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
 import { BottomTabInset, Radii, Spacing } from '@/constants/theme';
 import { useSearch } from '@/data/hooks/useSearch';
+import { useFactsStore } from '@/data/stores/factsStore';
+import { useRepostsStore } from '@/data/stores/repostsStore';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
@@ -54,6 +56,26 @@ export default function SearchScreen() {
   const [likesFactId, setLikesFactId] = useState<string | null>(null);
   const [likesRepostId, setLikesRepostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  const toggleRepost = useFactsStore((s) => s.toggleRepost);
+  const handleRepost = useCallback(
+    async (factId: string) => {
+      if (!isAuthenticated) return;
+      const ok = await toggleRepost(factId);
+      if (ok) Alert.alert('Listo', 'Repost publicado');
+    },
+    [isAuthenticated, toggleRepost],
+  );
+
+  const toggleRepostLike = useRepostsStore((s) => s.toggleRepostLike);
+  const handleRepostLike = useCallback(
+    (repostEntryId: string) => {
+      if (isAuthenticated) {
+        toggleRepostLike(repostEntryId);
+      }
+    },
+    [isAuthenticated, toggleRepostLike],
+  );
 
   const handleRefresh = useCallback(async () => {
     if (!query.trim()) return;
@@ -204,12 +226,16 @@ const renderPostItem = useCallback(
       <FactCard
         fact={item}
         variant="preview"
+        isSignedIn={isAuthenticated}
         onPress={() => handleFactPress(item)}
+        onLike={isAuthenticated && !item.isRepost ? () => {} : undefined}
+        onRepost={isAuthenticated ? () => handleRepost(item.originalFactId ?? item.id) : undefined}
+        onRepostLike={isAuthenticated && item.isRepost ? () => handleRepostLike(item.id) : undefined}
         onOpenLikes={!item.isRepost ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
         onOpenRepostLikes={item.isRepost ? () => setLikesRepostId(item.id) : undefined}
       />
     ),
-    [handleFactPress],
+    [isAuthenticated, handleFactPress, handleRepost, handleRepostLike],
   );
 
   // --- Hashtags tab ---

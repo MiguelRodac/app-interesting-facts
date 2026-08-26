@@ -19,14 +19,19 @@ export default function TabsLayout() {
   const { hasUnsavedChanges, clearGuard, triggerFormReset } = useCreateScreenGuard();
   const [pendingTab, setPendingTab] = useState<string | null>(null);
 
-  // Determine active tab from pathname
-  const activeTab = pathname.includes('/search')
+  // Determine active tab from pathname. Sub-routes inside the tabs group
+  // (/users/[username]) must NOT fall through to 'index' — otherwise Home
+  // thinks it is already active and only scroll-to-tops instead of
+  // navigating back, and the bar highlights the wrong tab.
+  const activeTab = pathname.includes('/users/')
+    ? 'users'
+    : pathname.includes('/search')
     ? 'search'
     : pathname.includes('/create')
-      ? 'create'
-      : pathname.includes('/profile')
-        ? 'profile'
-        : 'index';
+    ? 'create'
+    : pathname.includes('/profile')
+    ? 'profile'
+    : 'index';
 
   const navigateToTab = useCallback(
     (name: string) => {

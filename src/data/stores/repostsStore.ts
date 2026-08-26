@@ -12,6 +12,7 @@ import {
 } from '@/data/hooks/useRepostComments';
 import { notifyRepostCommentLikesChanged } from '@/data/hooks/useRepostCommentLikes';
 import { notifyRepostLikesChanged } from '@/data/hooks/useRepostLikes';
+import { broadcastEntryUpdate } from '@/data/hooks/entryUpdateBus';
 import { mapCommentDto } from '@/data/mappers/commentMapper';
 import { useAuthStore } from './authStore';
 import { useFactsStore } from './factsStore';
@@ -86,12 +87,43 @@ function insertReply(list: Comment[], parentId: string, reply: Comment): Comment
 }
 
 /**
+ * Finds a repost entry by ID across the feed cache AND the user-facts list —
+ * own-profile actions target entries that may only exist in userFacts.
+ */
+function findRepostEntry(repostEntryId: string): Fact | undefined {
+  const state = useFactsStore.getState();
+  return (
+    state.facts.find((f) => f.id === repostEntryId) ??
+    state.userFacts.find((f) => f.id === repostEntryId)
+  );
+}
+
+/**
+ * Builds the optimistic liked-by list for the current user's repost like/
+ * unlike — same policy as factsStore: prepend on like (capped at 3, the
+ * number LikedByLine renders), drop on unlike.
+ */
+function optimisticRepostLikeBy(
+  likeBy: NonNullable<Fact['likeBy']>,
+  user: { username: string; avatarUrl?: string | null; avatarColor?: string | null } | null,
+  liked: boolean,
+): Fact['likeBy'] {
+  if (!user) return likeBy;
+  const withoutUser = likeBy.filter((l) => l.username !== user.username);
+  if (!liked) return withoutUser;
+  return [
+    { username: user.username, avatarUrl: user.avatarUrl, avatarColor: user.avatarColor },
+    ...withoutUser,
+  ].slice(0, 3);
+}
+
+/**
  * Updates the repost's counts on the Fact in factsStore so the feed card
  * reflects the change immediately.
  */
 function applyRepostFactUpdate(
   repostEntryId: string,
-  patch: Partial<Pick<Fact, 'repostLikeCount' | 'repostLiked' | 'repostCommentCount'>>,
+  patch: Partial<Pick<Fact, 'repostLikeCount' | 'repostLiked' | 'repostCommentCount' | 'likeBy'>>,
 ) {
   const factsState = useFactsStore.getState();
   const snapFacts = factsState.facts;
@@ -111,7 +143,7 @@ function rollbackRepostFact(snapFacts: Fact[], snapUserFacts: Fact[]) {
 }
 
 interface RepostsState {
-  toggleRepostLike: (repostEntryId: string) => Promise<void>;
+  toggleRepostLike: (repostEntryId: string, fallbackFact?: Fact) => Promise<void>;
   addRepostComment: (repostEntryId: string, content: string, parentCommentId?: string | null) => Promise<void>;
   updateRepostComment: (repostEntryId: string, commentId: string, content: string) => Promise<void>;
   deleteRepostComment: (repostEntryId: string, commentId: string) => Promise<void>;
@@ -125,17 +157,22 @@ interface RepostsState {
  * optimistic updates, fires API calls, and rolls back on error.
  */
 export const useRepostsStore = create<RepostsState>(() => ({
-  toggleRepostLike: async (repostEntryId: string) => {
-    const fact = useFactsStore.getState().facts.find((f) => f.id === repostEntryId);
+  toggleRepostLike: async (repostEntryId: string, fallbackFact?: Fact) => {
+    const fact = findRepostEntry(repostEntryId) ?? fallbackFact;
     if (!fact) return;
 
     const wasLiked = fact.repostLiked;
     const currentUser = useAuthStore.getState().user;
 
-    const { snapFacts, snapUserFacts } = applyRepostFactUpdate(repostEntryId, {
+    // Optimistic update — count AND the inline liked-by line, mirroring the
+    // facts pattern so LikedByLine avatars update instantly on the card.
+    const likePatch = {
       repostLiked: !wasLiked,
       repostLikeCount: fact.repostLikeCount + (wasLiked ? -1 : 1),
-    });
+      likeBy: optimisticRepostLikeBy(fact.likeBy ?? [], currentUser, !wasLiked),
+    };
+    const { snapFacts, snapUserFacts } = applyRepostFactUpdate(repostEntryId, likePatch);
+    broadcastEntryUpdate('repost-entry', { id: repostEntryId }, likePatch);
 
     try {
       if (wasLiked) {
@@ -146,6 +183,11 @@ export const useRepostsStore = create<RepostsState>(() => ({
       notifyRepostLikesChanged(repostEntryId);
     } catch (error) {
       rollbackRepostFact(snapFacts, snapUserFacts);
+      broadcastEntryUpdate('repost-entry', { id: repostEntryId }, {
+        repostLiked: wasLiked,
+        repostLikeCount: fact.repostLikeCount,
+        likeBy: fact.likeBy ?? [],
+      });
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as AppError);
       }
@@ -162,8 +204,9 @@ export const useRepostsStore = create<RepostsState>(() => ({
     notifyRepostCommentsChanged(repostEntryId);
 
     // Increment repostCommentCount on the Fact optimistically.
+    const currentCount = findRepostEntry(repostEntryId)?.repostCommentCount ?? 0;
     const { snapFacts, snapUserFacts } = applyRepostFactUpdate(repostEntryId, {
-      repostCommentCount: (useFactsStore.getState().facts.find((f) => f.id === repostEntryId)?.repostCommentCount ?? 0) + 1,
+      repostCommentCount: currentCount + 1,
     });
 
     try {
@@ -222,7 +265,7 @@ export const useRepostsStore = create<RepostsState>(() => ({
 
     // Decrement repostCommentCount on the Fact optimistically.
     const { snapFacts, snapUserFacts } = applyRepostFactUpdate(repostEntryId, {
-      repostCommentCount: Math.max(0, (useFactsStore.getState().facts.find((f) => f.id === repostEntryId)?.repostCommentCount ?? 1) - 1),
+      repostCommentCount: Math.max(0, (findRepostEntry(repostEntryId)?.repostCommentCount ?? 1) - 1),
     });
 
     try {

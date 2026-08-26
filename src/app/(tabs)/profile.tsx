@@ -14,7 +14,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
-import { useLikedFacts } from '@/data/hooks/useLikedFacts';
+import { useUserLikes } from '@/data/hooks/useUserLikes';
 import { useMentionedFacts } from '@/data/hooks/useMentionedFacts';
 import { useFactsStore } from '@/data/stores/factsStore';
 import { useRepostsStore } from '@/data/stores/repostsStore';
@@ -32,7 +32,7 @@ const userFacts = useFactsStore((s) => s.userFacts);
   const fetchFacts = useFactsStore((s) => s.fetchFacts);
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const toggleRepost = useFactsStore((s) => s.toggleRepost);
-  const { likedFacts } = useLikedFacts();
+  const { likedEntries, likesLoading, refetch: refetchLikes } = useUserLikes(user?.id);
   const { mentionedFacts, mentionsLoading, mentionsCount, refetch: refetchMentions } = useMentionedFacts(user?.username);
   const userFactsCount = useFactsStore((s) => s.userFacts.length);
 const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
@@ -48,12 +48,12 @@ const [avatarModalVisible, setAvatarModalVisible] = useState(false);
     if (!user?.id) return;
     setRefreshing(true);
     try {
-      // Silent refreshes: profile facts + feed + mentions
-      await Promise.all([fetchUserFacts(user.id, true), fetchFacts(true), refetchMentions()]);
+      // Silent refreshes: profile facts + feed + likes + mentions
+      await Promise.all([fetchUserFacts(user.id, true), fetchFacts(true), refetchLikes(), refetchMentions()]);
     } finally {
       setRefreshing(false);
     }
-  }, [user?.id, fetchUserFacts, fetchFacts, refetchMentions]);
+  }, [user?.id, fetchUserFacts, fetchFacts, refetchLikes, refetchMentions]);
 
   // Fetch fresh user facts every time the profile gains focus (create/edit/delete happen elsewhere)
   useFocusEffect(
@@ -61,12 +61,13 @@ const [avatarModalVisible, setAvatarModalVisible] = useState(false);
       if (user?.id) {
         fetchUserFacts(user.id, userFactsCount > 0);
       }
-      // Also refetch mentions so the tab shows fresh data.
+      // Also refetch likes and mentions so the tabs show fresh data.
+      refetchLikes();
       refetchMentions();
-    }, [user?.id, fetchUserFacts, userFactsCount, refetchMentions]),
+    }, [user?.id, fetchUserFacts, userFactsCount, refetchLikes, refetchMentions]),
   );
 
-  const displayedFacts = activeTab === 'mine' ? userFacts : activeTab === 'liked' ? likedFacts : mentionedFacts;
+  const displayedFacts = activeTab === 'mine' ? userFacts : activeTab === 'liked' ? likedEntries : mentionedFacts;
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
@@ -80,15 +81,20 @@ const [avatarModalVisible, setAvatarModalVisible] = useState(false);
   );
 
 const handleLike = useCallback(
-    (factId: string) => {
-      toggleLike(factId);
+    async (item: Fact) => {
+      // Pass the rendered card as fallback: Liked/Mentions entries may not
+      // exist in the feed/user-facts caches, but the action still must fire.
+      await toggleLike(item.originalFactId ?? item.id, item);
+      // Unlike must drop the entry from the Liked list — silent re-fetch
+      // reconciles it server-side (feed-style refresh), no spinner flash.
+      if (activeTab === 'liked') refetchLikes(true);
     },
-    [toggleLike],
+    [toggleLike, activeTab, refetchLikes],
   );
 
   const handleRepost = useCallback(
-    async (factId: string) => {
-      const ok = await toggleRepost(factId);
+    async (item: Fact) => {
+      const ok = await toggleRepost(item.originalFactId ?? item.id, item);
       if (ok) Alert.alert('Listo', 'Repost publicado');
     },
     [toggleRepost],
@@ -96,10 +102,22 @@ const handleLike = useCallback(
 
   const toggleRepostLike = useRepostsStore((s) => s.toggleRepostLike);
   const handleRepostLike = useCallback(
-    (repostEntryId: string) => {
-      toggleRepostLike(repostEntryId);
+    async (item: Fact) => {
+      await toggleRepostLike(item.id, item);
+      // Un-liking a repost must drop it from the Liked list as well.
+      if (activeTab === 'liked') refetchLikes(true);
     },
-    [toggleRepostLike],
+    [toggleRepostLike, activeTab, refetchLikes],
+  );
+
+  // Entering the Liked tab always shows fresh state — likes made elsewhere
+  // (feed, other tabs) change membership without touching this screen.
+  const handleTabChange = useCallback(
+    (tab: ProfileTab) => {
+      setActiveTab(tab);
+      if (tab === 'liked') refetchLikes(true);
+    },
+    [refetchLikes],
   );
 
   const handleSettings = useCallback(() => {
@@ -116,9 +134,9 @@ const renderItem = useCallback(
         fact={item}
         variant="preview"
         onPress={() => handleFactPress(item)}
-        onLike={!item.isRepost ? () => handleLike(item.originalFactId ?? item.id) : undefined}
-        onRepost={() => handleRepost(item.originalFactId ?? item.id)}
-        onRepostLike={item.isRepost ? () => handleRepostLike(item.id) : undefined}
+        onLike={!item.isRepost ? () => handleLike(item) : undefined}
+        onRepost={() => handleRepost(item)}
+        onRepostLike={item.isRepost ? () => handleRepostLike(item) : undefined}
         onOpenLikes={!item.isRepost ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
         onOpenRepostLikes={item.isRepost ? () => setLikesRepostId(item.id) : undefined}
       />
@@ -127,7 +145,11 @@ const renderItem = useCallback(
   );
 
   const renderEmpty = useCallback(() => {
-    if ((activeTab === 'mine' && userFactsLoading) || (activeTab === 'mentions' && mentionsLoading)) {
+    if (
+      (activeTab === 'mine' && userFactsLoading) ||
+      (activeTab === 'liked' && likesLoading) ||
+      (activeTab === 'mentions' && mentionsLoading)
+    ) {
       return <LoadingSkeleton count={3} />;
     }
     if (activeTab === 'mine') {
@@ -137,7 +159,7 @@ const renderItem = useCallback(
       return <EmptyState title="No liked facts" subtitle="Facts you like will appear here" icon="heart-outline" />;
     }
     return <EmptyState title="No mentions yet" subtitle="Facts that mention you will appear here" icon="at-outline" />;
-  }, [activeTab, userFactsLoading, mentionsLoading]);
+  }, [activeTab, userFactsLoading, likesLoading, mentionsLoading]);
 
   if (!isAuthenticated || !user) {
     return (
@@ -199,7 +221,7 @@ const renderItem = useCallback(
       {/* Tab switcher */}
       <View style={[styles.tabBar, { borderBottomColor: theme.border }]}>
         <AppPressable
-          onPress={() => setActiveTab('mine')}
+          onPress={() => handleTabChange('mine')}
           style={[styles.tab, activeTab === 'mine' && { borderBottomColor: theme.primary }]}>
           <ThemedText
             type="smallBold"
@@ -208,16 +230,16 @@ const renderItem = useCallback(
           </ThemedText>
         </AppPressable>
         <AppPressable
-          onPress={() => setActiveTab('liked')}
+          onPress={() => handleTabChange('liked')}
           style={[styles.tab, activeTab === 'liked' && { borderBottomColor: theme.primary }]}>
           <ThemedText
             type="smallBold"
             style={{ color: activeTab === 'liked' ? theme.primary : theme.muted }}>
-            Liked ({likedFacts.length})
+            Liked ({likedEntries.length})
           </ThemedText>
         </AppPressable>
         <AppPressable
-          onPress={() => setActiveTab('mentions')}
+          onPress={() => handleTabChange('mentions')}
           style={[styles.tab, activeTab === 'mentions' && { borderBottomColor: theme.primary }]}>
           <ThemedText
             type="smallBold"

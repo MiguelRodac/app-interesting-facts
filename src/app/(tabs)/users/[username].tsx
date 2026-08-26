@@ -13,11 +13,14 @@ import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
 import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useUserProfile } from '@/data/hooks/useUserProfile';
+import { useUserLikes } from '@/data/hooks/useUserLikes';
 import { useRepostsStore } from '@/data/stores/repostsStore';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
+
+type ProfileTab = 'facts' | 'likes';
 
 function formatJoinDate(iso: string): string {
   const d = new Date(iso);
@@ -35,15 +38,17 @@ export default function UserProfileScreen() {
     isLoading,
     factsLoading,
     fetchProfile,
-fetchUserFacts,
+    fetchUserFacts,
     toggleLike,
     toggleRepost,
     clearProfile,
   } = useUserProfile();
+  const { likedEntries, likesLoading, refetch: refetchUserLikes } = useUserLikes(profile?.id ?? null);
   const { isAuthenticated } = useAuth();
   const [likesFactId, setLikesFactId] = useState<string | null>(null);
   const [likesRepostId, setLikesRepostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('facts');
 
   const handleRefresh = useCallback(async () => {
     if (!username) return;
@@ -51,12 +56,12 @@ fetchUserFacts,
     try {
       await fetchProfile(username, profile ? true : undefined);
       if (profile?.id) {
-        await fetchUserFacts(profile.id, true);
+        await Promise.all([fetchUserFacts(profile.id, true), refetchUserLikes()]);
       }
     } finally {
       setRefreshing(false);
     }
-  }, [username, profile, fetchProfile, fetchUserFacts]);
+  }, [username, profile, fetchProfile, fetchUserFacts, refetchUserLikes]);
 
 useEffect(() => {
     if (!username) {
@@ -73,7 +78,8 @@ useEffect(() => {
     };
   }, [username, fetchProfile, clearProfile, router]);
 
-  // Fetch facts once profile is loaded (uses profile.id from GET /users/:username)
+  // Fetch facts once profile is loaded (uses profile.id from GET /users/:username).
+  // Liked entries are fetched by useUserLikes when profile.id resolves.
   useEffect(() => {
     if (!profile) return;
     fetchUserFacts(profile.id).catch(() => {
@@ -168,23 +174,53 @@ const handleBack = useCallback(() => {
           </ThemedText>
         </ThemedView>
 
-        {/* Facts section header */}
-        <View style={styles.sectionHeader}>
-          <ThemedText type="subtitle">Facts</ThemedText>
-          {!factsLoading && (
-            <ThemedText type="small" themeColor="muted">
-              {facts.length}
+        {/* Facts / Likes tabs */}
+        <View style={styles.tabBar}>
+          <AppPressable
+            onPress={() => setActiveTab('facts')}
+            style={[styles.tab, activeTab === 'facts' && { borderBottomColor: theme.primary }]}
+            hitSlop={8}>
+            <ThemedText
+              type="smallBold"
+              style={{ color: activeTab === 'facts' ? theme.primary : theme.muted }}>
+              Facts
             </ThemedText>
-          )}
+            {activeTab === 'facts' && !factsLoading && (
+              <ThemedText type="small" themeColor="muted">{facts.length}</ThemedText>
+            )}
+          </AppPressable>
+          <AppPressable
+            onPress={() => setActiveTab('likes')}
+            style={[styles.tab, activeTab === 'likes' && { borderBottomColor: theme.primary }]}
+            hitSlop={8}>
+            <ThemedText
+              type="smallBold"
+              style={{ color: activeTab === 'likes' ? theme.primary : theme.muted }}>
+              Likes
+            </ThemedText>
+            {activeTab === 'likes' && !likesLoading && (
+              <ThemedText type="small" themeColor="muted">{likedEntries.length}</ThemedText>
+            )}
+          </AppPressable>
         </View>
 
-        {factsLoading && <LoadingSkeleton count={2} />}
+        {activeTab === 'facts' && factsLoading && <LoadingSkeleton count={2} />}
 
-        {!factsLoading && facts.length === 0 && (
+        {activeTab === 'facts' && !factsLoading && facts.length === 0 && (
           <EmptyState
             title="No facts yet"
             subtitle="This user hasn't posted any facts"
             icon="document-text-outline"
+          />
+        )}
+
+        {activeTab === 'likes' && likesLoading && <LoadingSkeleton count={2} />}
+
+        {activeTab === 'likes' && !likesLoading && likedEntries.length === 0 && (
+          <EmptyState
+            title="No likes yet"
+            subtitle="This user hasn't liked any facts"
+            icon="heart-outline"
           />
         )}
       </View>
@@ -216,7 +252,7 @@ if (isLoading || !profile) {
   return (
     <ThemedView style={styles.container}>
       <FlatList
-        data={facts}
+        data={activeTab === 'facts' ? facts : likedEntries}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={renderHeader}
         renderItem={({ item }) => (
@@ -302,5 +338,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: Spacing.three,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: 'transparent',
+    marginBottom: Spacing.three,
+    gap: Spacing.four,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingBottom: Spacing.two,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
 });

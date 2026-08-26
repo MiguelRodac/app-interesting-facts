@@ -4,6 +4,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider as ExpoThemeProvider } from 'exp
 import * as SplashScreen from 'expo-splash-screen';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 
+import { AppUpdateGate } from '@/components/AppUpdateGate';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { Toast } from '@/components/Toast';
 import { useAuthStore } from '@/data/stores/authStore';
@@ -141,6 +142,7 @@ function RootLayoutInner() {
                 <ErrorBanner />
                 <Toast />
                 {appStack}
+                <AppUpdateGate />
               </View>
             </View>
           </View>
@@ -152,6 +154,7 @@ function RootLayoutInner() {
             <ErrorBanner />
             <Toast />
             {appStack}
+            <AppUpdateGate />
           </View>
         </>
       )}

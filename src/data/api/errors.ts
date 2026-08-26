@@ -16,6 +16,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   EDIT_WINDOW_EXPIRED: 'The 1-hour edit window has expired.',
   DELETE_BLOCKED_HAS_REPLIES:
     "This comment has replies and can't be deleted.",
+  VERSION_TOO_OLD: 'Please update the app to continue.',
 };
 
 function getUserMessage(code: string, fallback: string): string {

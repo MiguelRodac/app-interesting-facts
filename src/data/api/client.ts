@@ -1,9 +1,11 @@
-import { createNetworkError, mapApiError } from './errors';
-import type { AppError } from '@/types';
+import { createNetworkError, mapApiError } from "./errors";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://api-interesting-facts-mu.vercel.app';
+const BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ??
+  "https://api-interesting-facts-mu.vercel.app";
+const APP_VERSION = process.env.EXPO_PUBLIC_APP_VERSION ?? "0.0.0";
 
-type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
 interface RequestOptions {
   method: HttpMethod;
@@ -12,6 +14,18 @@ interface RequestOptions {
   params?: Record<string, string>;
   /** Async function that returns the auth token */
   getToken: () => Promise<string | null>;
+}
+
+/**
+ * Called when the backend rejects a request because the client version is
+ * outdated (426 APP_VERSION_OUTDATED) or missing the version header in
+ * strict mode (400 APP_VERSION_MISSING). Registered by the root layout to
+ * render a full-screen "update required" gate.
+ */
+let appUpdateHandler: (() => void) | null = null;
+
+export function setAppUpdateHandler(handler: () => void): void {
+  appUpdateHandler = handler;
 }
 
 /**
@@ -35,13 +49,14 @@ async function request<T>(options: RequestOptions): Promise<T> {
   }
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
+    "X-App-Version": APP_VERSION,
   };
 
   // Get token asynchronously (Firebase getIdToken is async)
   const token = await getToken();
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   try {
@@ -64,12 +79,22 @@ async function request<T>(options: RequestOptions): Promise<T> {
       if (response.status === 401 && !path.startsWith('/auth/')) {
         unauthorizedHandler?.();
       }
+      // Outdated client — backend version check rejected the request. Flag it
+      // so the root gate blocks the UI and points to the latest download.
+      const errorCode = (responseBody as { error_code?: string } | null)?.error_code;
+      if (
+        response.status === 426 ||
+        errorCode === 'APP_VERSION_OUTDATED' ||
+        errorCode === 'APP_VERSION_MISSING'
+      ) {
+        appUpdateHandler?.();
+      }
       throw mapApiError(response.status, responseBody);
     }
 
     return responseBody as T;
   } catch (error) {
-    if (error && typeof error === 'object' && 'code' in error) {
+    if (error && typeof error === "object" && "code" in error) {
       throw error;
     }
     throw createNetworkError(error);
@@ -83,16 +108,16 @@ async function request<T>(options: RequestOptions): Promise<T> {
 export function createApiClient(getToken: () => Promise<string | null>) {
   return {
     get: <T>(path: string, params?: Record<string, string>): Promise<T> =>
-      request<T>({ method: 'GET', path, params, getToken }),
+      request<T>({ method: "GET", path, params, getToken }),
 
     post: <T>(path: string, body?: unknown): Promise<T> =>
-      request<T>({ method: 'POST', path, body, getToken }),
+      request<T>({ method: "POST", path, body, getToken }),
 
     patch: <T>(path: string, body: unknown): Promise<T> =>
-      request<T>({ method: 'PATCH', path, body, getToken }),
+      request<T>({ method: "PATCH", path, body, getToken }),
 
     del: (path: string): Promise<void> =>
-      request<void>({ method: 'DELETE', path, getToken }),
+      request<void>({ method: "DELETE", path, getToken }),
   };
 }
 

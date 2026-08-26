@@ -4,6 +4,7 @@ import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
 import type { ApiAuthor, ApiFact, ApiFactFeedItem, ApiPaginatedResponse } from '@/data/api/types';
 import { mapFactsDtos } from '@/data/mappers/factMapper';
+import { applyEntryUpdate, subscribeEntryUpdates } from './entryUpdateBus';
 
 const client = createApiClient(getIdToken);
 
@@ -78,6 +79,16 @@ export function useMentionedFacts(username?: string): MentionedFactsState {
       activeRef.current = false;
     };
   }, [fetchMentions]);
+
+  // Live-update: like/repost actions elsewhere broadcast patches — apply them
+  // to this list so cards react instantly in the Mentions tab too.
+  useEffect(
+    () =>
+      subscribeEntryUpdates((scope, anchor, patch) => {
+        setMentionedFacts((prev) => applyEntryUpdate(prev, scope, anchor, patch));
+      }),
+    [],
+  );
 
   return {
     mentionedFacts,

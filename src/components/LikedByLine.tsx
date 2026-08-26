@@ -23,8 +23,7 @@ export function LikedByLine({ likes, likesCount, onPress }: LikedByLineProps) {
 
   if (likesCount === 0) return null;
 
-  const shown = likes.slice(0, 2);
-  const remaining = likesCount - shown.length;
+  const shown = likes.slice(0, 3);
 
   // No inline previews yet but the count is known — show a plain count line.
   if (shown.length === 0) {
@@ -44,8 +43,35 @@ export function LikedByLine({ likes, likesCount, onPress }: LikedByLineProps) {
     );
   }
 
-  const names = shown.map((entry) => `@${entry.username}`).join(', ');
-  const andMore = remaining > 0 ? ` and ${remaining} more` : '';
+  // Usernames: show all when ≤2 likes; only the first one when >2.
+  // "N more" counts everyone not named by their username (count-based,
+  // not avatar-based): 3 likes → "@first and 2 more".
+  const namedUsers = shown.filter((e) => e.username);
+
+  if (namedUsers.length === 0) {
+    return (
+      <AppPressable
+        onPress={(e) => {
+          e.stopPropagation();
+          onPress?.();
+        }}
+        disabled={!onPress}
+        hitSlop={4}
+        style={styles.row}>
+        <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.text}>
+          Liked by {likesCount} {likesCount === 1 ? 'person' : 'people'}
+        </ThemedText>
+      </AppPressable>
+    );
+  }
+
+  const displayNames =
+    likesCount <= 2
+      ? namedUsers.map((e) => `@${e.username}`).join(', ')
+      : `@${namedUsers[0].username}`;
+  const namedCount = displayNames.split(', ').length;
+  const hidden = Math.max(0, likesCount - namedCount);
+  const andMore = hidden > 0 ? ` and ${hidden} more` : '';
 
   return (
     <AppPressable
@@ -58,7 +84,7 @@ export function LikedByLine({ likes, likesCount, onPress }: LikedByLineProps) {
       style={styles.row}>
       <View style={styles.avatars}>
         {shown.map((entry, i) => (
-          <View key={entry.username} style={[styles.avatarWrap, i > 0 && styles.avatarOverlap]}>
+          <View key={entry.username ?? i} style={[styles.avatarWrap, i > 0 && styles.avatarOverlap]}>
             <UserAvatar
               user={{
                 displayName: entry.username,
@@ -71,7 +97,7 @@ export function LikedByLine({ likes, likesCount, onPress }: LikedByLineProps) {
         ))}
       </View>
       <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.text}>
-        Liked by <ThemedText type="smallBold" style={{ color: theme.text }}>{names}</ThemedText>
+        Liked by <ThemedText type="smallBold" style={{ color: theme.text }}>{displayNames}</ThemedText>
         {andMore}
       </ThemedText>
     </AppPressable>

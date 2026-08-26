@@ -56,7 +56,7 @@ export function mapRepostDto(repost: ApiRepostResponse): Fact {
     author: mapAuthorDto(repost.author),
     likesCount: 0,
     liked: false,
-    likeBy: [],
+    likeBy: (repost.likeBy ?? []).map(mapLikePreviewDto),
     repostCount: repost.repostCount ?? 0,
     repostedByMe: repost.repostedBy.isMe,
     repostBy: [],

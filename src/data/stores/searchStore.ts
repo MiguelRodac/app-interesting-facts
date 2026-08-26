@@ -48,7 +48,7 @@ export const useSearchStore = create<SearchState>((set) => ({
 
       set({
         peopleResults: response.users.map(mapAuthorDto),
-        postsResults: mapFactsDtos(response.facts),
+        postsResults: mapFactsDtos(response.results),
         hashtagsResults: response.hashtags.map((h) => ({ id: h.id, tag: h.tag })),
         isLoading: false,
       });

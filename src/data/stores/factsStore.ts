@@ -5,6 +5,7 @@ import type { ApiFact, ApiFactFeedItem, ApiPaginatedResponse, ApiRepostResponse 
 import { mapFactsDtos, mapFactDto, mapRepostDto } from '../mappers/factMapper';
 import { getIdToken } from '../auth/firebaseAuth';
 import { notifyFactLikesChanged } from '../hooks/useFactLikes';
+import { broadcastEntryUpdate } from '../hooks/entryUpdateBus';
 import { useAuthStore } from './authStore';
 import { useUIStore } from './uiStore';
 
@@ -39,7 +40,7 @@ function mergeFacts(current: Fact[], fresh: Fact[]): Fact[] {
 /**
  * Builds the optimistic liked-by list for the current user's like/unlike.
  * On like the user is prepended (most recent liker first) and the list is
- * capped at 2 — the number shown by LikedByLine. On unlike their row is
+ * capped at 3 — the number shown by LikedByLine. On unlike their row is
  * dropped. The backend reconcile that follows the API call corrects drift.
  */
 function optimisticLikeBy(likeBy: FactLike[], user: Author, liked: boolean): FactLike[] {
@@ -50,13 +51,13 @@ function optimisticLikeBy(likeBy: FactLike[], user: Author, liked: boolean): Fac
     avatarUrl: user.avatarUrl,
     avatarColor: user.avatarColor,
   };
-  return [entry, ...withoutUser].slice(0, 2);
+  return [entry, ...withoutUser].slice(0, 3);
 }
 
 /**
  * Builds the optimistic reposted-by list for the current user's repost/
  * un-repost. Same shape and policy as optimisticLikeBy: the user is
- * prepended (most recent reposter first) capped at 2 on repost, removed on
+ * prepended (most recent reposter first) capped at 3 on repost, removed on
  * un-repost. The backend reconcile that follows the API call corrects drift.
  */
 function optimisticRepostBy(repostBy: FactLike[], user: Author, reposted: boolean): FactLike[] {
@@ -67,7 +68,7 @@ function optimisticRepostBy(repostBy: FactLike[], user: Author, reposted: boolea
     avatarUrl: user.avatarUrl,
     avatarColor: user.avatarColor,
   };
-  return [entry, ...withoutUser].slice(0, 2);
+  return [entry, ...withoutUser].slice(0, 3);
 }
 
 interface FactsState {
@@ -82,8 +83,8 @@ interface FactsState {
   fetchFactById: (factId: string) => Promise<Fact>;
   fetchRepostById: (repostId: string) => Promise<Fact>;
   fetchUserFacts: (userId: string, silent?: boolean) => Promise<void>;
-  toggleLike: (factId: string) => Promise<void>;
-  toggleRepost: (factId: string) => Promise<boolean>;
+  toggleLike: (factId: string, fallbackFact?: Fact) => Promise<void>;
+  toggleRepost: (factId: string, fallbackFact?: Fact) => Promise<boolean>;
   addFact: (fact: { title?: string; content: string }) => Promise<Fact>;
   updateFact: (factId: string, data: { title?: string; content?: string }) => Promise<Fact>;
   deleteFact: (factId: string) => Promise<void>;
@@ -215,31 +216,34 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     }
   },
 
-  toggleLike: async (factId: string) => {
+  toggleLike: async (factId: string, fallbackFact?: Fact) => {
     const { facts, userFacts } = get();
-    const fact = facts.find((f) => f.id === factId);
+    // The entry may live in the feed cache, the user-facts list, or nowhere
+    // locally (profile Liked/Mentions tabs render remote-only posts) — the
+    // caller supplies the rendered card as fallback in that case.
+    const fact =
+      facts.find((f) => f.id === factId) ??
+      userFacts.find((f) => f.id === factId) ??
+      fallbackFact;
     if (!fact) return;
 
     // Reposts have composite IDs — use the original fact ID for API calls.
     const apiFactId = fact.originalFactId ?? factId;
     const wasLiked = fact.liked;
     const currentUser = useAuthStore.getState().user;
+    const anchor = { id: fact.id, originalFactId: fact.originalFactId };
 
     // Optimistic update — keep feed and user facts in sync, including the
     // liked-by line (mini avatars + usernames) so it feels instant.
-    const applyOptimistic = (f: Fact): Fact =>
-      f.id === factId
-        ? {
-            ...f,
-            liked: !wasLiked,
-            likesCount: f.likesCount + (wasLiked ? -1 : 1),
-            likeBy: currentUser
-              ? optimisticLikeBy(f.likeBy, currentUser, !wasLiked)
-              : f.likeBy,
-          }
-        : f;
+    const likePatch = {
+      liked: !wasLiked,
+      likesCount: fact.likesCount + (wasLiked ? -1 : 1),
+      likeBy: currentUser ? optimisticLikeBy(fact.likeBy, currentUser, !wasLiked) : fact.likeBy,
+    };
+    const applyOptimistic = (f: Fact): Fact => (f.id === factId ? { ...f, ...likePatch } : f);
 
     set({ facts: facts.map(applyOptimistic), userFacts: userFacts.map(applyOptimistic) });
+    broadcastEntryUpdate('fact', anchor, likePatch);
 
     try {
       if (wasLiked) {
@@ -256,6 +260,11 @@ export const useFactsStore = create<FactsState>((set, get) => ({
         set((state) => ({
           userFacts: state.userFacts.map((f) => (f.id === factId ? fresh : f)),
         }));
+        broadcastEntryUpdate('fact', anchor, {
+          liked: fresh.liked,
+          likesCount: fresh.likesCount,
+          likeBy: fresh.likeBy,
+        });
       } catch {
         // keep optimistic state
       }
@@ -266,19 +275,25 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       // Rollback on error — restores the pre-optimistic snapshots, which
       // also reverts this action's likeBy change.
       set({ facts, userFacts });
+      broadcastEntryUpdate('fact', anchor, {
+        liked: wasLiked,
+        likesCount: fact.likesCount,
+        likeBy: fact.likeBy,
+      });
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
     }
   },
 
-  toggleRepost: async (originalFactId: string): Promise<boolean> => {
+  toggleRepost: async (originalFactId: string, fallbackFact?: Fact): Promise<boolean> => {
     const { facts, userFacts } = get();
     // Find the fact to read current state — could be the original fact entry
-    // or a repost entry that references it.
-    const fact = facts.find(
-      (f) => f.id === originalFactId || f.originalFactId === originalFactId,
-    );
+    // or a repost entry that references it, in the feed, in user facts, or
+    // only on the caller's rendered card (Liked/Mentions tabs).
+    const findEntry = (list: Fact[]) =>
+      list.find((f) => f.id === originalFactId || f.originalFactId === originalFactId);
+    const fact = findEntry(facts) ?? findEntry(userFacts) ?? fallbackFact;
     if (!fact) return false;
 
     const wasReposted = fact.repostedByMe;
@@ -289,19 +304,17 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       f.id === originalFactId || f.originalFactId === originalFactId;
 
     // Optimistic update — sync all related entries across feed + user facts.
-    const applyOptimistic = (f: Fact): Fact =>
-      matches(f)
-        ? {
-            ...f,
-            repostedByMe: !wasReposted,
-            repostCount: f.repostCount + (wasReposted ? -1 : 1),
-            repostBy: currentUser
-              ? optimisticRepostBy(f.repostBy, currentUser, !wasReposted)
-              : f.repostBy,
-          }
-        : f;
+    const repostPatch = {
+      repostedByMe: !wasReposted,
+      repostCount: fact.repostCount + (wasReposted ? -1 : 1),
+      repostBy: currentUser
+        ? optimisticRepostBy(fact.repostBy, currentUser, !wasReposted)
+        : fact.repostBy,
+    };
+    const applyOptimistic = (f: Fact): Fact => (matches(f) ? { ...f, ...repostPatch } : f);
 
     set({ facts: facts.map(applyOptimistic), userFacts: userFacts.map(applyOptimistic) });
+    broadcastEntryUpdate('repost-tree', { id: originalFactId }, repostPatch);
 
     try {
       if (wasReposted) {
@@ -320,12 +333,21 @@ export const useFactsStore = create<FactsState>((set, get) => ({
           facts: state.facts.map(reconcile),
           userFacts: state.userFacts.map(reconcile),
         }));
+        broadcastEntryUpdate('repost-tree', { id: originalFactId }, {
+          repostBy: fresh.repostBy,
+          repostCount: fresh.repostCount,
+        });
       } catch {
         // keep optimistic state
       }
       return true;
     } catch (error) {
       set({ facts, userFacts });
+      broadcastEntryUpdate('repost-tree', { id: originalFactId }, {
+        repostedByMe: wasReposted,
+        repostCount: fact.repostCount,
+        repostBy: fact.repostBy,
+      });
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }

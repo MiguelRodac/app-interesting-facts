@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
+import { LikedByLine } from '@/components/LikedByLine';
 import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { CommentComposer } from '@/components/comments/CommentComposer';
@@ -36,6 +37,7 @@ export default function RepostDetailScreen() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
+  const scrollViewRef = useRef<ScrollView>(null);
   const theme = useTheme();
   const topInset = useTopInset();
   const [fact, setFact] = useState<Fact | null>(null);
@@ -247,6 +249,10 @@ export default function RepostDetailScreen() {
     }
   }, [fact]);
 
+  const handleScrollToComments = useCallback(() => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  }, []);
+
   const handleBack = useCallback(() => {
     if (composerHasPending) {
       setConfirmDiscardCommentVisible(true);
@@ -290,6 +296,7 @@ export default function RepostDetailScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={0}>
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={[styles.scroll, { paddingTop: topInset }]}
         refreshControl={
           <RefreshControl
@@ -363,20 +370,16 @@ export default function RepostDetailScreen() {
             })}
           </ThemedText>
 
-          {/* Repost likes line */}
-          <AppPressable
+          {/* Repost likes line — same format as facts: 3 avatars + usernames + N more */}
+          <LikedByLine
+            likes={fact.likeBy ?? []}
+            likesCount={fact.repostLikeCount ?? 0}
             onPress={() =>
               isAuthenticated
                 ? setLikesModalVisible(true)
                 : router.push('/auth/login')
             }
-            style={styles.repostLikesLine}
-            hitSlop={8}>
-            <Ionicons name="heart" size={16} color={theme.destructive} />
-            <ThemedText type="small" themeColor="textSecondary">
-              {fact.repostLikeCount ?? 0} {fact.repostLikeCount === 1 ? 'like' : 'likes'} on this repost
-            </ThemedText>
-          </AppPressable>
+          />
 
           {/* Actions */}
           <View style={[styles.actions, { borderTopColor: theme.border }]}>
@@ -389,6 +392,14 @@ export default function RepostDetailScreen() {
               />
               <ThemedText type="small" themeColor="textSecondary">
                 {fact.repostLikeCount ?? 0}
+              </ThemedText>
+            </AppPressable>
+
+            {/* Comment — scroll to the comment thread below */}
+            <AppPressable onPress={handleScrollToComments} style={styles.actionBtn} hitSlop={8}>
+              <Ionicons name="chatbubble-outline" size={24} color={theme.muted} />
+              <ThemedText type="small" themeColor="textSecondary">
+                {fact.repostCommentCount ?? 0}
               </ThemedText>
             </AppPressable>
 

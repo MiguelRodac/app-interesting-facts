@@ -168,7 +168,7 @@ return (
           true 'anon' variant; anonymous view-mode taps route to login. */}
       {(isSignedIn || anonView) && (
         <LikedByLine
-          likes={fact.isRepost ? [] : fact.likeBy}
+          likes={fact.isRepost ? (fact.likeBy ?? []) : fact.likeBy}
           likesCount={fact.isRepost ? (fact.repostLikeCount ?? 0) : fact.likesCount}
           onPress={gate(fact.isRepost ? onOpenRepostLikes : onOpenLikes)}
         />

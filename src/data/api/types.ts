@@ -51,6 +51,7 @@ export interface ApiRepostResponse {
   repostCount: number;
   repostedBy: ApiRepostAuthor;
   liked: boolean;
+  likeBy?: ApiUserAvatarPreview[];
   repostLikeCount: number;
   repostCommentCount: number;
   repostCommentsDetails?: ApiCommentPreview | null;
@@ -199,11 +200,19 @@ export interface ApiAvatarOption {
 /** Response from GET /facts/search */
 export interface ApiSearchResponse {
   users: ApiAuthor[];
-  facts: ApiFact[];
+  results: ApiFact[];
   hashtags: ApiHashtag[];
   page: number;
   limit: number;
   hasMore: boolean;
+}
+
+/** Response from GET /users/:userId/likes — paginated feed entries (facts + reposts) ordered by like date */
+export interface ApiUserLikesResponse {
+  results: ApiFactFeedItem[];
+  page: number;
+  limit: number;
+  nextPage: number | null;
 }
 
 /** Response from GET /hashtags */
