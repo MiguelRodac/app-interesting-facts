@@ -10,6 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useCreateScreenGuard } from '@/data/stores/createScreenGuard';
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { triggerScrollToTop } from '@/lib/scrollToTop';
 
 export default function TabsLayout() {
   const pathname = usePathname();
@@ -52,6 +53,12 @@ export default function TabsLayout() {
       // If leaving create tab with unsaved changes, show confirmation
       if (activeTab === 'create' && name !== 'create' && hasUnsavedChanges) {
         setPendingTab(name);
+        return;
+      }
+
+      // If already on the home tab, scroll to top and refresh
+      if (activeTab === 'index' && name === 'index') {
+        triggerScrollToTop();
         return;
       }
 

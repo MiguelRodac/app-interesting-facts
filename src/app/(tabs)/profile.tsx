@@ -173,27 +173,25 @@ const renderItem = useCallback(
     <ThemedView style={styles.container}>
       {/* Profile header */}
       <View style={[styles.profileHeader, { paddingTop: topInset }]}>
-        {/* Settings — anchored to the top-right corner, doesn't push content */}
-        <AppPressable
-          onPress={handleSettings}
-          hitSlop={8}
-          style={[styles.settingsButton, { top: topInset + Spacing.two }]}>
-          <Ionicons name="settings-outline" size={24} color={theme.text} />
-        </AppPressable>
-
         <View style={styles.avatarSection}>
           <AppPressable onPress={() => setAvatarModalVisible(true)} hitSlop={8}>
             <UserAvatar user={user} size={80} />
           </AppPressable>
           {/* Tapping anywhere on the name/username opens Edit Profile */}
           <AppPressable onPress={handleEditProfile} style={styles.userInfo} hitSlop={4}>
-            <ThemedText type="subtitle">{user.displayName}</ThemedText>
+            <ThemedText type="subtitle" numberOfLines={2} ellipsizeMode="tail">{user.displayName}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               @{user.username}
             </ThemedText>
             <ThemedText type="small" style={{ color: theme.primary }}>
               Edit Profile
             </ThemedText>
+          </AppPressable>
+          <AppPressable
+            onPress={handleSettings}
+            hitSlop={8}
+            style={styles.settingsButton}>
+            <Ionicons name="settings-outline" size={24} color={theme.text} />
           </AppPressable>
         </View>
       </View>
@@ -291,12 +289,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+    flex: 1,
   },
   settingsButton: {
-    position: 'absolute',
-    right: Spacing.three,
     padding: Spacing.one,
-    zIndex: 10,
+    alignSelf: 'flex-start',
   },
   avatarModalOverlay: {
     flex: 1,
@@ -307,6 +304,8 @@ const styles = StyleSheet.create({
   },
   userInfo: {
     gap: Spacing.half,
+    flex: 1,
+    minWidth: 0,
   },
   tabBar: {
     flexDirection: 'row',

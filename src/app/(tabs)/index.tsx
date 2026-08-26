@@ -1,5 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 
 import { FactCard } from '@/components/FactCard';
@@ -13,6 +14,7 @@ import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
+import { registerScrollToTop } from '@/lib/scrollToTop';
 import type { Fact } from '@/types';
 
 export default function FeedScreen() {
@@ -25,6 +27,7 @@ const { isAuthenticated } = useAuth();
   const [likesRepostId, setLikesRepostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const firstFocusRef = useRef(true);
+  const flatListRef = useRef<FlatList<Fact>>(null);
 
   // Initial fetch shows the skeleton; later focus refreshes are silent
   // (background merge keeps new facts on top without resetting scroll).
@@ -43,6 +46,14 @@ const { isAuthenticated } = useAuth();
       setRefreshing(false);
     }
   }, [fetchFacts]);
+
+  // Register scroll-to-top handler so the tab bar can trigger it
+  useEffect(() => {
+    return registerScrollToTop(() => {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      handleRefresh();
+    });
+  }, [handleRefresh]);
 
   const handleEndReached = useCallback(() => {
     if (hasMore && !isLoading) {
@@ -110,10 +121,23 @@ const handleLike = useCallback(
     [isAuthenticated, handleFactPress, handleLike, handleRepost, handleRepostLike, handleRequireLogin],
   );
 
-  const renderFooter = useCallback(
-    () => (isLoading && facts.length > 0 ? <LoadingSkeleton count={1} /> : null),
-    [isLoading, facts.length],
-  );
+  const renderFooter = useCallback(() => {
+    if (isLoading && facts.length > 0) return <LoadingSkeleton count={1} />;
+    if (!hasMore && facts.length > 0) {
+      return (
+        <View style={styles.endOfList}>
+          <Ionicons name="checkmark-circle-outline" size={28} color={theme.muted} />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.endOfListText}>
+            No hay más facts para mostrar
+          </ThemedText>
+          <ThemedText type="small" themeColor="muted">
+            Desliza hacia arriba para ver los más recientes
+          </ThemedText>
+        </View>
+      );
+    }
+    return null;
+  }, [isLoading, facts.length, hasMore, theme]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading) {
@@ -131,6 +155,7 @@ const handleLike = useCallback(
 
       {/* Facts list */}
       <FlatList
+        ref={flatListRef}
         data={facts}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
@@ -183,5 +208,13 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
+  },
+  endOfList: {
+    alignItems: 'center',
+    paddingVertical: Spacing.five,
+    gap: Spacing.one,
+  },
+  endOfListText: {
+    fontWeight: '600',
   },
 });
