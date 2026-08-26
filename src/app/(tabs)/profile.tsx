@@ -161,6 +161,72 @@ const renderItem = useCallback(
     return <EmptyState title="No mentions yet" subtitle="Facts that mention you will appear here" icon="at-outline" />;
   }, [activeTab, userFactsLoading, likesLoading, mentionsLoading]);
 
+  const renderHeader = useCallback(
+    () => {
+      if (!user) return null;
+      return (
+      <View>
+        {/* Profile header */}
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarSection}>
+            <AppPressable onPress={() => setAvatarModalVisible(true)} hitSlop={8}>
+              <UserAvatar user={user} size={80} />
+            </AppPressable>
+            {/* Tapping anywhere on the name/username opens Edit Profile */}
+            <AppPressable onPress={handleEditProfile} style={styles.userInfo} hitSlop={4}>
+              <ThemedText type="subtitle" numberOfLines={2} ellipsizeMode="tail">{user.displayName}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                @{user.username}
+              </ThemedText>
+              <ThemedText type="small" style={{ color: theme.primary }}>
+                Edit Profile
+              </ThemedText>
+            </AppPressable>
+            <AppPressable
+              onPress={handleSettings}
+              hitSlop={8}
+              style={styles.settingsButton}>
+              <Ionicons name="settings-outline" size={24} color={theme.text} />
+            </AppPressable>
+          </View>
+        </View>
+
+        {/* Tab switcher */}
+        <View style={[styles.tabBar, { borderBottomColor: theme.border }]}>
+          <AppPressable
+            onPress={() => handleTabChange('mine')}
+            style={[styles.tab, activeTab === 'mine' && { borderBottomColor: theme.primary }]}>
+            <ThemedText
+              type="smallBold"
+              style={{ color: activeTab === 'mine' ? theme.primary : theme.muted }}>
+              My Facts ({userFacts.length})
+            </ThemedText>
+          </AppPressable>
+          <AppPressable
+            onPress={() => handleTabChange('liked')}
+            style={[styles.tab, activeTab === 'liked' && { borderBottomColor: theme.primary }]}>
+            <ThemedText
+              type="smallBold"
+              style={{ color: activeTab === 'liked' ? theme.primary : theme.muted }}>
+              Liked ({likedEntries.length})
+            </ThemedText>
+          </AppPressable>
+          <AppPressable
+            onPress={() => handleTabChange('mentions')}
+            style={[styles.tab, activeTab === 'mentions' && { borderBottomColor: theme.primary }]}>
+            <ThemedText
+              type="smallBold"
+              style={{ color: activeTab === 'mentions' ? theme.primary : theme.muted }}>
+              Mentions ({mentionsCount})
+            </ThemedText>
+          </AppPressable>
+        </View>
+      </View>
+      );
+    },
+    [user, theme, activeTab, handleEditProfile, handleSettings, handleTabChange, userFacts.length, likedEntries.length, mentionsCount],
+  );
+
   if (!isAuthenticated || !user) {
     return (
       <ThemedView style={styles.container}>
@@ -193,68 +259,15 @@ const renderItem = useCallback(
 
   return (
     <ThemedView style={styles.container}>
-      {/* Profile header */}
-      <View style={[styles.profileHeader, { paddingTop: topInset }]}>
-        <View style={styles.avatarSection}>
-          <AppPressable onPress={() => setAvatarModalVisible(true)} hitSlop={8}>
-            <UserAvatar user={user} size={80} />
-          </AppPressable>
-          {/* Tapping anywhere on the name/username opens Edit Profile */}
-          <AppPressable onPress={handleEditProfile} style={styles.userInfo} hitSlop={4}>
-            <ThemedText type="subtitle" numberOfLines={2} ellipsizeMode="tail">{user.displayName}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              @{user.username}
-            </ThemedText>
-            <ThemedText type="small" style={{ color: theme.primary }}>
-              Edit Profile
-            </ThemedText>
-          </AppPressable>
-          <AppPressable
-            onPress={handleSettings}
-            hitSlop={8}
-            style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={24} color={theme.text} />
-          </AppPressable>
-        </View>
-      </View>
-
-      {/* Tab switcher */}
-      <View style={[styles.tabBar, { borderBottomColor: theme.border }]}>
-        <AppPressable
-          onPress={() => handleTabChange('mine')}
-          style={[styles.tab, activeTab === 'mine' && { borderBottomColor: theme.primary }]}>
-          <ThemedText
-            type="smallBold"
-            style={{ color: activeTab === 'mine' ? theme.primary : theme.muted }}>
-            My Facts ({userFacts.length})
-          </ThemedText>
-        </AppPressable>
-        <AppPressable
-          onPress={() => handleTabChange('liked')}
-          style={[styles.tab, activeTab === 'liked' && { borderBottomColor: theme.primary }]}>
-          <ThemedText
-            type="smallBold"
-            style={{ color: activeTab === 'liked' ? theme.primary : theme.muted }}>
-            Liked ({likedEntries.length})
-          </ThemedText>
-        </AppPressable>
-        <AppPressable
-          onPress={() => handleTabChange('mentions')}
-          style={[styles.tab, activeTab === 'mentions' && { borderBottomColor: theme.primary }]}>
-          <ThemedText
-            type="smallBold"
-            style={{ color: activeTab === 'mentions' ? theme.primary : theme.muted }}>
-            Mentions ({mentionsCount})
-          </ThemedText>
-        </AppPressable>
-      </View>
-
-      {/* Facts list */}
-<FlatList
+      {/* Header + tabs live inside ListHeaderComponent so the whole screen
+          scrolls as one unit and shares contentContainerStyle padding —
+          keeps the safe-area inset consistent with the other tabs. */}
+      <FlatList
         data={displayedFacts}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={[styles.list, { paddingTop: topInset }]}
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -303,7 +316,6 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.six,
     paddingBottom: Spacing.three,
     gap: Spacing.three,
   },

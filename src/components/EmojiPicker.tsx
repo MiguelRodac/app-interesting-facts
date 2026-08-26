@@ -6,6 +6,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
 import { Radii, Shadows, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useKeyboardHeight } from '@/hooks/use-keyboard-height';
 
 const EMOJI_DATA: Record<string, { label: string; icon: string; emojis: string[] }> = {
   smileys: {
@@ -132,6 +133,7 @@ export function EmojiPicker({ visible, onClose, onSelect }: EmojiPickerProps) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
+  const keyboardHeight = useKeyboardHeight();
 
   const emojis = useMemo(() => {
     if (query.trim()) {
@@ -152,7 +154,14 @@ export function EmojiPicker({ visible, onClose, onSelect }: EmojiPickerProps) {
     <>
       <AppPressable style={styles.backdrop} onPress={onClose} />
 
-      <View style={[styles.modal, { backgroundColor: theme.background, borderColor: theme.border }]}>
+      <View
+        style={[
+          styles.modal,
+          { backgroundColor: theme.background, borderColor: theme.border },
+          // When the keyboard is open, anchor the picker near the top so the
+          // search stays visible instead of staying centered under the IME.
+          keyboardHeight > 0 && { top: Spacing.six, transform: [{ translateX: '-50%' }] },
+        ]}>
         {/* Search */}
         <View style={[styles.searchRow, { borderBottomColor: theme.border }]}>
           <Ionicons name="search" size={16} color={theme.muted} style={{ marginLeft: 4 }} />

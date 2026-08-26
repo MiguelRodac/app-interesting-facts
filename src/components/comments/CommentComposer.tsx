@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   StyleSheet,
   TextInput,
   View,
@@ -12,6 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Radii, Spacing } from '@/constants/theme';
+import { useKeyboardHeight } from '@/hooks/use-keyboard-height';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
 import { useAuth } from '@/data/hooks/useAuth';
@@ -94,6 +96,7 @@ export function CommentComposer({
 }: CommentComposerProps) {
   const theme = useTheme();
   const { user } = useAuth();
+  const keyboardHeight = useKeyboardHeight();
   const isEdit = mode === 'edit';
   const isRepost = !!repostEntryId;
   const addComment = useCommentsStore((s) => s.addComment);
@@ -334,7 +337,15 @@ export function CommentComposer({
         onClose={() => setShowEmojiPicker(false)}
         onSelect={handleEmojiSelected}
       />
-      <View style={[styles.wrap, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
+      <View
+        style={[
+          styles.wrap,
+          { borderTopColor: theme.border, backgroundColor: theme.background },
+          // Lift the composer above the on-screen keyboard on Android — with
+          // edge-to-edge the window doesn't resize, so the fixed bar would
+          // otherwise stay hidden behind the IME.
+          Platform.OS === 'android' && keyboardHeight > 0 && { marginBottom: keyboardHeight },
+        ]}>
       {/* Subtle reply-to chip, only in create/reply mode with an active target. */}
       {replyTo && !isEdit ? (
         <View style={styles.replyChipRow}>
