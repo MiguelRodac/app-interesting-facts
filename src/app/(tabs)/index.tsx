@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { FactCard } from '@/components/FactCard';
 import { EmptyState } from '@/components/EmptyState';
@@ -18,8 +19,9 @@ import { registerScrollToTop } from '@/lib/scrollToTop';
 import type { Fact } from '@/types';
 
 export default function FeedScreen() {
+  const { t } = useTranslation(['feed', 'common']);
   const { facts, isLoading, hasMore, fetchFacts, loadMore, toggleLike, toggleRepost, toggleRepostLike } = useFacts();
-const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
@@ -72,7 +74,7 @@ const { isAuthenticated } = useAuth();
     [router],
   );
 
-const handleLike = useCallback(
+  const handleLike = useCallback(
     (factId: string) => {
       if (isAuthenticated) {
         toggleLike(factId);
@@ -85,9 +87,9 @@ const handleLike = useCallback(
     async (factId: string) => {
       if (!isAuthenticated) return;
       const ok = await toggleRepost(factId);
-      if (ok) Alert.alert('Listo', 'Repost publicado');
+      if (ok) Alert.alert(t('common:ready'), t('feed:repostPublished'));
     },
-    [isAuthenticated, toggleRepost],
+    [isAuthenticated, toggleRepost, t],
   );
 
   const handleRepostLike = useCallback(
@@ -109,13 +111,13 @@ const handleLike = useCallback(
         fact={item}
         variant="preview"
         isSignedIn={isAuthenticated}
-        onRequireLogin={handleRequireLogin}
         onPress={() => handleFactPress(item)}
-        onLike={isAuthenticated && !item.isRepost ? () => handleLike(item.originalFactId ?? item.id) : undefined}
-        onRepost={isAuthenticated ? () => handleRepost(item.originalFactId ?? item.id) : undefined}
-        onRepostLike={isAuthenticated && item.isRepost ? () => handleRepostLike(item.id) : undefined}
-        onOpenLikes={isAuthenticated && !item.isRepost ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
-        onOpenRepostLikes={isAuthenticated && item.isRepost ? () => setLikesRepostId(item.id) : undefined}
+        onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
+        onRepost={isAuthenticated ? () => handleRepost(item.id) : undefined}
+        onRepostLike={isAuthenticated ? () => handleRepostLike(item.id) : undefined}
+        onOpenLikes={() => setLikesFactId(item.originalFactId ?? item.id)}
+        onOpenRepostLikes={() => setLikesRepostId(item.id)}
+        onRequireLogin={handleRequireLogin}
       />
     ),
     [isAuthenticated, handleFactPress, handleLike, handleRepost, handleRepostLike, handleRequireLogin],
@@ -128,29 +130,35 @@ const handleLike = useCallback(
         <View style={styles.endOfList}>
           <Ionicons name="checkmark-circle-outline" size={28} color={theme.muted} />
           <ThemedText type="small" themeColor="textSecondary" style={styles.endOfListText}>
-            No hay más facts para mostrar
+            {t('feed:endOfListTitle')}
           </ThemedText>
           <ThemedText type="small" themeColor="muted">
-            Desliza hacia arriba para ver los más recientes
+            {t('feed:endOfListSubtitle')}
           </ThemedText>
         </View>
       );
     }
     return null;
-  }, [isLoading, facts.length, hasMore, theme]);
+  }, [isLoading, facts.length, hasMore, theme, t]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading) {
       return <LoadingSkeleton count={3} />;
     }
-    return <EmptyState title="No facts yet" subtitle="Be the first to share a fact!" icon="bulb-outline" />;
-  }, [isLoading]);
+    return (
+      <EmptyState
+        title={t('feed:emptyTitle')}
+        subtitle={t('feed:emptySubtitle')}
+        icon="bulb-outline"
+      />
+    );
+  }, [isLoading, t]);
 
   return (
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topInset }]}>
-        <ThemedText type="subtitle">Interesting Facts</ThemedText>
+        <ThemedText type="subtitle">{t('feed:title')}</ThemedText>
       </View>
 
       {/* Facts list */}

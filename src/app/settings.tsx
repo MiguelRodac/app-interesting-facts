@@ -4,6 +4,7 @@ import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,25 +13,39 @@ import { useThemeContext, type ThemePreference } from '@/hooks/theme-provider';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import { useAuth } from '@/data/hooks/useAuth';
-
-const THEME_OPTIONS: {
-  value: ThemePreference;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconFocused: keyof typeof Ionicons.glyphMap;
-}[] = [
-  { value: 'system', label: 'System', icon: 'phone-portrait-outline', iconFocused: 'phone-portrait' },
-  { value: 'light', label: 'Light', icon: 'sunny-outline', iconFocused: 'sunny' },
-  { value: 'dark', label: 'Dark', icon: 'moon-outline', iconFocused: 'moon' },
-];
+import { useLanguage } from '@/hooks/use-language';
+import type { LanguagePreference } from '@/i18n';
 
 export default function SettingsScreen() {
+  const { t } = useTranslation(['settings', 'common']);
   const theme = useTheme();
   const topInset = useTopInset();
   const router = useRouter();
-  const { preference, setPreference } = useThemeContext();
+  const { preference: themePreference, setPreference: setThemePreference } = useThemeContext();
+  const { preference: langPreference, setLanguagePreference } = useLanguage();
   const { user, logout } = useAuth();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+  const themeOptions: {
+    value: ThemePreference;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    iconFocused: keyof typeof Ionicons.glyphMap;
+  }[] = [
+    { value: 'system', label: t('settings:themeSystem'), icon: 'phone-portrait-outline', iconFocused: 'phone-portrait' },
+    { value: 'light', label: t('settings:themeLight'), icon: 'sunny-outline', iconFocused: 'sunny' },
+    { value: 'dark', label: t('settings:themeDark'), icon: 'moon-outline', iconFocused: 'moon' },
+  ];
+
+  const languageOptions: {
+    value: LanguagePreference;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+  }[] = [
+    { value: 'system', label: t('settings:langSystem'), icon: 'globe-outline' },
+    { value: 'en', label: t('settings:langEn'), icon: 'language-outline' },
+    { value: 'es', label: t('settings:langEs'), icon: 'language-outline' },
+  ];
 
   const handleOpenPassword = () => {
     if (!user) {
@@ -62,7 +77,7 @@ export default function SettingsScreen() {
           hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </AppPressable>
-        <ThemedText type="subtitle">Settings</ThemedText>
+        <ThemedText type="subtitle">{t('settings:title')}</ThemedText>
         <View style={styles.backButton} />
       </View>
 
@@ -72,21 +87,53 @@ export default function SettingsScreen() {
         {/* Appearance */}
         <View style={styles.section}>
           <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-            Appearance
+            {t('settings:sectionAppearance')}
           </ThemedText>
           <ThemedView type="backgroundElement" style={styles.card}>
-            {THEME_OPTIONS.map((option, index) => {
-              const isSelected = preference === option.value;
+            {themeOptions.map((option, index) => {
+              const isSelected = themePreference === option.value;
               const iconName = isSelected ? option.iconFocused : option.icon;
               return (
                 <AppPressable
                   key={option.value}
-                  onPress={() => setPreference(option.value)}
+                  onPress={() => setThemePreference(option.value)}
                   style={[
                     styles.row,
-                    index < THEME_OPTIONS.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
+                    index < themeOptions.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
                   ]}>
                   <Ionicons name={iconName} size={20} color={isSelected ? theme.primary : theme.muted} />
+                  <ThemedText type="default" style={{ color: isSelected ? theme.primary : theme.text }}>
+                    {option.label}
+                  </ThemedText>
+                  <View style={styles.flexSpacer} />
+                  <Ionicons
+                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                    size={20}
+                    color={isSelected ? theme.primary : theme.muted}
+                  />
+                </AppPressable>
+              );
+            })}
+          </ThemedView>
+        </View>
+
+        {/* Language */}
+        <View style={styles.section}>
+          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
+            {t('settings:sectionLanguage')}
+          </ThemedText>
+          <ThemedView type="backgroundElement" style={styles.card}>
+            {languageOptions.map((option, index) => {
+              const isSelected = langPreference === option.value;
+              return (
+                <AppPressable
+                  key={option.value}
+                  onPress={() => setLanguagePreference(option.value)}
+                  style={[
+                    styles.row,
+                    index < languageOptions.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
+                  ]}>
+                  <Ionicons name={option.icon} size={20} color={isSelected ? theme.primary : theme.muted} />
                   <ThemedText type="default" style={{ color: isSelected ? theme.primary : theme.text }}>
                     {option.label}
                   </ThemedText>
@@ -105,14 +152,14 @@ export default function SettingsScreen() {
         {/* Account */}
         <View style={styles.section}>
           <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-            Account
+            {t('settings:sectionAccount')}
           </ThemedText>
           <ThemedView type="backgroundElement" style={styles.card}>
             <AppPressable
               onPress={handleOpenPassword}
               style={[styles.row, { borderBottomWidth: 1, borderBottomColor: theme.border }]}>
               <Ionicons name="key-outline" size={20} color={theme.textSecondary} />
-              <ThemedText type="default">Change Password</ThemedText>
+              <ThemedText type="default">{t('settings:changePassword')}</ThemedText>
               <View style={styles.flexSpacer} />
               <Ionicons name="chevron-forward" size={18} color={theme.muted} />
             </AppPressable>
@@ -120,7 +167,7 @@ export default function SettingsScreen() {
               <AppPressable onPress={() => setLogoutModalVisible(true)} style={styles.row}>
                 <Ionicons name="log-out-outline" size={20} color={theme.destructive} />
                 <ThemedText type="default" style={{ color: theme.destructive }}>
-                  Logout
+                  {t('settings:logout')}
                 </ThemedText>
                 <View style={styles.flexSpacer} />
               </AppPressable>
@@ -128,7 +175,7 @@ export default function SettingsScreen() {
           </ThemedView>
           {!user && (
             <ThemedText type="small" themeColor="textSecondary">
-              Sign in to manage your account settings.
+              {t('settings:anonymousNotice')}
             </ThemedText>
           )}
         </View>
@@ -139,30 +186,30 @@ export default function SettingsScreen() {
         <View style={styles.modalOverlay}>
           <ThemedView type="backgroundElement" style={styles.modalCard}>
             <ThemedText type="subtitle" style={styles.modalTitle}>
-              Log out?
+              {t('settings:logoutTitle')}
             </ThemedText>
             <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-              Are you sure you want to log out?
+              {t('settings:logoutMessage')}
             </ThemedText>
             <View style={styles.modalActions}>
               <AppPressable
                 onPress={() => setLogoutModalVisible(false)}
                 style={[styles.modalButton, { borderColor: theme.border }]}>
                 <ThemedText type="smallBold" themeColor="textSecondary">
-                  Cancel
+                  {t('common:cancel')}
                 </ThemedText>
               </AppPressable>
               <AppPressable
                 onPress={handleLogout}
                 style={[styles.modalButton, { backgroundColor: theme.destructive }]}>
                 <ThemedText type="smallBold" style={styles.modalButtonText}>
-                  Log Out
+                  {t('settings:logout')}
                 </ThemedText>
               </AppPressable>
             </View>
           </ThemedView>
         </View>
-</AppModal>
+      </AppModal>
     </ThemedView>
   );
 }

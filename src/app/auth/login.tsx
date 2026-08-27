@@ -3,6 +3,7 @@ import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ScrollView
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -14,6 +15,7 @@ import { useTopInset } from '@/hooks/use-top-inset';
 import { isValidEmail, MIN_PASSWORD_LENGTH } from '@/utils/validation';
 
 export default function LoginScreen() {
+  const { t } = useTranslation(['auth', 'common']);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,9 +76,9 @@ export default function LoginScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <ThemedText type="title">Welcome Back</ThemedText>
+            <ThemedText type="title">{t('auth:welcomeBack')}</ThemedText>
             <ThemedText type="default" themeColor="textSecondary">
-              Sign in to continue
+              {t('auth:signInToContinue')}
             </ThemedText>
           </View>
 
@@ -84,7 +86,7 @@ export default function LoginScreen() {
           <View style={styles.form}>
             <View style={styles.field}>
               <ThemedText type="smallBold" themeColor="textSecondary">
-                Email
+                {t('auth:email')}
               </ThemedText>
               <TextInput
                 style={[
@@ -95,7 +97,7 @@ export default function LoginScreen() {
                     borderColor: emailInvalid ? theme.destructive : theme.border,
                   },
                 ]}
-                placeholder="your@email.com"
+                placeholder={t('auth:emailPlaceholder')}
                 placeholderTextColor={theme.muted}
                 value={email}
                 onChangeText={setEmail}
@@ -107,7 +109,7 @@ export default function LoginScreen() {
               />
               {emailInvalid && (
                 <ThemedText type="small" style={{ color: theme.destructive }}>
-                  {'Enter a valid email'}
+                  {t('auth:invalidEmail')}
                 </ThemedText>
               )}
             </View>
@@ -115,7 +117,8 @@ export default function LoginScreen() {
             <PasswordField
               value={password}
               onChangeText={setPassword}
-              placeholder="Your password"
+              label={t('auth:password')}
+              placeholder={t('auth:passwordPlaceholder')}
               editable={!isSubmitting}
             />
 
@@ -124,7 +127,7 @@ export default function LoginScreen() {
               style={styles.forgotButton}
               hitSlop={6}>
               <ThemedText type="small" style={{ color: theme.primary }}>
-                Forgot password?
+                {t('auth:forgotPasswordLink')}
               </ThemedText>
             </AppPressable>
 
@@ -138,16 +141,16 @@ export default function LoginScreen() {
                 },
               ]}>
               <ThemedText type="smallBold" style={styles.submitText}>
-                {isSubmitting ? 'Signing in...' : 'Sign In'}
+                {isSubmitting ? t('auth:signingIn') : t('auth:signInTitle')}
               </ThemedText>
             </AppPressable>
 
             <AppPressable onPress={goToRegister} style={styles.linkButton}>
               <ThemedText type="small" themeColor="textSecondary">
-                Don't have an account?{' '}
+                {t('auth:noAccountPrompt')}{' '}
               </ThemedText>
               <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                Sign Up
+                {t('auth:signUpLink')}
               </ThemedText>
             </AppPressable>
           </View>

@@ -3,6 +3,7 @@ import { StyleSheet, View, KeyboardAvoidingView, Platform, ScrollView } from 're
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -16,6 +17,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 
 export default function ChangePasswordScreen() {
+  const { t } = useTranslation(['auth', 'common']);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,7 +53,7 @@ export default function ChangePasswordScreen() {
       } else {
         router.replace('/settings');
       }
-      uiStore.showToast('Password updated successfully.', 'success');
+      uiStore.showToast(t('auth:passwordUpdated'), 'success');
     } catch (error) {
       uiStore.setError(isFirebaseAuthError(error) ? mapFirebaseError(error) : (error as never));
     } finally {
@@ -81,9 +83,9 @@ export default function ChangePasswordScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <ThemedText type="title">Change Password</ThemedText>
+          <ThemedText type="title">{t('auth:changePasswordTitle')}</ThemedText>
           <ThemedText type="default" themeColor="textSecondary">
-            Enter your current password and a new one.
+            {t('auth:changePasswordSubtitle')}
           </ThemedText>
         </View>
 
@@ -91,41 +93,37 @@ export default function ChangePasswordScreen() {
         <ScrollView
           contentContainerStyle={styles.form}
           keyboardShouldPersistTaps="handled">
-          {!user && (
-            <ThemedText type="small" style={{ color: theme.destructive }}>
-              You are not signed in. Changes can't be saved until you sign in.
-            </ThemedText>
-          )}
-
           <PasswordField
             value={currentPassword}
             onChangeText={setCurrentPassword}
-            placeholder="Current password"
+            label={t('auth:currentPassword')}
+            placeholder={t('auth:currentPasswordPlaceholder')}
             editable={!isSubmitting}
           />
           <PasswordField
             value={newPassword}
             onChangeText={setNewPassword}
-            placeholder="New password (6-16 characters)"
+            label={t('auth:newPassword')}
+            placeholder={t('auth:newPasswordPlaceholder')}
             editable={!isSubmitting}
             showStrength
           />
           <PasswordField
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            placeholder="Repeat new password"
+            placeholder={t('auth:confirmNewPasswordPlaceholder')}
             editable={!isSubmitting}
-            label="Confirm New Password"
+            label={t('auth:confirmNewPassword')}
           />
 
           {passwordInvalid && (
             <ThemedText type="small" style={{ color: theme.destructive }}>
-              New password must be different from the current one.
+              {t('auth:passwordsDoNotMatch')}
             </ThemedText>
           )}
           {passwordsMismatch && (
             <ThemedText type="small" style={{ color: theme.destructive }}>
-              Passwords do not match.
+              {t('auth:passwordsDoNotMatch')}
             </ThemedText>
           )}
 
@@ -139,7 +137,7 @@ export default function ChangePasswordScreen() {
               },
             ]}>
             <ThemedText type="smallBold" style={styles.submitText}>
-              {isSubmitting ? 'Updating...' : 'Update Password'}
+              {isSubmitting ? t('auth:updating') : t('auth:updatePassword')}
             </ThemedText>
           </AppPressable>
         </ScrollView>

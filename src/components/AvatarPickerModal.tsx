@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -30,6 +31,7 @@ export function AvatarPickerModal({
   onClose,
   onSelectAvatarOption,
 }: AvatarPickerModalProps) {
+  const { t } = useTranslation(['profile', 'common']);
   const theme = useTheme();
   const [avatarOptions, setAvatarOptions] = useState<ApiAvatarOption[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
@@ -59,7 +61,15 @@ export function AvatarPickerModal({
   }, [visible, currentColor, currentAvatarUrl, fetchAvatarOptions]);
 
   const handlePickColor = (color: string) => {
+    // If the currently pending avatar has this same color, keep the avatar;
+    // otherwise clear the avatar image so the picked color is visible.
+    const matchingAvatar = avatarOptions.find(
+      (opt) => opt.url === pendingUrl && opt.color === color,
+    );
     setPendingColor(color);
+    if (!matchingAvatar) {
+      setPendingUrl(null);
+    }
   };
 
   const handlePickNoColor = () => {
@@ -67,7 +77,8 @@ export function AvatarPickerModal({
   };
 
   const handlePickAvatar = (option: ApiAvatarOption) => {
-    setPendingUrl(option.url);
+    setPendingUrl(option.url!);
+    // Also auto-select the avatar's background color if it has one
     if (option.color) {
       setPendingColor(option.color);
     }
@@ -97,7 +108,7 @@ export function AvatarPickerModal({
           <AppPressable style={StyleSheet.absoluteFill} onPress={() => {}} />
           <View style={styles.handle} />
           <ThemedText type="subtitle" style={styles.title}>
-            Change Avatar
+            {t('profile:changeAvatar')}
           </ThemedText>
 
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -112,7 +123,7 @@ export function AvatarPickerModal({
                 {colorOptions.length > 0 && (
                   <>
                     <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-                      Choose a color
+                      {t('profile:chooseColor')}
                     </ThemedText>
                     <View style={styles.colorGrid}>
                       <AppPressable
@@ -155,7 +166,7 @@ export function AvatarPickerModal({
                 {avatarOptionsWithUrl.length > 0 && (
                   <>
                     <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-                      Choose an avatar
+                      {t('profile:chooseAvatar')}
                     </ThemedText>
                     <View style={styles.avatarGrid}>
                       <AppPressable
@@ -209,14 +220,14 @@ export function AvatarPickerModal({
               onPress={onClose}
               style={[styles.actionButton, styles.cancelButton, { borderColor: theme.border }]}>
               <ThemedText type="smallBold" style={styles.cancelText}>
-                Cancel
+                {t('common:cancel')}
               </ThemedText>
             </AppPressable>
             <AppPressable
               onPress={handleDone}
               style={[styles.actionButton, { backgroundColor: theme.primary }]}>
               <ThemedText type="smallBold" style={styles.doneText}>
-                Done
+                {t('common:done')}
               </ThemedText>
             </AppPressable>
           </View>

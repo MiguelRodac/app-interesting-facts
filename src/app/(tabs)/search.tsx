@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, TextInput, View, ActivityIndicator } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useSegments, useFocusEffect } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/components/EmptyState';
 import { FactCard } from '@/components/FactCard';
@@ -23,13 +24,8 @@ import type { Author, Fact, Hashtag } from '@/types';
 
 type SearchTabKey = 'people' | 'posts' | 'hashtags';
 
-const TABS: SegmentedTab[] = [
-  { key: 'people', label: 'People' },
-  { key: 'posts', label: 'Posts' },
-  { key: 'hashtags', label: 'Hashtags' },
-];
-
 export default function SearchScreen() {
+  const { t } = useTranslation(['search', 'common']);
   const {
     query,
     activeTab,
@@ -192,13 +188,11 @@ export default function SearchScreen() {
   );
 
   // Build tabs with counts
-  const tabsWithCounts: SegmentedTab[] = TABS.map((tab) => {
-    let count: number | undefined;
-    if (tab.key === 'people') count = peopleResults.length;
-    else if (tab.key === 'posts') count = postsResults.length;
-    else if (tab.key === 'hashtags') count = hashtagsResults.length;
-    return { ...tab, count };
-  });
+  const tabsWithCounts: SegmentedTab[] = useMemo(() => [
+    { key: 'people', label: t('search:tabPeople'), count: peopleResults.length },
+    { key: 'posts', label: t('search:tabPosts'), count: postsResults.length },
+    { key: 'hashtags', label: t('search:tabHashtags'), count: hashtagsResults.length },
+  ], [t, peopleResults.length, postsResults.length, hashtagsResults.length]);
 
   // --- People tab ---
   const renderPeopleItem = useCallback(
@@ -221,7 +215,7 @@ export default function SearchScreen() {
   );
 
   // --- Posts tab ---
-const renderPostItem = useCallback(
+  const renderPostItem = useCallback(
     ({ item }: { item: Fact }) => (
       <FactCard
         fact={item}
@@ -262,28 +256,31 @@ const renderPostItem = useCallback(
     if (!query.trim()) {
       return (
         <EmptyState
-          title="Search for interesting facts"
-          subtitle="Type something in the search bar above"
+          title={t('search:searchHint')}
+          subtitle={t('search:placeholder')}
           icon="search-outline"
         />
       );
     }
 
-    const tabLabel =
-      activeTab === 'people'
-        ? 'people'
-        : activeTab === 'posts'
-          ? 'posts'
-          : 'hashtags';
+    let emptyTitle = t('search:noPostsTitle');
+    let emptySubtitle = t('search:noPostsSubtitle');
+    if (activeTab === 'people') {
+      emptyTitle = t('search:noPeopleTitle');
+      emptySubtitle = t('search:noPeopleSubtitle');
+    } else if (activeTab === 'hashtags') {
+      emptyTitle = t('search:noHashtagsTitle');
+      emptySubtitle = t('search:noHashtagsSubtitle');
+    }
 
     return (
       <EmptyState
-        title={`No ${tabLabel} found`}
-        subtitle={`Nothing matched "${query}"`}
+        title={emptyTitle}
+        subtitle={emptySubtitle}
         icon="search-outline"
       />
     );
-  }, [isLoading, query, activeTab]);
+  }, [isLoading, query, activeTab, t]);
 
   // Pick data + renderer for active tab
   const activeData =
@@ -326,7 +323,7 @@ const renderPostItem = useCallback(
           <Ionicons name="search-outline" size={20} color={theme.muted} />
           <TextInput
             style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Search..."
+            placeholder={t('search:placeholder')}
             placeholderTextColor={theme.muted}
             value={inputValue}
             onChangeText={handleChangeText}

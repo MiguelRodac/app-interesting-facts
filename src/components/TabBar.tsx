@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
@@ -10,14 +11,14 @@ interface TabItem {
   name: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconFocused: keyof typeof Ionicons.glyphMap;
-  label: string;
+  labelKey: string;
 }
 
 const TABS: TabItem[] = [
-  { name: 'index', icon: 'home-outline', iconFocused: 'home', label: 'Feed' },
-  { name: 'search', icon: 'search-outline', iconFocused: 'search', label: 'Search' },
-  { name: 'create', icon: 'add-circle-outline', iconFocused: 'add-circle', label: 'Create' },
-  { name: 'profile', icon: 'person-outline', iconFocused: 'person', label: 'Profile' },
+  { name: 'index', icon: 'home-outline', iconFocused: 'home', labelKey: 'tabFeed' },
+  { name: 'search', icon: 'search-outline', iconFocused: 'search', labelKey: 'tabSearch' },
+  { name: 'create', icon: 'add-circle-outline', iconFocused: 'add-circle', labelKey: 'tabCreate' },
+  { name: 'profile', icon: 'person-outline', iconFocused: 'person', labelKey: 'tabProfile' },
 ];
 
 interface TabBarProps {
@@ -26,6 +27,7 @@ interface TabBarProps {
 }
 
 export function TabBar({ activeTab, onTabPress }: TabBarProps) {
+  const { t } = useTranslation('common');
   const theme = useTheme();
 
   return (
@@ -51,7 +53,7 @@ export function TabBar({ activeTab, onTabPress }: TabBarProps) {
             <ThemedText
               type="small"
               style={[styles.label, { color }]}>
-              {tab.label}
+              {t(tab.labelKey)}
             </ThemedText>
           </AppPressable>
         );

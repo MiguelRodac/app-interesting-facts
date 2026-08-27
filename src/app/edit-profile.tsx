@@ -4,6 +4,7 @@ import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { AvatarPickerModal } from '@/components/AvatarPickerModal';
 import { PasswordField } from '@/components/PasswordField';
@@ -20,7 +21,8 @@ import { useTopInset } from '@/hooks/use-top-inset';
 import { isValidEmail, MAX_DISPLAY_NAME_LENGTH } from '@/utils/validation';
 
 export default function EditProfileScreen() {
-const { user, updateProfile, isLoading } = useAuth();
+  const { t } = useTranslation(['profile', 'auth', 'create', 'common']);
+  const { user, updateProfile, isLoading } = useAuth();
   const showToast = useUIStore((s) => s.showToast);
   const setError = useUIStore((s) => s.setError);
   const router = useRouter();
@@ -91,7 +93,7 @@ const { user, updateProfile, isLoading } = useAuth();
     setEditNameValue('');
   }, []);
 
-const handleConfirmEditName = useCallback(() => {
+  const handleConfirmEditName = useCallback(() => {
     const trimmed = editNameValue.trim();
     if (trimmed.length < 2 || trimmed === pendingDisplayName) {
       setIsEditingName(false);
@@ -143,10 +145,10 @@ const handleConfirmEditName = useCallback(() => {
     }
   }, []);
 
-const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async () => {
     // Local email format check before hitting the backend (422 otherwise)
     if (!isValidEmail(pendingEmail)) {
-      showToast('Please enter a valid email', 'warning');
+      showToast(t('profile:validEmailRequired'), 'warning');
       return;
     }
 
@@ -166,14 +168,14 @@ const handleSave = useCallback(async () => {
         avatarColor: pendingAvatarColor,
         avatarUrl: pendingAvatarUrl,
       });
-      showToast('Profile updated successfully', 'success');
+      showToast(t('profile:profileUpdated'), 'success');
       router.replace('/(tabs)/profile');
     } catch {
       // Error handled by uiStore
     } finally {
       setIsSubmitting(false);
     }
-  }, [pendingDisplayName, pendingEmail, pendingAvatarColor, pendingAvatarUrl, updateProfile, router, user, showToast]);
+  }, [pendingDisplayName, pendingEmail, pendingAvatarColor, pendingAvatarUrl, updateProfile, router, user, showToast, t]);
 
   const handleCancelPasswordPrompt = useCallback(() => {
     setIsPasswordPromptVisible(false);
@@ -195,7 +197,7 @@ const handleSave = useCallback(async () => {
         avatarUrl: pendingAvatarUrl,
       });
       showToast(
-        'We sent a verification link to your new email. Your email will update once you verify it.',
+        t('profile:emailVerificationSent'),
         'warning',
       );
       router.replace('/(tabs)/profile');
@@ -205,7 +207,7 @@ const handleSave = useCallback(async () => {
       setIsPasswordPromptVisible(true);
       setError(isFirebaseAuthError(error) ? mapFirebaseError(error) : (error as never));
     }
-  }, [pendingEmail, passwordValue, pendingDisplayName, pendingAvatarColor, pendingAvatarUrl, updateProfile, showToast, setError, router]);
+  }, [pendingEmail, passwordValue, pendingDisplayName, pendingAvatarColor, pendingAvatarUrl, updateProfile, showToast, setError, router, t]);
 
   const handleCancel = useCallback(() => {
     // With unsaved changes, block the in-screen back button and ask for confirmation.
@@ -247,11 +249,11 @@ const handleSave = useCallback(async () => {
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </AppPressable>
           <ThemedText type="subtitle" style={styles.headerTitle}>
-            Edit Profile
+            {t('profile:editProfileTitle')}
           </ThemedText>
           <AppPressable onPress={handleSave} hitSlop={8} disabled={isSubmitting}>
             <ThemedText type="smallBold" style={{ color: theme.primary }}>
-              {isSubmitting ? 'Saving...' : 'Done'}
+              {isSubmitting ? t('common:saving') : t('common:done')}
             </ThemedText>
           </AppPressable>
         </View>
@@ -276,7 +278,7 @@ const handleSave = useCallback(async () => {
             </AppPressable>
             <AppPressable onPress={() => setIsAvatarModalVisible(true)}>
               <ThemedText type="small" themeColor="primary">
-                Tap to change
+                {t('profile:tapToChange')}
               </ThemedText>
             </AppPressable>
           </View>
@@ -284,7 +286,7 @@ const handleSave = useCallback(async () => {
           {/* Display name row */}
           <View style={styles.fieldSection}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.fieldLabel}>
-              Display Name
+              {t('profile:displayName')}
             </ThemedText>
             {isEditingName ? (
               <View style={styles.editNameRow}>
@@ -332,7 +334,7 @@ const handleSave = useCallback(async () => {
           {/* Username (read-only) */}
           <View style={styles.fieldSection}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.fieldLabel}>
-              Username
+              {t('profile:username')}
             </ThemedText>
             <View style={styles.readOnlyRow}>
               <ThemedText type="default" themeColor="muted">
@@ -344,7 +346,7 @@ const handleSave = useCallback(async () => {
           {/* Email row */}
           <View style={styles.fieldSection}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.fieldLabel}>
-              Email
+              {t('profile:email')}
             </ThemedText>
             {isEditingEmail ? (
               <View style={styles.editNameRow}>
@@ -385,7 +387,7 @@ const handleSave = useCallback(async () => {
                 <ThemedText type="default" style={styles.nameDisplayText}>
                   {pendingEmail}
                 </ThemedText>
-<Ionicons name="pencil" size={18} color={theme.muted} />
+                <Ionicons name="pencil" size={18} color={theme.muted} />
               </AppPressable>
             )}
           </View>
@@ -394,16 +396,16 @@ const handleSave = useCallback(async () => {
           {isPasswordPromptVisible && (
             <View style={styles.passwordSection}>
               <ThemedText type="smallBold" themeColor="textSecondary" style={styles.fieldLabel}>
-                Confirm your email change
+                {t('profile:confirmEmailTitle')}
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                Enter your current password. A verification link will be sent to your new email.
+                {t('profile:confirmEmailSubtitle')}
               </ThemedText>
               <PasswordField
                 value={passwordValue}
                 onChangeText={setPasswordValue}
-                label="Current Password"
-                placeholder="Your password"
+                label={t('auth:currentPassword')}
+                placeholder={t('auth:passwordPlaceholder')}
                 editable={!isConfirmingEmail}
               />
               <View style={styles.passwordButtons}>
@@ -412,7 +414,7 @@ const handleSave = useCallback(async () => {
                   onPress={handleCancelPasswordPrompt}
                   disabled={isConfirmingEmail}>
                   <ThemedText type="smallBold" style={styles.passwordCancelText}>
-                    Cancel
+                    {t('common:cancel')}
                   </ThemedText>
                 </AppPressable>
                 <AppPressable
@@ -424,7 +426,7 @@ const handleSave = useCallback(async () => {
                   onPress={handleConfirmEmailChange}
                   disabled={isConfirmingEmail || passwordValue.length === 0}>
                   <ThemedText type="smallBold" style={styles.passwordConfirmText}>
-                    {isConfirmingEmail ? 'Confirming...' : 'Confirm'}
+                    {isConfirmingEmail ? t('common:confirming') : t('common:confirm')}
                   </ThemedText>
                 </AppPressable>
               </View>
@@ -446,24 +448,24 @@ const handleSave = useCallback(async () => {
           <View style={styles.modalOverlay}>
             <ThemedView type="backgroundElement" style={styles.modalContent}>
               <ThemedText type="subtitle" style={styles.modalTitle}>
-                ¿Perder los cambios?
+                {t('create:leaveConfirmTitle')}
               </ThemedText>
               <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-                Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?
+                {t('create:leaveConfirmMessage')}
               </ThemedText>
               <View style={styles.modalButtons}>
                 <AppPressable
                   onPress={handleCancelLeave}
                   style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
                   <ThemedText type="smallBold" style={styles.cancelModalText}>
-                    Cancelar
+                    {t('create:leaveConfirmStay')}
                   </ThemedText>
                 </AppPressable>
                 <AppPressable
                   onPress={handleConfirmLeave}
                   style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
                   <ThemedText type="smallBold" style={styles.confirmModalText}>
-                    Salir
+                    {t('create:leaveConfirmExit')}
                   </ThemedText>
                 </AppPressable>
               </View>

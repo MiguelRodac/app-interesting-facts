@@ -1,0 +1,16 @@
+{
+  "title": "Crear Fact",
+  "subtitle": "Comparte algo interesante con el mundo",
+  "fieldTitle": "Título (opcional)",
+  "titlePlaceholder": "Dale un título a tu fact...",
+  "fieldContent": "Contenido",
+  "contentPlaceholder": "Comparte un fact interesante... Usa @ para mencionar usuarios",
+  "noUsersFound": "No se encontraron usuarios",
+  "noHashtagsFound": "No se encontraron hashtags",
+  "submitButton": "Compartir Fact",
+  "submittingButton": "Compartiendo...",
+  "leaveConfirmTitle": "¿Perder los cambios?",
+  "leaveConfirmMessage": "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?",
+  "leaveConfirmStay": "Quedarme",
+  "leaveConfirmExit": "Salir"
+}

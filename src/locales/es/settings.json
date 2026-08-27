@@ -1,0 +1,17 @@
+{
+  "title": "Ajustes",
+  "sectionAppearance": "Apariencia",
+  "themeSystem": "Sistema",
+  "themeLight": "Claro",
+  "themeDark": "Oscuro",
+  "sectionLanguage": "Idioma",
+  "langSystem": "Predeterminado del sistema",
+  "langEn": "English",
+  "langEs": "Español",
+  "sectionAccount": "Cuenta",
+  "changePassword": "Cambiar Contraseña",
+  "logout": "Cerrar Sesión",
+  "logoutTitle": "¿Cerrar sesión?",
+  "logoutMessage": "¿Estás seguro de que deseas cerrar sesión?",
+  "anonymousNotice": "Inicia sesión para gestionar los ajustes de tu cuenta."
+}

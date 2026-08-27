@@ -1,0 +1,17 @@
+{
+  "title": "Settings",
+  "sectionAppearance": "Appearance",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "sectionLanguage": "Language",
+  "langSystem": "System default",
+  "langEn": "English",
+  "langEs": "Español",
+  "sectionAccount": "Account",
+  "changePassword": "Change Password",
+  "logout": "Log Out",
+  "logoutTitle": "Log out?",
+  "logoutMessage": "Are you sure you want to log out?",
+  "anonymousNotice": "Sign in to manage your account settings."
+}

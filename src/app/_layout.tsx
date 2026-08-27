@@ -10,6 +10,7 @@ import { Toast } from '@/components/Toast';
 import { useAuthStore } from '@/data/stores/authStore';
 import { Colors } from '@/constants/theme';
 import { ThemeProvider, useThemeContext } from '@/hooks/theme-provider';
+import '@/i18n';
 
 SplashScreen.preventAutoHideAsync();
 

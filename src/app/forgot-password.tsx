@@ -3,6 +3,7 @@ import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ScrollView
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -14,6 +15,7 @@ import { useTopInset } from '@/hooks/use-top-inset';
 import { isValidEmail } from '@/utils/validation';
 
 export default function ForgotPasswordScreen() {
+  const { t } = useTranslation(['auth', 'common']);
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
   const router = useRouter();
@@ -33,7 +35,7 @@ export default function ForgotPasswordScreen() {
       // Firebase sends the reset email directly — no backend involved.
       await sendPasswordReset(emailValue);
       router.back();
-      uiStore.showToast('If an account exists for this email, a reset link was sent.', 'success');
+      uiStore.showToast(t('auth:resetEmailSent'), 'success');
     } catch (error) {
       // Don't reveal whether an email is registered: only surface real failures
       // (network, rate limit). Everything else responds like success.
@@ -47,7 +49,7 @@ export default function ForgotPasswordScreen() {
         uiStore.setError(error as never);
       } else {
         router.back();
-        uiStore.showToast('If an account exists for this email, a reset link was sent.', 'success');
+        uiStore.showToast(t('auth:resetEmailSent'), 'success');
       }
     } finally {
       setIsSending(false);
@@ -80,9 +82,9 @@ export default function ForgotPasswordScreen() {
 
           {/* Header */}
           <View style={styles.header}>
-            <ThemedText type="title">Reset Password</ThemedText>
+            <ThemedText type="title">{t('auth:resetPasswordTitle')}</ThemedText>
             <ThemedText type="default" themeColor="textSecondary">
-              Enter your email and we'll send you a link to reset your password.
+              {t('auth:resetPasswordSubtitle')}
             </ThemedText>
           </View>
 
@@ -90,7 +92,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.form}>
             <View style={styles.field}>
               <ThemedText type="smallBold" themeColor="textSecondary">
-                Email
+                {t('auth:email')}
               </ThemedText>
               <TextInput
                 style={[
@@ -101,7 +103,7 @@ export default function ForgotPasswordScreen() {
                     borderColor: emailInvalid ? theme.destructive : theme.border,
                   },
                 ]}
-                placeholder="your@email.com"
+                placeholder={t('auth:emailPlaceholder')}
                 placeholderTextColor={theme.muted}
                 value={email}
                 onChangeText={setEmail}
@@ -113,7 +115,7 @@ export default function ForgotPasswordScreen() {
               />
               {emailInvalid && (
                 <ThemedText type="small" style={{ color: theme.destructive }}>
-                  {'Enter a valid email'}
+                  {t('auth:invalidEmail')}
                 </ThemedText>
               )}
             </View>
@@ -128,7 +130,7 @@ export default function ForgotPasswordScreen() {
                 },
               ]}>
               <ThemedText type="smallBold" style={styles.submitText}>
-                {isSending ? 'Sending...' : 'Send Reset Link'}
+                {isSending ? t('auth:sending') : t('auth:sendResetLink')}
               </ThemedText>
             </AppPressable>
           </View>

@@ -4,6 +4,7 @@ import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -34,6 +35,7 @@ interface LikesModalProps {
  * for repost likes, or `repostCommentId` for repost comment likes.
  */
 export function LikesModal({ factId, commentId, repostId, repostCommentId, visible, onClose }: LikesModalProps) {
+  const { t } = useTranslation('common');
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
@@ -84,7 +86,7 @@ export function LikesModal({ factId, commentId, repostId, repostCommentId, visib
           ) : (
             <>
               <View style={styles.header}>
-                <ThemedText type="small" themeColor="textSecondary">Likes</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{t('common:likes')}</ThemedText>
                 <View style={styles.counterRow}>
                   <Ionicons name="heart" size={28} color={theme.destructive} />
                   <ThemedText type="default" style={styles.counterNumber}>{likes.length}</ThemedText>
@@ -97,7 +99,7 @@ export function LikesModal({ factId, commentId, repostId, repostCommentId, visib
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                   <View style={styles.centerEmpty}>
-                    <ThemedText type="small" themeColor="textSecondary">No likes yet</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">{t('common:noLikesYet')}</ThemedText>
                   </View>
                 }
                 renderItem={({ item }) => (

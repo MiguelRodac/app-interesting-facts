@@ -3,6 +3,7 @@ import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIn
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -25,6 +26,7 @@ import type { ApiUsernameCheck } from '@/data/api/types';
 const client = createApiClient(getIdToken);
 
 export default function RegisterScreen() {
+  const { t } = useTranslation(['auth', 'profile', 'common']);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -48,7 +50,7 @@ export default function RegisterScreen() {
     // Local format check — avoids hitting the API with an invalid pattern
     if (!isValidUsername(value)) {
       setUsernameStatus('invalid');
-      setUsernameError(USERNAME_ERROR_MESSAGE);
+      setUsernameError(t('auth:invalidUsername'));
       return;
     }
 
@@ -62,13 +64,13 @@ export default function RegisterScreen() {
         setUsernameError(null);
       } else {
         setUsernameStatus('taken');
-        setUsernameError('Username is already taken');
+        setUsernameError(t('auth:usernameTaken'));
       }
     } catch {
       setUsernameStatus('idle');
       setUsernameError(null);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (debounceRef.current) {
@@ -84,7 +86,7 @@ export default function RegisterScreen() {
     // Invalid pattern — skip the API call and show the error immediately
     if (!isValidUsername(username)) {
       setUsernameStatus('invalid');
-      setUsernameError(USERNAME_ERROR_MESSAGE);
+      setUsernameError(t('auth:invalidUsername'));
       return;
     }
 
@@ -97,7 +99,7 @@ export default function RegisterScreen() {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [username, checkUsername]);
+  }, [username, checkUsername, t]);
 
 const isValid =
     isValidEmail(email) &&
@@ -142,7 +144,7 @@ const isValid =
   const getUsernameHelperText = () => {
     if (usernameStatus === 'checking') return null;
     if (usernameStatus === 'taken' || usernameStatus === 'invalid') return usernameError;
-    if (usernameStatus === 'available') return 'Username is available';
+    if (usernameStatus === 'available') return t('auth:usernameAvailable');
     return null;
   };
 
@@ -175,9 +177,9 @@ const isValid =
 
           {/* Header */}
           <View style={styles.header}>
-            <ThemedText type="title">Create Account</ThemedText>
+            <ThemedText type="title">{t('auth:createAccountTitle')}</ThemedText>
             <ThemedText type="default" themeColor="textSecondary">
-              Join the community
+              {t('auth:joinCommunity')}
             </ThemedText>
           </View>
 
@@ -185,7 +187,7 @@ const isValid =
           <View style={styles.form}>
             <View style={styles.field}>
               <ThemedText type="smallBold" themeColor="textSecondary">
-                Display Name
+                {t('profile:displayName')}
               </ThemedText>
               <TextInput
                 style={[
@@ -196,7 +198,7 @@ const isValid =
                     borderColor: theme.border,
                   },
                 ]}
-                placeholder="Your name"
+                placeholder={t('profile:displayNamePlaceholder')}
                 placeholderTextColor={theme.muted}
                 value={displayName}
                 onChangeText={setDisplayName}
@@ -208,7 +210,7 @@ const isValid =
 
             <View style={styles.field}>
               <ThemedText type="smallBold" themeColor="textSecondary">
-                Username
+                {t('auth:username')}
               </ThemedText>
               <View
                 style={[
@@ -224,7 +226,7 @@ const isValid =
                 </ThemedText>
                 <TextInput
                   style={[styles.usernameField, { color: theme.text }]}
-                  placeholder="your_username"
+                  placeholder={t('auth:usernamePlaceholder')}
                   placeholderTextColor={theme.muted}
                   value={username}
                   onChangeText={setUsername}
@@ -255,7 +257,7 @@ const isValid =
 
             <View style={styles.field}>
               <ThemedText type="smallBold" themeColor="textSecondary">
-                Email
+                {t('auth:email')}
               </ThemedText>
               <TextInput
                 style={[
@@ -266,7 +268,7 @@ const isValid =
                     borderColor: emailInvalid ? theme.destructive : theme.border,
                   },
                 ]}
-                placeholder="your@email.com"
+                placeholder={t('auth:emailPlaceholder')}
                 placeholderTextColor={theme.muted}
                 value={email}
                 onChangeText={setEmail}
@@ -278,7 +280,7 @@ const isValid =
               />
               {emailInvalid && (
                 <ThemedText type="small" style={{ color: theme.destructive }}>
-                  {'Enter a valid email'}
+                  {t('auth:invalidEmail')}
                 </ThemedText>
               )}
             </View>
@@ -286,7 +288,8 @@ const isValid =
             <PasswordField
               value={password}
               onChangeText={setPassword}
-              placeholder="Choose a password"
+              label={t('auth:password')}
+              placeholder={t('auth:passwordPlaceholder')}
               editable={!isSubmitting}
               showStrength
             />
@@ -301,16 +304,16 @@ const isValid =
                 },
               ]}>
               <ThemedText type="smallBold" style={styles.submitText}>
-                {isSubmitting ? 'Creating account...' : 'Create Account'}
+                {isSubmitting ? t('auth:creatingAccount') : t('auth:createAccountTitle')}
               </ThemedText>
             </AppPressable>
 
             <AppPressable onPress={goToLogin} style={styles.linkButton}>
               <ThemedText type="small" themeColor="textSecondary">
-                Already have an account?{' '}
+                {t('auth:hasAccountPrompt')}{' '}
               </ThemedText>
               <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                Sign In
+                {t('auth:signInLink')}
               </ThemedText>
             </AppPressable>
           </View>

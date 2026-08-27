@@ -1,0 +1,15 @@
+{
+  "title": "Interesting Facts",
+  "emptyTitle": "No facts yet",
+  "emptySubtitle": "Be the first to share a fact!",
+  "endOfListTitle": "No more facts to show",
+  "endOfListSubtitle": "Swipe up to refresh the newest facts",
+  "repostPublished": "Repost published",
+  "repostRemoved": "Repost removed",
+  "youReposted": "You reposted this",
+  "repostedBy": "Reposted by @{{username}}",
+  "seeMore": "See more",
+  "seeLess": "See less",
+  "anonymousGateTitle": "Sign in required",
+  "anonymousGateSubtitle": "Sign in to like, comment, and repost facts."
+}

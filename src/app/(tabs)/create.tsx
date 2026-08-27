@@ -3,6 +3,7 @@ import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIn
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter, useSegments } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { CharCounter } from '@/components/CharCounter';
 import { ThemedText } from '@/components/themed-text';
@@ -30,6 +31,7 @@ const DROPDOWN_BG = '#26262E';
 const DROPDOWN_BORDER = '#3A3A46';
 
 export default function CreateFactScreen() {
+  const { t } = useTranslation(['create', 'common']);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -404,9 +406,9 @@ export default function CreateFactScreen() {
           showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <ThemedText type="subtitle">Create Fact</ThemedText>
+            <ThemedText type="subtitle">{t('create:title')}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              Share something interesting with the world
+              {t('create:subtitle')}
             </ThemedText>
           </View>
 
@@ -416,7 +418,7 @@ export default function CreateFactScreen() {
           <View style={styles.field}>
             <View style={styles.fieldHeader}>
               <ThemedText type="smallBold" themeColor="textSecondary">
-                Title (optional)
+                {t('create:fieldTitle')}
               </ThemedText>
               <CharCounter current={title.length} min={0} max={TITLE_MAX_LENGTH} />
             </View>
@@ -429,7 +431,7 @@ export default function CreateFactScreen() {
                   borderColor: theme.border,
                 },
               ]}
-              placeholder="Give your fact a title..."
+              placeholder={t('create:titlePlaceholder')}
               placeholderTextColor={theme.muted}
               value={title}
               onChangeText={setTitle}
@@ -442,7 +444,7 @@ export default function CreateFactScreen() {
           <View style={styles.field}>
             <View style={styles.fieldHeader}>
               <ThemedText type="smallBold" themeColor="textSecondary">
-                Content
+                {t('create:fieldContent')}
               </ThemedText>
               <View style={styles.fieldHeaderRight}>
                 <EmojiButton onPress={() => setShowEmojiPicker((v) => !v)} active={showEmojiPicker} />
@@ -460,7 +462,7 @@ export default function CreateFactScreen() {
                     borderColor: theme.border,
                   },
                 ]}
-                placeholder="Share a fact you find interesting... Use @ to mention users"
+                placeholder={t('create:contentPlaceholder')}
                 placeholderTextColor={theme.muted}
                 value={content}
                 onChangeText={handleContentChange}
@@ -482,7 +484,7 @@ export default function CreateFactScreen() {
                     </View>
                   ) : mentionResults.length === 0 ? (
                     <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" style={styles.autocompleteEmptyText}>No users found</ThemedText>
+                      <ThemedText type="small" style={styles.autocompleteEmptyText}>{t('create:noUsersFound')}</ThemedText>
                     </View>
                   ) : (
                     <FlatList
@@ -525,7 +527,7 @@ export default function CreateFactScreen() {
                     </View>
                   ) : hashtagResults.length === 0 ? (
                     <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" style={styles.autocompleteEmptyText}>No hashtags found</ThemedText>
+                      <ThemedText type="small" style={styles.autocompleteEmptyText}>{t('create:noHashtagsFound')}</ThemedText>
                     </View>
                   ) : (
                     <FlatList
@@ -569,7 +571,7 @@ export default function CreateFactScreen() {
                 { borderColor: theme.border },
               ]}>
               <ThemedText type="smallBold" style={styles.cancelText}>
-                Cancel
+                {t('common:cancel')}
               </ThemedText>
             </AppPressable>
             <AppPressable
@@ -585,7 +587,7 @@ export default function CreateFactScreen() {
                 },
               ]}>
               <ThemedText type="smallBold" style={styles.submitText}>
-                {isSubmitting ? 'Sharing...' : 'Share Fact'}
+                {isSubmitting ? t('create:submittingButton') : t('create:submitButton')}
               </ThemedText>
             </AppPressable>
           </View>
@@ -604,24 +606,24 @@ export default function CreateFactScreen() {
       <View style={styles.modalOverlay}>
         <ThemedView type="backgroundElement" style={styles.modalContent}>
           <ThemedText type="subtitle" style={styles.modalTitle}>
-            ¿Perder los cambios?
+            {t('create:leaveConfirmTitle')}
           </ThemedText>
           <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-            Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?
+            {t('create:leaveConfirmMessage')}
           </ThemedText>
           <View style={styles.modalButtons}>
             <AppPressable
               onPress={handleCancelLeave}
               style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
               <ThemedText type="smallBold" style={styles.cancelModalText}>
-                Cancelar
+                {t('create:leaveConfirmStay')}
               </ThemedText>
             </AppPressable>
             <AppPressable
               onPress={handleConfirmLeave}
               style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
               <ThemedText type="smallBold" style={styles.confirmModalText}>
-                Salir
+                {t('create:leaveConfirmExit')}
               </ThemedText>
             </AppPressable>
           </View>

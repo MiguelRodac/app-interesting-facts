@@ -1,0 +1,13 @@
+{
+  "placeholder": "Buscar facts, usuarios, #tags...",
+  "tabPeople": "Personas",
+  "tabPosts": "Posts",
+  "tabHashtags": "Hashtags",
+  "noPeopleTitle": "No se encontraron usuarios",
+  "noPeopleSubtitle": "Intenta buscando con otro nombre de usuario",
+  "noPostsTitle": "No se encontraron facts",
+  "noPostsSubtitle": "Intenta buscando con otras palabras clave",
+  "noHashtagsTitle": "No se encontraron hashtags",
+  "noHashtagsSubtitle": "Intenta buscando con otro #tag",
+  "searchHint": "Busca por palabra clave, @usuario o #hashtag"
+}

@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -39,9 +40,13 @@ interface FactCardProps {
   onRequireLogin?: () => void;
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, locale: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(locale.startsWith('es') ? 'es-ES' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 export function FactCard({
@@ -60,33 +65,45 @@ export function FactCard({
   isSignedIn = true,
   onRequireLogin,
 }: FactCardProps) {
+  const { t, i18n } = useTranslation(['feed', 'common']);
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
 
-  const isCollapsible = fact.content.length > COLLAPSE_THRESHOLD;
+  // Anon variant: viewer is logged out, show non-interactive preview
+  const anonView = variant === 'anon';
 
-  // View-mode: render the full read-only surface but route every action to
-  // the login gate instead of the real handler.
-  const anonView = !isSignedIn;
-  const requireLogin = onRequireLogin ?? (() => {});
+  // Helper to wrap actions with auth check
+  const gate = (action?: () => void) => {
+    if (!action) return undefined;
+    if (isSignedIn) return action;
+    return onRequireLogin;
+  };
 
-  // Pick which handler an action should fire. Signed-in users always run the
-  // real action; anonymous users hit the login gate instead.
-  const gate = (real?: () => void): (() => void) => (anonView ? requireLogin : real ?? (() => {}));
+  // Determine if content exceeds the collapse threshold
+  const isCollapsible =
+    variant !== 'full' &&
+    fact.content &&
+    fact.content.length > COLLAPSE_THRESHOLD;
+
+  const contentNumberOfLines =
+    variant === 'full' || expanded ? undefined : COLLAPSE_LINES;
 
   const titleEl = fact.title ? (
-    <StyledContent content={fact.title} style={[styles.defaultText, styles.title]} />
+    <ThemedText type="subtitle" numberOfLines={variant === 'full' ? undefined : 2} style={styles.title}>
+      {fact.title}
+    </ThemedText>
   ) : null;
 
-  const contentEl = (
-    <StyledContent
-      content={fact.content}
-      numberOfLines={isCollapsible && !expanded ? COLLAPSE_LINES : undefined}
-      style={[styles.defaultText, styles.content]}
-    />
-  );
+  const contentEl = fact.content ? (
+    <ThemedText
+      type="default"
+      numberOfLines={contentNumberOfLines}
+      style={styles.content}>
+      <StyledContent content={fact.content} enableHashtags />
+    </ThemedText>
+  ) : null;
 
   const handleAuthorPress = useCallback(() => {
     if (user && fact.author.id === user.id) {
@@ -101,7 +118,7 @@ export function FactCard({
     setExpanded((current) => !current);
   }, []);
 
-return (
+  return (
     <ThemedView type="backgroundElement" style={[styles.card, Shadows.sm]}>
       {/* Repost indicator — Reposter avatar + "Reposted by @user" banner above
           the author row, only for repost entries in the feed. */}
@@ -110,8 +127,8 @@ return (
           <UserAvatar user={fact.reposter} size={20} />
           <ThemedText type="small" themeColor="textSecondary">
             {fact.reposter.isMe
-              ? 'You reposted this'
-              : `Reposted by @${fact.reposter.username}`}
+              ? t('feed:youReposted')
+              : t('feed:repostedBy', { username: fact.reposter.username })}
           </ThemedText>
           <Ionicons name="repeat" size={14} color={theme.muted} />
         </View>
@@ -136,7 +153,7 @@ return (
               <ThemedText type="smallBold" numberOfLines={1} ellipsizeMode="tail">{fact.author.displayName}</ThemedText>
             )}
             <ThemedText type="small" themeColor="textSecondary">
-              @{fact.author.username} · {formatDate(fact.createdAt)}
+              @{fact.author.username} · {formatDate(fact.createdAt, i18n.language)}
             </ThemedText>
           </View>
         </AppPressable>
@@ -159,7 +176,7 @@ return (
       {isCollapsible && (
         <AppPressable onPress={handleToggleExpand} hitSlop={6} style={styles.seeMore}>
           <ThemedText type="smallBold" style={{ color: theme.primary }}>
-            {expanded ? 'See less' : 'See more'}
+            {expanded ? t('feed:seeLess') : t('feed:seeMore')}
           </ThemedText>
         </AppPressable>
       )}
@@ -257,7 +274,7 @@ return (
             {fact.commentPreview.replies > 0 && (
               <ThemedText type="smallBold" themeColor="primary">
                 {' '}+{fact.commentPreview.replies}{' '}
-                {fact.commentPreview.replies === 1 ? 'reply' : 'replies'}
+                {fact.commentPreview.replies === 1 ? t('common:reply') : t('common:replies')}
               </ThemedText>
             )}
           </ThemedText>

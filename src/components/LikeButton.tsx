@@ -15,7 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
 interface LikeButtonProps {
   liked: boolean;
   likesCount: number;
-  onPress: () => void;
+  onPress?: () => void;
   disabled?: boolean;
 }
 
@@ -41,7 +41,7 @@ export function LikeButton({ liked, likesCount, onPress, disabled = false }: Lik
       withSpring(1, SPRING_CONFIG),
     );
     fillProgress.value = withTiming(liked ? 0 : 1, { duration: 200 });
-    onPress();
+    onPress?.();
   };
 
   const iconName: keyof typeof Ionicons.glyphMap = liked ? 'heart' : 'heart-outline';
