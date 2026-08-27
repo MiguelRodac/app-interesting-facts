@@ -6,6 +6,7 @@ import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { AppUpdateGate } from '@/components/AppUpdateGate';
 import { ErrorBanner } from '@/components/ErrorBanner';
+import { GlobalConfirmDialog } from '@/components/GlobalConfirmDialog';
 import { Toast } from '@/components/Toast';
 import { useAuthStore } from '@/data/stores/authStore';
 import { Colors } from '@/constants/theme';
@@ -144,6 +145,7 @@ function RootLayoutInner() {
               <View style={styles.root}>
                 <ErrorBanner />
                 <Toast />
+                <GlobalConfirmDialog />
                 {appStack}
                 <AppUpdateGate />
               </View>
@@ -156,6 +158,7 @@ function RootLayoutInner() {
           <View style={styles.root}>
             <ErrorBanner />
             <Toast />
+            <GlobalConfirmDialog />
             {appStack}
             <AppUpdateGate />
           </View>

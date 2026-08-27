@@ -96,12 +96,12 @@ export function FactCard({
   ) : null;
 
   const contentEl = fact.content ? (
-    <ThemedText
-      type="default"
+    <StyledContent
+      content={fact.content}
       numberOfLines={contentNumberOfLines}
-      style={styles.content}>
-      <StyledContent content={fact.content} enableHashtags />
-    </ThemedText>
+      enableHashtags
+      style={styles.content}
+    />
   ) : null;
 
   const handleAuthorPress = useCallback(() => {

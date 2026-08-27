@@ -197,8 +197,9 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   },
 
   fetchUserFacts: async (userId: string, silent?: boolean) => {
-    // Silent refresh skips the loading state and error banner (background refresh)
-    if (!silent) set({ userFactsLoading: true });
+    // Silent refresh skips the loading state and error banner (background refresh),
+    // but on cold start / empty list we always show the loading skeleton.
+    if (!silent || get().userFacts.length === 0) set({ userFactsLoading: true });
     try {
       const { results } = await client.get<ApiPaginatedResponse<ApiFactFeedItem>>(
         `/facts/author/${userId}`,

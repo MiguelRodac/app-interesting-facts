@@ -51,7 +51,7 @@ export default function ProfileScreen() {
     if (!user?.id) return;
     setRefreshing(true);
     try {
-      await Promise.all([fetchUserFacts(user.id, true), fetchFacts(true), refetchLikes(), refetchMentions()]);
+      await Promise.all([fetchUserFacts(user.id, true), fetchFacts(true), refetchLikes(true), refetchMentions(true)]);
     } finally {
       setRefreshing(false);
     }
@@ -60,11 +60,14 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       if (user?.id) {
-        fetchUserFacts(user.id, true);
-        refetchLikes();
-        refetchMentions();
+        const hasFacts = userFacts.length > 0;
+        const hasLikes = likedEntries.length > 0;
+        const hasMentions = mentionedFacts.length > 0;
+        fetchUserFacts(user.id, hasFacts);
+        refetchLikes(hasLikes);
+        refetchMentions(hasMentions);
       }
-    }, [user?.id, fetchUserFacts, refetchLikes, refetchMentions]),
+    }, [user?.id, userFacts.length, likedEntries.length, mentionedFacts.length, fetchUserFacts, refetchLikes, refetchMentions]),
   );
 
   const handleFactPress = useCallback(
@@ -172,7 +175,7 @@ export default function ProfileScreen() {
             <ThemedText
               type="smallBold"
               style={{ color: activeTab === 'mine' ? theme.primary : theme.muted }}>
-              {t('profile:tabMyFacts')} ({userFacts.length})
+              {t('profile:tabMyFacts')} ({userFactsLoading && userFacts.length === 0 ? '...' : userFacts.length})
             </ThemedText>
           </AppPressable>
           <AppPressable
@@ -181,7 +184,7 @@ export default function ProfileScreen() {
             <ThemedText
               type="smallBold"
               style={{ color: activeTab === 'liked' ? theme.primary : theme.muted }}>
-              {t('profile:tabLiked')} ({likedEntries.length})
+              {t('profile:tabLiked')} ({likesLoading && likedEntries.length === 0 ? '...' : likedEntries.length})
             </ThemedText>
           </AppPressable>
           <AppPressable
@@ -190,14 +193,14 @@ export default function ProfileScreen() {
             <ThemedText
               type="smallBold"
               style={{ color: activeTab === 'mentions' ? theme.primary : theme.muted }}>
-              {t('profile:tabMentions')} ({mentionsCount})
+              {t('profile:tabMentions')} ({mentionsLoading && mentionedFacts.length === 0 ? '...' : mentionsCount})
             </ThemedText>
           </AppPressable>
         </View>
       </View>
       );
     },
-    [user, theme, activeTab, handleEditProfile, handleSettings, handleTabChange, userFacts.length, likedEntries.length, mentionsCount, t],
+    [user, theme, activeTab, handleEditProfile, handleSettings, handleTabChange, userFacts.length, likedEntries.length, mentionsCount, userFactsLoading, likesLoading, mentionsLoading, t],
   );
 
   if (!isAuthenticated || !user) {

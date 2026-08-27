@@ -23,7 +23,13 @@ export interface ApiErrorResponse {
 
 export interface ApiPaginatedResponse<T> {
   results: T[];
-  nextPage: number | null;
+  page?: number;
+  limit?: number;
+  total?: number;
+  totalPages?: number;
+  hasMore?: boolean;
+  nextPage?: number | null;
+  prevPage?: number | null;
 }
 
 /** Feed timeline item — the backend wraps every feed entry (a fact or a

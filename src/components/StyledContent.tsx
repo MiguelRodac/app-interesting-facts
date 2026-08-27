@@ -1,10 +1,11 @@
-import { Alert, Linking, Platform, Text, type StyleProp, type TextStyle } from 'react-native';
+import { Linking, Platform, Text, type StyleProp, type TextStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { parseContent } from '@/utils/parseContent';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/data/hooks/useAuth';
+import { useUIStore } from '@/data/stores/uiStore';
 
 interface StyledContentProps {
   content: string;
@@ -57,41 +58,29 @@ export function StyledContent({
 
   const handleUrlPress = (url?: string) => {
     if (!url) return;
-    Alert.alert(
-      t('leaveAppTitle'),
-      `${t('leaveAppMessage')}\n\n${url}`,
-      [
-        {
-          text: t('cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('continue'),
-          onPress: async () => {
-            try {
-              await Linking.openURL(url);
-            } catch {
-              // Ignore open error
-            }
-          },
-        },
-      ]
-    );
+    const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+
+    useUIStore.getState().showConfirm({
+      title: t('leaveAppTitle'),
+      message: `${t('leaveAppMessage')}\n\n${normalized}`,
+      confirmLabel: t('continue'),
+      cancelLabel: t('cancel'),
+      onConfirm: async () => {
+        try {
+          if (Platform.OS === 'web') {
+            window.open(normalized, '_blank', 'noopener,noreferrer');
+          } else {
+            await Linking.openURL(normalized);
+          }
+        } catch {
+          // Ignore open error
+        }
+      },
+    });
   };
 
-  // When numberOfLines is set (truncation mode), flatten all segments to a
-  // single plain string so React Native's numberOfLines actually truncates.
-  // Nested <Text> children break the ellipsis behavior.
-  if (numberOfLines != null) {
-    return (
-      <Text numberOfLines={numberOfLines} style={[{ color: theme.text }, style]}>
-        {content}
-      </Text>
-    );
-  }
-
   return (
-    <Text style={[{ color: theme.text }, style]}>
+    <Text numberOfLines={numberOfLines} style={[{ color: theme.text }, style]}>
       {segments.map((segment, index) => {
         if (segment.type === 'text') {
           return (
@@ -115,7 +104,10 @@ export function StyledContent({
             <Text
               key={index}
               style={{ color: theme.primary }}
-              onPress={() => handleHashtagPress(segment.content)}
+              onPress={(e) => {
+                e?.stopPropagation?.();
+                handleHashtagPress(segment.content);
+              }}
             >
               {segment.content}
             </Text>
@@ -136,6 +128,7 @@ export function StyledContent({
                 : {})}
               style={{ color: theme.primary, textDecorationLine: 'underline' }}
               onPress={(e) => {
+                e?.stopPropagation?.();
                 if (Platform.OS === 'web') {
                   e?.preventDefault?.();
                 }
@@ -152,7 +145,10 @@ export function StyledContent({
           <Text
             key={index}
             style={{ color: theme.primary }}
-            onPress={() => handleMentionPress(segment.content)}
+            onPress={(e) => {
+              e?.stopPropagation?.();
+              handleMentionPress(segment.content);
+            }}
           >
             {segment.content}
           </Text>

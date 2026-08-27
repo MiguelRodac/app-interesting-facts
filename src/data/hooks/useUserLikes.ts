@@ -25,12 +25,12 @@ export interface UserLikesState {
  */
 export function useUserLikes(userId?: string | null): UserLikesState {
   const [likedEntries, setLikedEntries] = useState<Fact[]>([]);
-  const [likesLoading, setLikesLoading] = useState(false);
+  const [likesLoading, setLikesLoading] = useState(() => !!userId);
   const activeRef = useRef(true);
 
   const fetchLikes = useCallback((silent?: boolean) => {
     if (!userId) return;
-    if (!silent) setLikesLoading(true);
+    if (!silent || likedEntries.length === 0) setLikesLoading(true);
     client
       .get<ApiPaginatedResponse<ApiFactFeedItem>>(`/users/${userId}/likes`, {
         page: '1',
@@ -43,9 +43,9 @@ export function useUserLikes(userId?: string | null): UserLikesState {
         if (activeRef.current) setLikedEntries([]);
       })
       .finally(() => {
-        if (activeRef.current && !silent) setLikesLoading(false);
+        if (activeRef.current) setLikesLoading(false);
       });
-  }, [userId]);
+  }, [userId, likedEntries.length]);
 
   useEffect(() => {
     activeRef.current = true;

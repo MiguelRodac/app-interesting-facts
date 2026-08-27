@@ -184,8 +184,10 @@ export default function UserProfileScreen() {
               style={{ color: activeTab === 'facts' ? theme.primary : theme.muted }}>
               {t('profile:tabFacts')}
             </ThemedText>
-            {activeTab === 'facts' && !factsLoading && (
-              <ThemedText type="small" themeColor="muted">{facts.length}</ThemedText>
+            {activeTab === 'facts' && (
+              <ThemedText type="small" themeColor="muted">
+                {factsLoading && facts.length === 0 ? '...' : facts.length}
+              </ThemedText>
             )}
           </AppPressable>
           <AppPressable
@@ -197,8 +199,10 @@ export default function UserProfileScreen() {
               style={{ color: activeTab === 'likes' ? theme.primary : theme.muted }}>
               {t('profile:tabLikes')}
             </ThemedText>
-            {activeTab === 'likes' && !likesLoading && (
-              <ThemedText type="small" themeColor="muted">{likedEntries.length}</ThemedText>
+            {activeTab === 'likes' && (
+              <ThemedText type="small" themeColor="muted">
+                {likesLoading && likedEntries.length === 0 ? '...' : likedEntries.length}
+              </ThemedText>
             )}
           </AppPressable>
         </View>
