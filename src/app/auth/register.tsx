@@ -12,6 +12,7 @@ import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import { PasswordField } from '@/components/PasswordField';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
 import {
@@ -161,19 +162,22 @@ const isValid =
           contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + Spacing.three }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          {/* Close button - go back to previous screen */}
-          <AppPressable
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace('/');
-              }
-            }}
-            style={styles.closeButton}
-            hitSlop={8}>
-            <Ionicons name="close" size={28} color={theme.text} />
-          </AppPressable>
+          {/* Top Bar */}
+          <View style={styles.topBar}>
+            <AppPressable
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/');
+                }
+              }}
+              style={styles.closeButton}
+              hitSlop={8}>
+              <Ionicons name="close" size={28} color={theme.text} />
+            </AppPressable>
+            <LanguageToggle />
+          </View>
 
           {/* Header */}
           <View style={styles.header}>
@@ -335,8 +339,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.six,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.two,
+  },
   closeButton: {
-    alignSelf: 'flex-end',
     padding: Spacing.one,
   },
   header: {

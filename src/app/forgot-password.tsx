@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { sendPasswordReset } from '@/data/auth/firebaseAuth';
 import { useUIStore } from '@/data/stores/uiStore';
@@ -66,19 +67,22 @@ export default function ForgotPasswordScreen() {
           contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + Spacing.three }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          {/* Close button - go back to previous screen */}
-          <AppPressable
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace('/auth/login');
-              }
-            }}
-            style={styles.closeButton}
-            hitSlop={8}>
-            <Ionicons name="close" size={28} color={theme.text} />
-          </AppPressable>
+          {/* Top Bar */}
+          <View style={styles.topBar}>
+            <AppPressable
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace('/auth/login');
+                }
+              }}
+              style={styles.closeButton}
+              hitSlop={8}>
+              <Ionicons name="close" size={28} color={theme.text} />
+            </AppPressable>
+            <LanguageToggle />
+          </View>
 
           {/* Header */}
           <View style={styles.header}>
@@ -152,8 +156,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.six,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.two,
+  },
   closeButton: {
-    alignSelf: 'flex-end',
     padding: Spacing.one,
   },
   header: {

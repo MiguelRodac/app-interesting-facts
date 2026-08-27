@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { APK_URL } from '@/config/landing';
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -202,8 +203,9 @@ export default function LandingScreen() {
         </ThemedText>
       </ScrollView>
 
-      {/* Theme toggle — top-right corner */}
+      {/* Header controls — top-right corner */}
       <View style={styles.themeToggleWrap}>
+        <LanguageToggle />
         <AppPressable
           accessibilityRole="button"
           accessibilityLabel={isDark ? t('landing:switchToLight') : t('landing:switchToDark')}
@@ -235,6 +237,9 @@ const styles = StyleSheet.create({
     top: Spacing.four,
     right: Spacing.four,
     zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   themeToggle: {
     width: 40,

@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useUserLikes } from '@/data/hooks/useUserLikes';
@@ -202,7 +203,16 @@ export default function ProfileScreen() {
 
   if (!isAuthenticated || !user) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { paddingTop: topInset }]}>
+        <View style={styles.unauthTopBar}>
+          <LanguageToggle />
+          <AppPressable
+            onPress={handleSettings}
+            hitSlop={8}
+            style={styles.settingsButton}>
+            <Ionicons name="settings-outline" size={24} color={theme.text} />
+          </AppPressable>
+        </View>
         <ThemedView style={styles.loginPrompt}>
           <Ionicons name="person-circle-outline" size={80} color={theme.primary} />
           <ThemedText type="subtitle" style={styles.loginTitle}>
@@ -331,6 +341,16 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
+  },
+  unauthTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
   },
   loginPrompt: {
     flex: 1,
