@@ -345,6 +345,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     paddingHorizontal: Spacing.four,
+    marginBottom: Spacing.two,
   },
   tab: {
     flex: 1,

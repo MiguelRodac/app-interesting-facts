@@ -179,14 +179,14 @@ export function AvatarPickerModal({
                             onPress={() => handlePickAvatar(option)}
                             style={[
                               styles.avatarOption,
-                              { backgroundColor: option.color ?? '#E0E0E0' },
+                              { backgroundColor: option.color ?? 'transparent' },
                               isSelected && styles.optionSelected,
                             ]}>
                             <Image
                               source={{ uri: option.url! }}
                               style={styles.avatarOptionImage}
                               contentFit="cover"
-                              transition={150}
+                              cachePolicy="memory-disk"
                             />
                             {isSelected && (
                               <View style={styles.checkBadge}>
@@ -280,11 +280,14 @@ const styles = StyleSheet.create({
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
     borderRadius: CIRCLE_SIZE / 2,
-    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarOptionImage: {
     width: '100%',
     height: '100%',
+    borderRadius: CIRCLE_SIZE / 2,
+    overflow: 'hidden',
   },
   noAvatarOption: {
     width: CIRCLE_SIZE,
@@ -320,6 +323,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#3c87f7',
     elevation: 4,
+    transform: [{ scale: 1.05 }],
   },
   checkBadge: {
     position: 'absolute',

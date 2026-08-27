@@ -416,6 +416,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
     paddingBottom: BottomTabInset + Spacing.three,
   },
   userRow: {
