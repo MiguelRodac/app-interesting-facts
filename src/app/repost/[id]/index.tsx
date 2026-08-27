@@ -30,6 +30,7 @@ import type { Comment, Fact } from '@/types';
 interface CommentReplyTarget {
   commentId: string;
   username: string;
+  initialText?: string;
 }
 
 export default function RepostDetailScreen() {
@@ -77,9 +78,15 @@ export default function RepostDetailScreen() {
     return null;
   }, [comments, editingId]);
 
-  const handleCommentReply = useCallback((comment: Comment) => {
+  const handleCommentReply = useCallback((comment: Comment, rootCommentId?: string) => {
     setEditingId(null);
-    setReplyTo({ commentId: comment.id, username: comment.author.username });
+    const effectiveParentId = rootCommentId ?? comment.parentCommentId ?? comment.id;
+    const isReplyingToNested = comment.parentCommentId != null || (rootCommentId != null && rootCommentId !== comment.id);
+    setReplyTo({
+      commentId: effectiveParentId,
+      username: comment.author.username,
+      initialText: isReplyingToNested ? `@${comment.author.username} ` : '',
+    });
   }, []);
 
   const handleCommentEdit = useCallback((comment: Comment) => {

@@ -32,6 +32,7 @@ import type { Comment, Fact } from '@/types';
 interface CommentReplyTarget {
   commentId: string;
   username: string;
+  initialText?: string;
 }
 
 export default function FactDetailScreen() {
@@ -98,10 +99,16 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
   }, [comments, editingId]);
 
   // Reply: cancel any edit, prefill replyTo so the fixed composer submits with
-  // parentCommentId, and focus it (autoFocus on the TextInput when replyTo set).
-  const handleCommentReply = useCallback((comment: Comment) => {
+  // parentCommentId (the root comment ID) and pre-fills @username if replying to a child reply.
+  const handleCommentReply = useCallback((comment: Comment, rootCommentId?: string) => {
     setEditingId(null);
-    setReplyTo({ commentId: comment.id, username: comment.author.username });
+    const effectiveParentId = rootCommentId ?? comment.parentCommentId ?? comment.id;
+    const isReplyingToNested = comment.parentCommentId != null || (rootCommentId != null && rootCommentId !== comment.id);
+    setReplyTo({
+      commentId: effectiveParentId,
+      username: comment.author.username,
+      initialText: isReplyingToNested ? `@${comment.author.username} ` : '',
+    });
   }, []);
 
   // Edit: cancel any reply, swap the fixed composer into edit mode.

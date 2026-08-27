@@ -25,9 +25,8 @@ interface CommentSectionProps {
    *  read-only with @username author names (no displayName). Defaults to the
    *  detected auth state when omitted. */
   isSignedIn?: boolean;
-  /** Tapped "Reply" (top-level comment). Parent owns replyTo state and focuses
-   *  the fixed bottom composer in reply mode. */
-  onReply?: (comment: Comment) => void;
+  /** Tapped "Reply". Parent owns replyTo state and focuses the fixed bottom composer in reply mode. */
+  onReply?: (comment: Comment, rootCommentId?: string) => void;
   /** Tapped "Edit" (own comment within the 1h window). Parent swaps the fixed
    *  bottom composer into edit mode. */
   onEdit?: (comment: Comment) => void;

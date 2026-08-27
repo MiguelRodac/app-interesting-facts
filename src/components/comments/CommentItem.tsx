@@ -17,6 +17,8 @@ import { useRepostsStore } from '@/data/stores/repostsStore';
 
 interface CommentItemProps {
   comment: Comment;
+  /** Root parent comment id — passed down when rendering nested replies. */
+  rootCommentId?: string;
   /** Parent fact id — required for fact comment-like endpoints. */
   factId?: string;
   /** Parent repost entry id — required for repost comment-like endpoints. */
@@ -27,8 +29,8 @@ interface CommentItemProps {
   currentUsername?: string;
   /** Whether a user is signed in — reply is only offered to signed-in viewers. */
   isSignedIn?: boolean;
-  /** Tapped "Reply" (depth-0 top-level only). Parent sets replyTo + focuses composer. */
-  onReply?: (comment: Comment) => void;
+  /** Tapped "Reply". Parent sets replyTo with rootCommentId + focuses composer. */
+  onReply?: (comment: Comment, rootCommentId?: string) => void;
   /** Tapped "Edit" (own comment within the 1h window). */
   onEdit?: (comment: Comment) => void;
   /** Tapped "Delete" (own comment). Parent opens the ConfirmDialog. */
@@ -49,6 +51,7 @@ const EDIT_RECHECK_MS = 60 * 1000;
  */
 export function CommentItem({
   comment,
+  rootCommentId,
   factId,
   repostEntryId,
   onAuthorPress,
@@ -85,7 +88,13 @@ export function CommentItem({
     onAuthorPress?.(comment.author);
   }, [onAuthorPress, comment.author]);
 
-  const handleReply = useCallback(() => onReply?.(comment), [onReply, comment]);
+  const isTopLevel = comment.parentCommentId == null;
+
+  const handleReply = useCallback(() => {
+    const effectiveRootId = rootCommentId ?? (isTopLevel ? comment.id : comment.parentCommentId ?? comment.id);
+    onReply?.(comment, effectiveRootId);
+  }, [onReply, comment, rootCommentId, isTopLevel]);
+
   const handleEdit = useCallback(() => onEdit?.(comment), [onEdit, comment]);
   const handleDelete = useCallback(() => onDelete?.(comment), [onDelete, comment]);
   const handleToggleLike = useCallback(() => {
@@ -100,12 +109,11 @@ export function CommentItem({
   const replies = comment.replies ?? [];
 
   // Authoring visibility:
-  //  - Reply: depth-0 top-level only (backend rejects reply-to-reply), signed-in.
+  //  - Reply: any comment/reply when signed in.
   //  - Edit: own comment within the 1-hour window (canEdit from the timer).
   //  - Delete: own comment (no window; blocked replies handled by the store).
-  const isTopLevel = comment.parentCommentId == null;
   const isOwn = currentUsername != null && comment.author.username === currentUsername;
-  const canReply = isTopLevel && isSignedIn;
+  const canReply = isSignedIn;
 
   // Comment likes: backend-populated for authenticated viewers (likesCount,
   // liked). Anonymous viewers see the count read-only; signed-in viewers get
@@ -243,6 +251,7 @@ export function CommentItem({
               <CommentItem
                 key={reply.id}
                 comment={reply}
+                rootCommentId={rootCommentId ?? comment.id}
                 factId={factId}
                 repostEntryId={repostEntryId}
                 onAuthorPress={onAuthorPress}

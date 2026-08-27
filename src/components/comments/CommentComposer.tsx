@@ -38,9 +38,10 @@ const MAX_HEIGHT = 96;
 const DROPDOWN_BG = '#26262E';
 const DROPDOWN_BORDER = '#3A3A46';
 
-interface ReplyTarget {
+export interface ReplyTarget {
   commentId: string;
   username: string;
+  initialText?: string;
 }
 
 type ComposerMode = 'create' | 'edit';
@@ -160,18 +161,25 @@ export function CommentComposer({
   }, []);
 
   // Sync content when the parent swaps the same mounted composer between create
-  // and edit modes (replyTo/editingId live in the detail screen). Entering edit
-  // mode pre-fills the target comment's text; leaving edit mode clears any
-  // stale draft and any pending mention state.
+  // and edit modes, or sets/clears replyTo.
   useEffect(() => {
     if (mode === 'edit' && commentId) {
       setContent(initialValue);
+    } else if (replyTo) {
+      const text = replyTo.initialText ?? '';
+      setContent(text);
+      cursorPositionRef.current = text.length;
+      setShowMentions(false);
+      setMentionResults([]);
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
     } else {
       setContent('');
       setShowMentions(false);
       setMentionResults([]);
     }
-  }, [mode, commentId, initialValue]);
+  }, [mode, commentId, initialValue, replyTo]);
 
   // Tell the parent when there's unsubmitted draft text so it can arm its
   // unsaved-changes guard. InitialValue in edit mode is not "pending", so
@@ -348,6 +356,13 @@ export function CommentComposer({
     onCancelEdit?.();
   }, [onCancelEdit]);
 
+  const handleCancelReply = useCallback(() => {
+    setContent('');
+    setShowMentions(false);
+    setMentionResults([]);
+    onCancelReply?.();
+  }, [onCancelReply]);
+
   const handleEmojiPress = useCallback(() => setShowEmojiPicker((v) => !v), []);
 
   const handleEmojiSelected = useCallback((emoji: string) => {
@@ -385,7 +400,7 @@ export function CommentComposer({
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.replyChipText}>
             {t('common:replyingTo')} <ThemedText type="smallBold">@{replyTo.username}</ThemedText>
           </ThemedText>
-          <AppPressable onPress={onCancelReply} hitSlop={8} style={styles.replyCancel}>
+          <AppPressable onPress={handleCancelReply} hitSlop={8} style={styles.replyCancel}>
             <Ionicons name="close-circle" size={17} color={theme.muted} />
           </AppPressable>
         </View>
