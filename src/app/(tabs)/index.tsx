@@ -115,8 +115,8 @@ export default function FeedScreen() {
         isSignedIn={isAuthenticated}
         onPress={() => handleFactPress(item)}
         onLike={isAuthenticated ? () => handleLike(item.id) : undefined}
-        onRepost={isAuthenticated ? () => handleRepost(item.id) : undefined}
-        onRepostLike={isAuthenticated ? () => handleRepostLike(item.id) : undefined}
+        onRepost={isAuthenticated ? () => handleRepost(item.originalFactId ?? item.id) : undefined}
+        onRepostLike={isAuthenticated && item.isRepost ? () => handleRepostLike(item.id) : undefined}
         onOpenLikes={() => setLikesFactId(item.originalFactId ?? item.id)}
         onOpenRepostLikes={() => setLikesRepostId(item.id)}
         onRequireLogin={handleRequireLogin}

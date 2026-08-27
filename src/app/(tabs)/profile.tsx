@@ -19,6 +19,7 @@ import { useAuth } from '@/data/hooks/useAuth';
 import { useUserLikes } from '@/data/hooks/useUserLikes';
 import { useMentionedFacts } from '@/data/hooks/useMentionedFacts';
 import { useFactsStore } from '@/data/stores/factsStore';
+import { useRepostsStore } from '@/data/stores/repostsStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
@@ -34,6 +35,7 @@ export default function ProfileScreen() {
   const fetchFacts = useFactsStore((s) => s.fetchFacts);
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const toggleRepost = useFactsStore((s) => s.toggleRepost);
+  const toggleRepostLike = useRepostsStore((s) => s.toggleRepostLike);
   const { likedEntries, likesLoading, refetch: refetchLikes } = useUserLikes(user?.id);
   const { mentionedFacts, mentionsLoading, mentionsCount, refetch: refetchMentions } = useMentionedFacts(user?.username);
   const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
@@ -67,11 +69,7 @@ export default function ProfileScreen() {
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
-      if (fact.isRepost) {
-        router.push(`/repost/${fact.id}?from=profile` as any);
-      } else {
-        router.push(`/fact/${fact.id}?from=profile`);
-      }
+      router.push(fact.isRepost ? `/repost/${fact.id}` : `/fact/${fact.id}`);
     },
     [router],
   );
@@ -117,12 +115,13 @@ export default function ProfileScreen() {
         variant="full"
         onPress={() => handleFactPress(item)}
         onLike={() => handleLike(item.id)}
-        onRepost={() => handleRepost(item.id)}
+        onRepost={() => handleRepost(item.originalFactId ?? item.id)}
+        onRepostLike={item.isRepost ? () => toggleRepostLike(item.id) : undefined}
         onOpenLikes={() => setLikesFactId(item.originalFactId ?? item.id)}
         onOpenRepostLikes={() => setLikesRepostId(item.id)}
       />
     ),
-    [handleFactPress, handleLike, handleRepost],
+    [handleFactPress, handleLike, handleRepost, toggleRepostLike],
   );
 
   const renderEmpty = useCallback(() => {

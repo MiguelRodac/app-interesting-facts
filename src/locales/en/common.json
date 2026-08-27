@@ -52,5 +52,6 @@
   "discardCommentTitle": "Discard Comment?",
   "discardCommentMessage": "You have unsaved changes. If you leave now, your draft will be lost.",
   "discard": "Discard",
-  "keepEditing": "Keep editing"
+  "keepEditing": "Keep editing",
+  "saving": "Saving..."
 }

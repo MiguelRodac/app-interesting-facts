@@ -32,5 +32,9 @@
   "userNoFactsSubtitle": "This user hasn't posted any facts",
   "userNoLikesSubtitle": "This user hasn't liked any facts",
   "tabFacts": "Facts",
-  "tabLikes": "Likes"
+  "tabLikes": "Likes",
+  "editProfileTitle": "Edit Profile",
+  "username": "Username",
+  "email": "Email",
+  "chooseAvatar": "Choose an avatar"
 }

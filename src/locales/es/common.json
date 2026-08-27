@@ -52,5 +52,6 @@
   "discardCommentTitle": "¿Descartar comentario?",
   "discardCommentMessage": "Tienes cambios sin guardar. Si sales ahora, tu borrador se perderá.",
   "discard": "Descartar",
-  "keepEditing": "Seguir editando"
+  "keepEditing": "Seguir editando",
+  "saving": "Guardando..."
 }

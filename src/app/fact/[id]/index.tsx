@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, Share, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, BackHandler } from 'react-native';
+import { Alert, StyleSheet, View, Share, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, BackHandler } from 'react-native';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -256,16 +256,17 @@ const isOwner = fact && user?.id === fact.author.id;
     }
   }, [fact, toggleLike, isAuthenticated, router]);
 
-  const handleRepost = useCallback(() => {
+  const handleRepost = useCallback(async () => {
     // View-mode guard: anonymous viewers can't repost — route to the login gate.
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
     }
     if (fact) {
-      toggleRepost(fact.id);
+      const ok = await toggleRepost(fact.originalFactId ?? fact.id);
+      if (ok) Alert.alert(t('common:ready'), t('feed:repostPublished'));
     }
-  }, [fact, toggleRepost, isAuthenticated, router]);
+  }, [fact, toggleRepost, isAuthenticated, router, t]);
 
   const handleShare = useCallback(async () => {
     if (!fact) return;
