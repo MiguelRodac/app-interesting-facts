@@ -1,4 +1,5 @@
 import { createNetworkError, mapApiError } from "./errors";
+import { logger } from "@/lib/logger";
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ??
@@ -59,6 +60,7 @@ async function request<T>(options: RequestOptions): Promise<T> {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  const startTime = Date.now();
   try {
     const response = await fetch(url.toString(), {
       method,
@@ -66,11 +68,15 @@ async function request<T>(options: RequestOptions): Promise<T> {
       body: body ? JSON.stringify(body) : undefined,
     });
 
+    const duration = Date.now() - startTime;
+
     if (response.status === 204) {
+      logger.api(method, path, 204, duration);
       return undefined as T;
     }
 
     const responseBody = await response.json().catch(() => null);
+    logger.api(method, path, response.status, duration, responseBody);
 
     if (!response.ok) {
       // A 401 outside the auth flow means the session is gone/broken —
@@ -94,6 +100,8 @@ async function request<T>(options: RequestOptions): Promise<T> {
 
     return responseBody as T;
   } catch (error) {
+    const duration = Date.now() - startTime;
+    logger.error(`API ${method.toUpperCase()} ${path} failed (${duration}ms)`, error, 'NETWORK');
     if (error && typeof error === "object" && "code" in error) {
       throw error;
     }

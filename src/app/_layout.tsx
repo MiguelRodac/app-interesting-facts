@@ -10,8 +10,10 @@ import { Toast } from '@/components/Toast';
 import { useAuthStore } from '@/data/stores/authStore';
 import { Colors } from '@/constants/theme';
 import { ThemeProvider, useThemeContext } from '@/hooks/theme-provider';
+import { logger } from '@/lib/logger';
 import '@/i18n';
 
+logger.initGlobalLogCapture();
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {

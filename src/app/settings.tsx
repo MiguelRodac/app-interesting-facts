@@ -8,13 +8,18 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { DevLogsModal } from '@/components/DevLogsModal';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useThemeContext, type ThemePreference } from '@/hooks/theme-provider';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useLanguage } from '@/hooks/use-language';
+import { useUIStore } from '@/data/stores/uiStore';
 import type { LanguagePreference } from '@/i18n';
+
+const REQUIRED_TAPS = 10;
+const appVersion = process.env.EXPO_PUBLIC_APP_VERSION ?? '0.0.3';
 
 export default function SettingsScreen() {
   const { t } = useTranslation(['settings', 'auth', 'common']);
@@ -25,6 +30,9 @@ export default function SettingsScreen() {
   const { preference: langPreference, setLanguagePreference } = useLanguage();
   const { user, logout } = useAuth();
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [logsModalVisible, setLogsModalVisible] = useState(false);
+  const [tapCount, setTapCount] = useState(0);
+  const showToast = useUIStore((s) => s.showToast);
 
   const themeOptions: {
     value: ThemePreference;
@@ -59,6 +67,18 @@ export default function SettingsScreen() {
     setLogoutModalVisible(false);
     await logout();
     router.replace('/auth/login');
+  };
+
+  const handleVersionTap = () => {
+    const nextCount = tapCount + 1;
+    setTapCount(nextCount);
+    if (nextCount >= REQUIRED_TAPS) {
+      setTapCount(0);
+      showToast('Consola de Logs abierta 🛠️', 'success');
+      setLogsModalVisible(true);
+    } else if (nextCount >= 6) {
+      showToast(`Estás a ${REQUIRED_TAPS - nextCount} toques de ver los logs 🛠️`, 'info');
+    }
   };
 
   return (
@@ -204,6 +224,16 @@ export default function SettingsScreen() {
             </ThemedText>
           )}
         </View>
+
+        {/* App Version Footer (tap 10 times to open logs) */}
+        <View style={styles.versionFooter}>
+          <AppPressable onPress={handleVersionTap} hitSlop={12} style={styles.versionPressable}>
+            <Ionicons name="information-circle-outline" size={14} color={theme.muted} />
+            <ThemedText type="small" themeColor="textSecondary" style={styles.versionText}>
+              Interesting Facts v{appVersion}
+            </ThemedText>
+          </AppPressable>
+        </View>
       </ScrollView>
 
       {/* Logout confirmation modal */}
@@ -235,6 +265,9 @@ export default function SettingsScreen() {
           </ThemedView>
         </View>
       </AppModal>
+
+      {/* Developer Logs & Diagnostics Modal */}
+      <DevLogsModal visible={logsModalVisible} onClose={() => setLogsModalVisible(false)} />
     </ThemedView>
   );
 }
@@ -319,5 +352,20 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     color: '#FFFFFF',
+  },
+  versionFooter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.four,
+    marginTop: Spacing.two,
+  },
+  versionPressable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: Spacing.two,
+  },
+  versionText: {
+    fontSize: 12,
   },
 });
