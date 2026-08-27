@@ -109,7 +109,7 @@ export default function LandingScreen() {
         {/* Hero */}
         <View style={styles.hero}>
           <Image
-            source={require('@/assets/images/icon.png')}
+            source={isDark ? require('@/assets/images/logo-light.png') : require('@/assets/images/logo-dark.png')}
             style={[styles.logoImage, isNarrow && styles.logoImageNarrow]}
             accessibilityLabel={t('landing:logoLabel')}
           />
