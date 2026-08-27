@@ -5,6 +5,7 @@ export interface ApiLogParams {
   path: string;
   url: string;
   params?: Record<string, string>;
+  headers?: Record<string, string>;
   status: number;
   durationMs: number;
   requestBody?: unknown;
@@ -44,17 +45,34 @@ export const logger = {
     const statusEmoji = info.status === 0 ? '⚡ ERR' : isError ? `❌ ${info.status}` : `✓ ${info.status}`;
     const message = `${statusEmoji} ${info.method.toUpperCase()} ${info.path} (${info.durationMs}ms)`;
 
+    const sanitizedHeaders: Record<string, string> | undefined = info.headers
+      ? {
+          ...info.headers,
+          ...(info.headers.Authorization
+            ? {
+                Authorization:
+                  info.headers.Authorization.length > 20
+                    ? `${info.headers.Authorization.slice(0, 15)}...${info.headers.Authorization.slice(-6)}`
+                    : 'Bearer [present]',
+              }
+            : {}),
+        }
+      : undefined;
+
     const structuredPayload: Record<string, unknown> = {
-      '➡️ Request': {
+      _type: 'api',
+      headers: sanitizedHeaders ?? {
+        'X-App-Platform': info.platform ?? 'unknown',
+        hasAuthToken: info.hasAuthToken,
+      },
+      request: {
         method: info.method.toUpperCase(),
         path: info.path,
         fullUrl: info.url,
-        platform: info.platform,
-        hasAuthToken: info.hasAuthToken,
         queryParams: info.params && Object.keys(info.params).length > 0 ? info.params : undefined,
         body: info.requestBody !== undefined ? info.requestBody : undefined,
       },
-      '⬅️ Response': {
+      response: {
         status: info.status === 0 ? 'Network/Fetch Error' : info.status,
         duration: `${info.durationMs}ms`,
         body: info.responseBody !== undefined ? info.responseBody : undefined,

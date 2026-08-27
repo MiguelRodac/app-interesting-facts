@@ -6,9 +6,9 @@ import {
   StyleSheet,
   TextInput,
   View,
-  SafeAreaView,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useLogStore, type LogEntry, type LogLevel } from '@/data/stores/logStore';
@@ -40,8 +40,40 @@ function formatTime(timestamp: number): string {
   return `${h}:${m}:${s}.${ms}`;
 }
 
+interface ParsedApiDetails {
+  _type?: string;
+  headers?: Record<string, string>;
+  request?: {
+    method?: string;
+    path?: string;
+    fullUrl?: string;
+    queryParams?: Record<string, string>;
+    body?: unknown;
+  };
+  response?: {
+    status?: number | string;
+    duration?: string;
+    body?: unknown;
+    error?: unknown;
+  };
+}
+
+function tryParseApiLog(details?: string): ParsedApiDetails | null {
+  if (!details) return null;
+  try {
+    const parsed = JSON.parse(details);
+    if (parsed && typeof parsed === 'object') {
+      if (parsed._type === 'api' || parsed.headers !== undefined || (parsed.request && parsed.response)) {
+        return parsed as ParsedApiDetails;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const logs = useLogStore((s) => s.logs);
   const clearLogs = useLogStore((s) => s.clearLogs);
 
@@ -119,6 +151,12 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
     ({ item }: { item: LogEntry }) => {
       const isExpanded = !!expandedIds[item.id];
       const levelStyle = LEVEL_COLORS[item.level] || LEVEL_COLORS.info;
+      const apiData = tryParseApiLog(item.details);
+
+      const isHeadersExpanded = !!expandedIds[`${item.id}:headers`];
+      const isRequestExpanded = !!expandedIds[`${item.id}:request`];
+      const isPayloadExpanded = !!expandedIds[`${item.id}:payload`];
+      const isResponseExpanded = !!expandedIds[`${item.id}:response`];
 
       return (
         <ThemedView type="backgroundElement" style={styles.logCard}>
@@ -149,52 +187,270 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
 
           {item.details && (
             <View style={styles.detailsContainer}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <AppPressable onPress={() => toggleExpand(item.id)} style={styles.detailsToggle}>
-                  <Ionicons
-                    name={isExpanded ? 'chevron-down' : 'chevron-forward'}
-                    size={14}
-                    color={item.level === 'error' ? '#FF453A' : theme.primary}
-                  />
-                  <ThemedText
-                    type="smallBold"
-                    style={{
-                      color: item.level === 'error' ? '#FF453A' : theme.primary,
-                      fontSize: 12,
-                    }}>
-                    {isExpanded
-                      ? 'Ocultar detalles'
-                      : item.level === 'error'
-                        ? '🔍 Ver detalle completo del error'
-                        : '🔍 Ver payload / request'}
-                  </ThemedText>
-                </AppPressable>
-                {isExpanded && (
-                  <AppPressable
-                    onPress={async () => {
-                      if (item.details) {
-                        await Clipboard.setStringAsync(item.details);
-                        showFeedbackToast('✓ Detalles copiados');
-                      }
-                    }}
-                    hitSlop={8}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 }}>
-                    <Ionicons name="copy-outline" size={12} color="#8E8E93" />
-                    <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 11 }}>
-                      Copiar JSON
-                    </ThemedText>
-                  </AppPressable>
-                )}
-              </View>
+              {apiData ? (
+                /* Multi-accordion for API logs: Headers, Request, Response */
+                <View style={{ gap: 6, marginTop: 4 }}>
+                  {/* 1. Headers Accordion */}
+                  {apiData.headers && (
+                    <View style={styles.subAccordionCard}>
+                      <View style={styles.subAccordionHeader}>
+                        <AppPressable
+                          onPress={() => toggleExpand(`${item.id}:headers`)}
+                          style={styles.subAccordionToggle}>
+                          <Ionicons
+                            name={isHeadersExpanded ? 'chevron-down' : 'chevron-forward'}
+                            size={13}
+                            color="#38BDF8"
+                          />
+                          <ThemedText type="smallBold" style={{ color: '#38BDF8', fontSize: 12 }}>
+                            📋 Headers
+                          </ThemedText>
+                          <View style={[styles.subBadge, { backgroundColor: '#38BDF820' }]}>
+                            <ThemedText type="smallBold" style={{ color: '#38BDF8', fontSize: 10 }}>
+                              {Object.keys(apiData.headers).length}
+                            </ThemedText>
+                          </View>
+                        </AppPressable>
+                        {isHeadersExpanded && (
+                          <AppPressable
+                            onPress={async () => {
+                              await Clipboard.setStringAsync(JSON.stringify(apiData.headers, null, 2));
+                              showFeedbackToast('✓ Headers copiados');
+                            }}
+                            hitSlop={8}
+                            style={styles.subCopyBtn}>
+                            <Ionicons name="copy-outline" size={11} color="#8E8E93" />
+                            <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 10 }}>
+                              Copiar
+                            </ThemedText>
+                          </AppPressable>
+                        )}
+                      </View>
+                      {isHeadersExpanded && (
+                        <View style={styles.payloadBox}>
+                          <ThemedText type="small" style={styles.payloadText} selectable>
+                            {JSON.stringify(apiData.headers, null, 2)}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  )}
 
-              {isExpanded && (
-                <View style={[styles.payloadBox, item.level === 'error' && { borderColor: '#FF453A40' }]}>
-                  <ThemedText
-                    type="small"
-                    style={[styles.payloadText, item.level === 'error' && { color: '#FF9F0A' }]}
-                    selectable>
-                    {item.details}
-                  </ThemedText>
+                  {/* 2. Request Accordion (Endpoint / Params) */}
+                  {apiData.request && (
+                    <View style={styles.subAccordionCard}>
+                      <View style={styles.subAccordionHeader}>
+                        <AppPressable
+                          onPress={() => toggleExpand(`${item.id}:request`)}
+                          style={styles.subAccordionToggle}>
+                          <Ionicons
+                            name={isRequestExpanded ? 'chevron-down' : 'chevron-forward'}
+                            size={13}
+                            color="#30D158"
+                          />
+                          <ThemedText type="smallBold" style={{ color: '#30D158', fontSize: 12 }}>
+                            📤 Request ({apiData.request.method || 'REQ'})
+                          </ThemedText>
+                        </AppPressable>
+                        {isRequestExpanded && (
+                          <AppPressable
+                            onPress={async () => {
+                              const reqInfo = {
+                                method: apiData.request?.method,
+                                path: apiData.request?.path,
+                                fullUrl: apiData.request?.fullUrl,
+                                queryParams: apiData.request?.queryParams,
+                              };
+                              await Clipboard.setStringAsync(JSON.stringify(reqInfo, null, 2));
+                              showFeedbackToast('✓ Request copiado');
+                            }}
+                            hitSlop={8}
+                            style={styles.subCopyBtn}>
+                            <Ionicons name="copy-outline" size={11} color="#8E8E93" />
+                            <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 10 }}>
+                              Copiar
+                            </ThemedText>
+                          </AppPressable>
+                        )}
+                      </View>
+                      {isRequestExpanded && (
+                        <View style={styles.payloadBox}>
+                          <ThemedText type="small" style={[styles.payloadText, { color: '#86EFAC' }]} selectable>
+                            {JSON.stringify(
+                              {
+                                method: apiData.request.method,
+                                path: apiData.request.path,
+                                fullUrl: apiData.request.fullUrl,
+                                queryParams: apiData.request.queryParams,
+                              },
+                              null,
+                              2
+                            )}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* 3. Payload (Body) Accordion — Only for requests that carry a body */}
+                  {apiData.request?.body !== undefined && apiData.request?.body !== null && (
+                    <View style={styles.subAccordionCard}>
+                      <View style={styles.subAccordionHeader}>
+                        <AppPressable
+                          onPress={() => toggleExpand(`${item.id}:payload`)}
+                          style={styles.subAccordionToggle}>
+                          <Ionicons
+                            name={isPayloadExpanded ? 'chevron-down' : 'chevron-forward'}
+                            size={13}
+                            color="#F59E0B"
+                          />
+                          <ThemedText type="smallBold" style={{ color: '#F59E0B', fontSize: 12 }}>
+                            📦 Payload (Body)
+                          </ThemedText>
+                        </AppPressable>
+                        {isPayloadExpanded && (
+                          <AppPressable
+                            onPress={async () => {
+                              await Clipboard.setStringAsync(
+                                typeof apiData.request?.body === 'string'
+                                  ? apiData.request.body
+                                  : JSON.stringify(apiData.request?.body, null, 2)
+                              );
+                              showFeedbackToast('✓ Payload copiado');
+                            }}
+                            hitSlop={8}
+                            style={styles.subCopyBtn}>
+                            <Ionicons name="copy-outline" size={11} color="#8E8E93" />
+                            <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 10 }}>
+                              Copiar
+                            </ThemedText>
+                          </AppPressable>
+                        )}
+                      </View>
+                      {isPayloadExpanded && (
+                        <View style={[styles.payloadBox, { borderColor: '#F59E0B30' }]}>
+                          <ThemedText type="small" style={[styles.payloadText, { color: '#FDE68A' }]} selectable>
+                            {typeof apiData.request.body === 'string'
+                              ? apiData.request.body
+                              : JSON.stringify(apiData.request.body, null, 2)}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* 4. Response Accordion */}
+                  {apiData.response && (
+                    <View style={styles.subAccordionCard}>
+                      <View style={styles.subAccordionHeader}>
+                        <AppPressable
+                          onPress={() => toggleExpand(`${item.id}:response`)}
+                          style={styles.subAccordionToggle}>
+                          <Ionicons
+                            name={isResponseExpanded ? 'chevron-down' : 'chevron-forward'}
+                            size={13}
+                            color={item.level === 'error' ? '#FF453A' : '#BF5AF2'}
+                          />
+                          <ThemedText
+                            type="smallBold"
+                            style={{
+                              color: item.level === 'error' ? '#FF453A' : '#BF5AF2',
+                              fontSize: 12,
+                            }}>
+                            📥 Response ({apiData.response.status || 'RES'})
+                          </ThemedText>
+                          {apiData.response.duration && (
+                            <View style={[styles.subBadge, { backgroundColor: item.level === 'error' ? '#FF453A20' : '#BF5AF220' }]}>
+                              <ThemedText
+                                type="smallBold"
+                                style={{
+                                  color: item.level === 'error' ? '#FF453A' : '#BF5AF2',
+                                  fontSize: 10,
+                                }}>
+                                {apiData.response.duration}
+                              </ThemedText>
+                            </View>
+                          )}
+                        </AppPressable>
+                        {isResponseExpanded && (
+                          <AppPressable
+                            onPress={async () => {
+                              await Clipboard.setStringAsync(JSON.stringify(apiData.response, null, 2));
+                              showFeedbackToast('✓ Response copiado');
+                            }}
+                            hitSlop={8}
+                            style={styles.subCopyBtn}>
+                            <Ionicons name="copy-outline" size={11} color="#8E8E93" />
+                            <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 10 }}>
+                              Copiar
+                            </ThemedText>
+                          </AppPressable>
+                        )}
+                      </View>
+                      {isResponseExpanded && (
+                        <View style={[styles.payloadBox, item.level === 'error' && { borderColor: '#FF453A40' }]}>
+                          <ThemedText
+                            type="small"
+                            style={[styles.payloadText, item.level === 'error' ? { color: '#FF9F0A' } : { color: '#D8B4FE' }]}
+                            selectable>
+                            {JSON.stringify(apiData.response, null, 2)}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              ) : (
+                /* Standard single accordion for non-API / generic error logs */
+                <View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <AppPressable onPress={() => toggleExpand(item.id)} style={styles.detailsToggle}>
+                      <Ionicons
+                        name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                        size={14}
+                        color={item.level === 'error' ? '#FF453A' : theme.primary}
+                      />
+                      <ThemedText
+                        type="smallBold"
+                        style={{
+                          color: item.level === 'error' ? '#FF453A' : theme.primary,
+                          fontSize: 12,
+                        }}>
+                        {isExpanded
+                          ? 'Ocultar detalles'
+                          : item.level === 'error'
+                            ? '🔍 Ver detalle completo del error'
+                            : '🔍 Ver payload / detalles'}
+                      </ThemedText>
+                    </AppPressable>
+                    {isExpanded && (
+                      <AppPressable
+                        onPress={async () => {
+                          if (item.details) {
+                            await Clipboard.setStringAsync(item.details);
+                            showFeedbackToast('✓ Detalles copiados');
+                          }
+                        }}
+                        hitSlop={8}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 }}>
+                        <Ionicons name="copy-outline" size={12} color="#8E8E93" />
+                        <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 11 }}>
+                          Copiar JSON
+                        </ThemedText>
+                      </AppPressable>
+                    )}
+                  </View>
+
+                  {isExpanded && (
+                    <View style={[styles.payloadBox, item.level === 'error' && { borderColor: '#FF453A40' }]}>
+                      <ThemedText
+                        type="small"
+                        style={[styles.payloadText, item.level === 'error' && { color: '#FF9F0A' }]}
+                        selectable>
+                        {item.details}
+                      </ThemedText>
+                    </View>
+                  )}
                 </View>
               )}
             </View>
@@ -207,106 +463,118 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: '#0B0F19' }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <ThemedText type="subtitle" style={{ color: '#FFFFFF' }}>
-              🛠️ Developer Logs
-            </ThemedText>
-            <ThemedText type="small" style={{ color: '#8E8E93' }}>
-              {logs.length} eventos en memoria
-            </ThemedText>
-          </View>
-
-          <View style={styles.headerActions}>
-            {toastMessage && (
-              <View style={styles.toast}>
-                <ThemedText type="smallBold" style={{ color: '#30D158', fontSize: 11 }}>
-                  {toastMessage}
-                </ThemedText>
-              </View>
-            )}
-            <AppPressable onPress={handleCopyAll} style={styles.iconButton}>
-              <Ionicons name="copy-outline" size={20} color="#0A84FF" />
-            </AppPressable>
-            <AppPressable onPress={handleClear} style={styles.iconButton}>
-              <Ionicons name="trash-outline" size={20} color="#FF453A" />
-            </AppPressable>
-            <AppPressable onPress={onClose} style={styles.iconButton}>
-              <Ionicons name="close" size={24} color="#FFFFFF" />
-            </AppPressable>
-          </View>
-        </View>
-
-        {/* Search */}
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={16} color="#8E8E93" style={styles.searchIcon} />
-          <TextInput
-            placeholder="Buscar por mensaje, tag o error..."
-            placeholderTextColor="#8E8E93"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            style={styles.searchInput}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {searchQuery ? (
-            <AppPressable onPress={() => setSearchQuery('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={16} color="#8E8E93" />
-            </AppPressable>
-          ) : null}
-        </View>
-
-        {/* Filter Pills */}
-        <View style={styles.filterRow}>
-          {(
-            [
-              { id: 'all' as const, label: `Todos (${counts.all})`, color: undefined },
-              { id: 'error' as const, label: `Errores (${counts.error})`, color: '#FF453A' },
-              { id: 'warn' as const, label: `Warns (${counts.warn})`, color: '#FF9F0A' },
-              { id: 'api' as const, label: `API (${counts.api})`, color: '#BF5AF2' },
-              { id: 'info' as const, label: `Info (${counts.info})`, color: '#0A84FF' },
-            ]
-          ).map((filter) => {
-            const isSelected = selectedLevel === filter.id;
-            return (
-              <AppPressable
-                key={filter.id}
-                onPress={() => setSelectedLevel(filter.id)}
-                style={[
-                  styles.filterPill,
-                  isSelected && styles.filterPillSelected,
-                  filter.color && !isSelected ? { borderColor: `${filter.color}50` } : undefined,
-                ]}>
-                <ThemedText
-                  type="smallBold"
-                  style={[
-                    styles.filterPillText,
-                    isSelected ? { color: '#FFFFFF' } : filter.color ? { color: filter.color } : { color: '#8E8E93' },
-                  ]}>
-                  {filter.label}
-                </ThemedText>
-              </AppPressable>
-            );
-          })}
-        </View>
-
-        {/* Logs list */}
-        <FlatList
-          data={filteredLogs}
-          renderItem={renderLogItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="terminal-outline" size={48} color="#48484A" />
-              <ThemedText type="smallBold" style={{ color: '#8E8E93', marginTop: 12 }}>
-                No hay logs registrados para este filtro
+      <View
+        style={[
+          styles.safeArea,
+          {
+            backgroundColor: '#0B0F19',
+            paddingTop: Math.max(insets.top, Platform.OS === 'android' ? 28 : 12),
+            paddingBottom: Math.max(insets.bottom, 16),
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+          },
+        ]}>
+        <View style={styles.responsiveContainer}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
+              <ThemedText type="subtitle" style={{ color: '#FFFFFF' }}>
+                🛠️ Developer Logs
+              </ThemedText>
+              <ThemedText type="small" style={{ color: '#8E8E93' }}>
+                {logs.length} eventos en memoria
               </ThemedText>
             </View>
-          }
-        />
+
+            <View style={styles.headerActions}>
+              {toastMessage && (
+                <View style={styles.toast}>
+                  <ThemedText type="smallBold" style={{ color: '#30D158', fontSize: 11 }}>
+                    {toastMessage}
+                  </ThemedText>
+                </View>
+              )}
+              <AppPressable onPress={handleCopyAll} style={styles.iconButton}>
+                <Ionicons name="copy-outline" size={20} color="#0A84FF" />
+              </AppPressable>
+              <AppPressable onPress={handleClear} style={styles.iconButton}>
+                <Ionicons name="trash-outline" size={20} color="#FF453A" />
+              </AppPressable>
+              <AppPressable onPress={onClose} style={styles.iconButton}>
+                <Ionicons name="close" size={24} color="#FFFFFF" />
+              </AppPressable>
+            </View>
+          </View>
+
+          {/* Search */}
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={16} color="#8E8E93" style={styles.searchIcon} />
+            <TextInput
+              placeholder="Buscar por mensaje, tag o error..."
+              placeholderTextColor="#8E8E93"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              style={styles.searchInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery ? (
+              <AppPressable onPress={() => setSearchQuery('')} hitSlop={8}>
+                <Ionicons name="close-circle" size={16} color="#8E8E93" />
+              </AppPressable>
+            ) : null}
+          </View>
+
+          {/* Filter Pills */}
+          <View style={styles.filterRow}>
+            {(
+              [
+                { id: 'all' as const, label: `Todos (${counts.all})`, color: undefined },
+                { id: 'error' as const, label: `Errores (${counts.error})`, color: '#FF453A' },
+                { id: 'warn' as const, label: `Warns (${counts.warn})`, color: '#FF9F0A' },
+                { id: 'api' as const, label: `API (${counts.api})`, color: '#BF5AF2' },
+                { id: 'info' as const, label: `Info (${counts.info})`, color: '#0A84FF' },
+              ]
+            ).map((filter) => {
+              const isSelected = selectedLevel === filter.id;
+              return (
+                <AppPressable
+                  key={filter.id}
+                  onPress={() => setSelectedLevel(filter.id)}
+                  style={[
+                    styles.filterPill,
+                    isSelected && styles.filterPillSelected,
+                    filter.color && !isSelected ? { borderColor: `${filter.color}50` } : undefined,
+                  ]}>
+                  <ThemedText
+                    type="smallBold"
+                    style={[
+                      styles.filterPillText,
+                      isSelected ? { color: '#FFFFFF' } : filter.color ? { color: filter.color } : { color: '#8E8E93' },
+                    ]}>
+                    {filter.label}
+                  </ThemedText>
+                </AppPressable>
+              );
+            })}
+          </View>
+
+          {/* Logs list */}
+          <FlatList
+            data={filteredLogs}
+            renderItem={renderLogItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="terminal-outline" size={48} color="#48484A" />
+                <ThemedText type="smallBold" style={{ color: '#8E8E93', marginTop: 12 }}>
+                  No hay logs registrados para este filtro
+                </ThemedText>
+              </View>
+            }
+          />
+        </View>
 
         {/* Custom in-app Confirmation Modal */}
         <Modal
@@ -348,7 +616,7 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
             </View>
           </View>
         </Modal>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -356,6 +624,12 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+  responsiveContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 720,
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -480,6 +754,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     paddingVertical: 4,
+  },
+  subAccordionCard: {
+    backgroundColor: '#0E1422',
+    borderRadius: Radii.sm,
+    padding: Spacing.two,
+    borderWidth: 1,
+    borderColor: '#1C2538',
+  },
+  subAccordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  subAccordionToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingVertical: 2,
+  },
+  subBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: Radii.sm,
+    marginLeft: 4,
+  },
+  subCopyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
   },
   payloadBox: {
     backgroundColor: '#0A0E18',
