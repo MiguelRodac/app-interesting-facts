@@ -10,6 +10,7 @@ export interface ApiLogParams {
   requestBody?: unknown;
   responseBody?: unknown;
   hasAuthToken: boolean;
+  platform?: string;
   error?: unknown;
 }
 
@@ -48,6 +49,7 @@ export const logger = {
         method: info.method.toUpperCase(),
         path: info.path,
         fullUrl: info.url,
+        platform: info.platform,
         hasAuthToken: info.hasAuthToken,
         queryParams: info.params && Object.keys(info.params).length > 0 ? info.params : undefined,
         body: info.requestBody !== undefined ? info.requestBody : undefined,

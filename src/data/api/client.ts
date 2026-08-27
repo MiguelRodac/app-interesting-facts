@@ -1,10 +1,15 @@
+import { Platform } from "react-native";
+import Constants from "expo-constants";
 import { createNetworkError, mapApiError } from "./errors";
 import { logger } from "@/lib/logger";
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ??
   "https://api-interesting-facts-mu.vercel.app";
-const APP_VERSION = process.env.EXPO_PUBLIC_APP_VERSION ?? "0.0.0";
+const APP_VERSION =
+  process.env.EXPO_PUBLIC_APP_VERSION ??
+  Constants.expoConfig?.version ??
+  "0.0.5";
 
 type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -52,6 +57,7 @@ async function request<T>(options: RequestOptions): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "X-App-Version": APP_VERSION,
+    "X-App-Platform": Platform.OS,
   };
 
   // Get token asynchronously (Firebase getIdToken is async)
@@ -81,6 +87,7 @@ async function request<T>(options: RequestOptions): Promise<T> {
         requestBody: body,
         responseBody: undefined,
         hasAuthToken: !!token,
+        platform: Platform.OS,
       });
       return undefined as T;
     }
@@ -96,6 +103,7 @@ async function request<T>(options: RequestOptions): Promise<T> {
       requestBody: body,
       responseBody,
       hasAuthToken: !!token,
+      platform: Platform.OS,
     });
 
     if (!response.ok) {
@@ -130,6 +138,7 @@ async function request<T>(options: RequestOptions): Promise<T> {
       durationMs: duration,
       requestBody: body,
       hasAuthToken: !!token,
+      platform: Platform.OS,
       error,
     });
     if (error && typeof error === "object" && "code" in error) {
