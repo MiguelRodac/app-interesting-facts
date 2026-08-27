@@ -10,6 +10,7 @@ import enSearch from '@/locales/en/search.json';
 import enCreate from '@/locales/en/create.json';
 import enProfile from '@/locales/en/profile.json';
 import enSettings from '@/locales/en/settings.json';
+import enLanding from '@/locales/en/landing.json';
 
 import esCommon from '@/locales/es/common.json';
 import esAuth from '@/locales/es/auth.json';
@@ -18,6 +19,7 @@ import esSearch from '@/locales/es/search.json';
 import esCreate from '@/locales/es/create.json';
 import esProfile from '@/locales/es/profile.json';
 import esSettings from '@/locales/es/settings.json';
+import esLanding from '@/locales/es/landing.json';
 
 export const LANGUAGE_STORAGE_KEY = 'app_language_preference';
 
@@ -32,6 +34,7 @@ export const resources = {
     create: enCreate,
     profile: enProfile,
     settings: enSettings,
+    landing: enLanding,
   },
   es: {
     common: esCommon,
@@ -41,6 +44,7 @@ export const resources = {
     create: esCreate,
     profile: esProfile,
     settings: esSettings,
+    landing: esLanding,
   },
 } as const;
 
@@ -71,7 +75,7 @@ export async function initI18n() {
       lng: initialLanguage,
       fallbackLng: 'en',
       defaultNS: 'common',
-      ns: ['common', 'auth', 'feed', 'search', 'create', 'profile', 'settings'],
+      ns: ['common', 'auth', 'feed', 'search', 'create', 'profile', 'settings', 'landing'],
       interpolation: {
         escapeValue: false,
       },

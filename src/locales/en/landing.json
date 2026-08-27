@@ -1,0 +1,20 @@
+{
+  "logoLabel": "Interesting Facts logo",
+  "title": "Interesting Facts",
+  "tagline": "Discover and share fascinating facts with the world. Available as an app for Android — or try it right in your browser.",
+  "downloadApk": "Download the APK",
+  "installApp": "Install the app",
+  "tryInBrowser": "Try it in the browser",
+  "feature1Title": "Discover",
+  "feature1Desc": "A feed of fascinating facts to learn something new every day.",
+  "feature2Title": "Like & save",
+  "feature2Desc": "Keep your favorite facts close with a single tap.",
+  "feature3Title": "Find anything",
+  "feature3Desc": "Search by keyword or explore hashtags and creators.",
+  "iosHintTitle": "Install the app",
+  "iosHint": "Tap Share, then \"Add to Home Screen\" — it works like a real app.",
+  "desktopHint": "Use your browser's menu — \"Add to Home Screen\" or \"Install App\".",
+  "footer": "Interesting Facts · Made with curiosity",
+  "switchToLight": "Switch to light mode",
+  "switchToDark": "Switch to dark mode"
+}

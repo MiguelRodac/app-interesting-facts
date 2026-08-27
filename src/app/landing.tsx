@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Linking, Platform, StyleSheet, ScrollView, View, useWindowDimensions } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -19,25 +20,8 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 
-const FEATURES = [
-  {
-    icon: 'bulb-outline' as const,
-    title: 'Discover',
-    description: 'A feed of fascinating facts to learn something new every day.',
-  },
-  {
-    icon: 'heart-outline' as const,
-    title: 'Like & save',
-    description: 'Keep your favorite facts close with a single tap.',
-  },
-  {
-    icon: 'search-outline' as const,
-    title: 'Find anything',
-    description: 'Search by keyword or explore hashtags and creators.',
-  },
-];
-
 export default function LandingScreen() {
+  const { t } = useTranslation(['landing', 'common']);
   const theme = useTheme();
   const { colorScheme, toggleDarkMode } = useThemeContext();
   const isDark = colorScheme === 'dark';
@@ -47,6 +31,27 @@ export default function LandingScreen() {
   const isNarrow = width < BREAKPOINT;
   const [deviceType, setDeviceType] = useState<'ios' | 'android' | 'desktop'>('desktop');
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  const features = useMemo(
+    () => [
+      {
+        icon: 'bulb-outline' as const,
+        title: t('landing:feature1Title'),
+        description: t('landing:feature1Desc'),
+      },
+      {
+        icon: 'heart-outline' as const,
+        title: t('landing:feature2Title'),
+        description: t('landing:feature2Desc'),
+      },
+      {
+        icon: 'search-outline' as const,
+        title: t('landing:feature3Title'),
+        description: t('landing:feature3Desc'),
+      },
+    ],
+    [t],
+  );
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -105,17 +110,16 @@ export default function LandingScreen() {
           <Image
             source={require('@/assets/images/icon.png')}
             style={[styles.logoImage, isNarrow && styles.logoImageNarrow]}
-            accessibilityLabel="Interesting Facts logo"
+            accessibilityLabel={t('landing:logoLabel')}
           />
           <ThemedText type="title" style={[styles.title, isNarrow && styles.titleNarrow]}>
-            Interesting Facts
+            {t('landing:title')}
           </ThemedText>
           <ThemedText
             type="default"
             themeColor="textSecondary"
             style={[styles.tagline, isNarrow && styles.taglineNarrow]}>
-            Discover and share fascinating facts with the world. Available as an app
-            for Android — or try it right in your browser.
+            {t('landing:tagline')}
           </ThemedText>
 
           {/* CTAs — one install path per device, plus the universal
@@ -127,7 +131,7 @@ export default function LandingScreen() {
                 onPress={handleDownload}>
                 <Ionicons name="download-outline" size={20} color="#FFFFFF" />
                 <ThemedText type="default" style={styles.ctaPrimaryText}>
-                  Download the APK
+                  {t('landing:downloadApk')}
                 </ThemedText>
               </AppPressable>
             )}
@@ -137,7 +141,7 @@ export default function LandingScreen() {
                 onPress={handleInstall}>
                 <Ionicons name="phone-portrait-outline" size={20} color={theme.text} />
                 <ThemedText type="default" style={{ color: theme.text }}>
-                  Install the app
+                  {t('landing:installApp')}
                 </ThemedText>
               </AppPressable>
             )}
@@ -146,7 +150,7 @@ export default function LandingScreen() {
               onPress={handleTryApp}>
               <Ionicons name="browsers-outline" size={20} color={theme.text} />
               <ThemedText type="default" style={{ color: theme.text }}>
-                Try it in the browser
+                {t('landing:tryInBrowser')}
               </ThemedText>
             </AppPressable>
           </View>
@@ -154,7 +158,7 @@ export default function LandingScreen() {
 
         {/* Features */}
         <View style={[styles.features, isNarrow && styles.featuresNarrow]}>
-          {FEATURES.map((feature) => (
+          {features.map((feature) => (
             <ThemedView
               key={feature.title}
               type="backgroundElement"
@@ -178,24 +182,23 @@ export default function LandingScreen() {
             style={[styles.iosHint, styles.staticCard, { borderColor: theme.border }]}>
             <Ionicons name="phone-portrait-outline" size={24} color={theme.primary} />
             <View style={styles.iosHintText}>
-              <ThemedText type="smallBold">Install the app</ThemedText>
+              <ThemedText type="smallBold">{t('landing:iosHintTitle')}</ThemedText>
               {deviceType === 'ios' ? (
                 <ThemedText type="small" themeColor="textSecondary" style={styles.iosHintDescription}>
-                  Tap Share, then &quot;Add to Home Screen&quot; — it works like a real app.
+                  {t('landing:iosHint')}
                 </ThemedText>
               ) : (
                 <ThemedText type="small" themeColor="textSecondary" style={styles.iosHintDescription}>
-                  Use your browser&apos;s menu — &quot;Add to Home Screen&quot; or &quot;Install
-                  App&quot;.
+                  {t('landing:desktopHint')}
                 </ThemedText>
               )}
             </View>
           </ThemedView>
         )}
 
-{/* Footer */}
+        {/* Footer */}
         <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>
-          Interesting Facts · Made with curiosity
+          {t('landing:footer')}
         </ThemedText>
       </ScrollView>
 
@@ -203,7 +206,7 @@ export default function LandingScreen() {
       <View style={styles.themeToggleWrap}>
         <AppPressable
           accessibilityRole="button"
-          accessibilityLabel={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          accessibilityLabel={isDark ? t('landing:switchToLight') : t('landing:switchToDark')}
           onPress={toggleDarkMode}
           style={[
             styles.themeToggle,

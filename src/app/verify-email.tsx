@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { PasswordField } from '@/components/PasswordField';
 import { AppPressable } from '@/components/ui/app-pressable';
@@ -23,6 +24,7 @@ const RESET_PASSWORD_MODE = 'resetPassword';
 const VERIFY_EMAIL_MODES = ['verifyBeforeUpdateEmail', 'verifyEmail'];
 
 export default function VerifyEmailScreen() {
+  const { t } = useTranslation(['auth', 'common']);
   const router = useRouter();
   const theme = useTheme();
   const params = useLocalSearchParams<{ mode?: string; oobCode?: string }>();
@@ -53,10 +55,10 @@ export default function VerifyEmailScreen() {
     if (!isSupported || !code) {
       setStatus('error');
       setErrorMessage(
-        !code ? 'Invalid or missing link. Please check the link and try again.' : 'This action is not supported.',
+        !code ? t('auth:invalidLink') : t('auth:actionNotSupported'),
       );
     }
-  }, [isSupported, code]);
+  }, [isSupported, code, t]);
 
   // Fire the verify-before-update flow automatically once the code is valid.
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function VerifyEmailScreen() {
           <View style={styles.center}>
             <Ionicons name="sync-outline" size={40} color={theme.primary} />
             <ThemedText type="default" themeColor="textSecondary">
-              Processing&hellip;
+              {t('auth:processing')}
             </ThemedText>
           </View>
         )}
@@ -123,7 +125,7 @@ export default function VerifyEmailScreen() {
           <View style={styles.center}>
             <Ionicons name="alert-circle-outline" size={44} color={theme.destructive} />
             <ThemedText type="title" style={styles.title}>
-              Something went wrong
+              {t('common:error')}
             </ThemedText>
             <ThemedText type="default" themeColor="textSecondary" style={styles.message}>
               {errorMessage}
@@ -132,7 +134,7 @@ export default function VerifyEmailScreen() {
               onPress={goToSignIn}
               style={[styles.button, { backgroundColor: theme.primary }]}>
               <ThemedText type="smallBold" style={styles.buttonText}>
-                Go to Sign In
+                {t('auth:goToSignIn')}
               </ThemedText>
             </AppPressable>
           </View>
@@ -142,18 +144,18 @@ export default function VerifyEmailScreen() {
           <View style={styles.center}>
             <Ionicons name="checkmark-circle-outline" size={44} color={theme.success} />
             <ThemedText type="title" style={styles.title}>
-              {isResetPasswordMode ? 'Password updated' : 'Email verified'}
+              {isResetPasswordMode ? t('auth:passwordUpdated') : t('auth:emailVerified')}
             </ThemedText>
             <ThemedText type="default" themeColor="textSecondary" style={styles.message}>
               {isResetPasswordMode
-                ? 'Your password has been updated. You can now sign in.'
-                : 'Your email has been verified and updated.'}
+                ? t('auth:passwordUpdatedMessage')
+                : t('auth:emailVerifiedMessage')}
             </ThemedText>
             <AppPressable
               onPress={goToSignIn}
               style={[styles.button, { backgroundColor: theme.primary }]}>
               <ThemedText type="smallBold" style={styles.buttonText}>
-                Go to Sign In
+                {t('auth:goToSignIn')}
               </ThemedText>
             </AppPressable>
           </View>
@@ -163,28 +165,28 @@ export default function VerifyEmailScreen() {
         {status === 'idle' && isResetPasswordMode && (
           <View>
             <ThemedText type="title" style={styles.title}>
-              Reset Password
+              {t('auth:resetPasswordTitle')}
             </ThemedText>
             <ThemedText type="default" themeColor="textSecondary" style={styles.message}>
-              Choose a new password for your account.
+              {t('auth:chooseNewPassword')}
             </ThemedText>
             <View style={styles.form}>
               <PasswordField
                 value={newPassword}
                 onChangeText={setNewPassword}
-                placeholder="New password (6-16 characters)"
-                label="New Password"
+                placeholder={t('auth:newPasswordPlaceholder')}
+                label={t('auth:newPassword')}
                 showStrength
               />
               <PasswordField
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                placeholder="Re-enter your new password"
-                label="Confirm Password"
+                placeholder={t('auth:confirmNewPasswordPlaceholder')}
+                label={t('auth:confirmNewPassword')}
               />
               {passwordsMismatch && (
                 <ThemedText type="small" style={{ color: theme.destructive }}>
-                  Passwords do not match.
+                  {t('auth:passwordsDoNotMatch')}
                 </ThemedText>
               )}
               <AppPressable
@@ -194,7 +196,7 @@ export default function VerifyEmailScreen() {
                   { backgroundColor: isValid ? theme.primary : theme.muted },
                 ]}>
                 <ThemedText type="smallBold" style={styles.buttonText}>
-                  Reset Password
+                  {t('auth:resetPasswordTitle')}
                 </ThemedText>
               </AppPressable>
             </View>
@@ -206,7 +208,7 @@ export default function VerifyEmailScreen() {
           <View style={styles.center}>
             <Ionicons name="sync-outline" size={40} color={theme.primary} />
             <ThemedText type="default" themeColor="textSecondary">
-              Verifying your email&hellip;
+              {t('auth:processing')}
             </ThemedText>
           </View>
         )}

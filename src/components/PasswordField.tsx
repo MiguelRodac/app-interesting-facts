@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radii, Spacing } from '@/constants/theme';
@@ -10,8 +11,6 @@ import {
   getPasswordStrength,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
-  PASSWORD_ERROR_MESSAGE,
-  PASSWORD_STRENGTH_LABELS,
 } from '@/utils/validation';
 
 interface PasswordFieldProps {
@@ -21,7 +20,7 @@ interface PasswordFieldProps {
   editable?: boolean;
   /** Show the strength meter below the input (used on register) */
   showStrength?: boolean;
-  /** Field label, defaults to "Password" */
+  /** Field label, defaults to localized "Password" */
   label?: string;
 }
 
@@ -33,8 +32,9 @@ export function PasswordField({
   placeholder,
   editable = true,
   showStrength = false,
-  label = 'Password',
+  label,
 }: PasswordFieldProps) {
+  const { t } = useTranslation(['auth', 'common']);
   const theme = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const tooShort = value.length > 0 && value.length < MIN_PASSWORD_LENGTH;
@@ -43,10 +43,24 @@ export function PasswordField({
   const strength = getPasswordStrength(value);
   const borderColor = invalid ? theme.destructive : theme.border;
 
+  const strengthLabels = useMemo(
+    () => [
+      t('auth:strengthWeak'),
+      t('auth:strengthWeak'),
+      t('auth:strengthFair'),
+      t('auth:strengthGood'),
+      t('auth:strengthStrong'),
+      t('auth:strengthStrong'),
+    ],
+    [t],
+  );
+
+  const displayLabel = label ?? t('auth:password');
+
   return (
     <View style={styles.field}>
       <ThemedText type="smallBold" themeColor="textSecondary">
-        {label}
+        {displayLabel}
       </ThemedText>
       <View style={styles.row}>
         <TextInput
@@ -81,12 +95,12 @@ export function PasswordField({
       </View>
       {tooShort && (
         <ThemedText type="small" style={{ color: theme.destructive }}>
-          {PASSWORD_ERROR_MESSAGE}
+          {t('auth:passwordLengthError')}
         </ThemedText>
       )}
       {showStrength && value.length > 0 && (
         <View style={styles.strengthRow}>
-          {PASSWORD_STRENGTH_LABELS.map((_, index) => (
+          {strengthLabels.map((_, index) => (
             <View
               key={index}
               style={[
@@ -98,7 +112,7 @@ export function PasswordField({
             />
           ))}
           <ThemedText type="small" style={{ color: STRENGTH_COLORS[strength] }}>
-            {PASSWORD_STRENGTH_LABELS[strength]}
+            {strengthLabels[strength]}
           </ThemedText>
         </View>
       )}

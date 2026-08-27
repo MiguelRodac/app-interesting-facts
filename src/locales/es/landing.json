@@ -1,0 +1,20 @@
+{
+  "logoLabel": "Logo de Datos Curiosos",
+  "title": "Datos Curiosos",
+  "tagline": "Descubre y comparte datos fascinantes con el mundo. Disponible como aplicación para Android o pruébala directamente en tu navegador.",
+  "downloadApk": "Descargar el APK",
+  "installApp": "Instalar la aplicación",
+  "tryInBrowser": "Probar en el navegador",
+  "feature1Title": "Descubre",
+  "feature1Desc": "Un feed de datos curiosos para aprender algo nuevo cada día.",
+  "feature2Title": "Me gusta y favoritos",
+  "feature2Desc": "Guarda tus datos favoritos con un solo toque.",
+  "feature3Title": "Encuentra lo que sea",
+  "feature3Desc": "Busca por palabra clave o explora hashtags y creadores.",
+  "iosHintTitle": "Instalar la aplicación",
+  "iosHint": "Toca Compartir, luego \"Agregar a pantalla de inicio\" — funciona como una app real.",
+  "desktopHint": "Usa el menú de tu navegador — \"Agregar a pantalla de inicio\" o \"Instalar aplicación\".",
+  "footer": "Datos Curiosos · Hecho con curiosidad",
+  "switchToLight": "Cambiar a modo claro",
+  "switchToDark": "Cambiar a modo oscuro"
+}
