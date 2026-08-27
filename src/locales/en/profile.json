@@ -26,5 +26,11 @@
   "validEmailRequired": "Please enter a valid email",
   "tapToChange": "Tap to change",
   "confirmEmailTitle": "Confirm your email change",
-  "confirmEmailSubtitle": "Enter your current password. A verification link will be sent to your new email."
+  "confirmEmailSubtitle": "Enter your current password. A verification link will be sent to your new email.",
+  "userNotFound": "User not found",
+  "userNotFoundSubtitle": "This user may not exist",
+  "userNoFactsSubtitle": "This user hasn't posted any facts",
+  "userNoLikesSubtitle": "This user hasn't liked any facts",
+  "tabFacts": "Facts",
+  "tabLikes": "Likes"
 }

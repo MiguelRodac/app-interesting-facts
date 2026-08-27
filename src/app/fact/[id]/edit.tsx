@@ -4,6 +4,7 @@ import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { CharCounter } from '@/components/CharCounter';
 import { ThemedText } from '@/components/themed-text';
@@ -26,6 +27,7 @@ const MAX_LENGTH = 1000;
 const TITLE_MAX_LENGTH = 50;
 
 export default function EditFactScreen() {
+  const { t } = useTranslation(['create', 'common']);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const theme = useTheme();
@@ -354,9 +356,9 @@ const facts = useFactsStore((s) => s.facts);
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </AppPressable>
           <View style={styles.headerContent}>
-            <ThemedText type="subtitle">Edit Fact</ThemedText>
+            <ThemedText type="subtitle">{t('create:editFactTitle')}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              Update your fact
+              {t('create:editFactSubtitle')}
             </ThemedText>
           </View>
         </View>
@@ -367,7 +369,7 @@ const facts = useFactsStore((s) => s.facts);
           <View style={styles.field}>
             <View style={styles.fieldHeader}>
               <ThemedText type="smallBold" themeColor="textSecondary">
-                Title (optional)
+                {t('create:fieldTitle')}
               </ThemedText>
               <CharCounter current={title.length} min={0} max={TITLE_MAX_LENGTH} />
             </View>
@@ -380,7 +382,7 @@ const facts = useFactsStore((s) => s.facts);
                   borderColor: theme.border,
                 },
               ]}
-              placeholder="Give your fact a title..."
+              placeholder={t('create:titlePlaceholder')}
               placeholderTextColor={theme.muted}
               value={title}
               onChangeText={setTitle}
@@ -393,7 +395,7 @@ const facts = useFactsStore((s) => s.facts);
           <View style={styles.field}>
             <View style={styles.fieldHeader}>
               <ThemedText type="smallBold" themeColor="textSecondary">
-                Content
+                {t('create:fieldContent')}
               </ThemedText>
               <CharCounter current={content.trim().length} min={MIN_LENGTH} max={MAX_LENGTH} />
             </View>
@@ -408,7 +410,7 @@ const facts = useFactsStore((s) => s.facts);
                     borderColor: theme.border,
                   },
                 ]}
-                placeholder="Share a fact you find interesting... Use @ to mention users"
+                placeholder={t('create:contentPlaceholder')}
                 placeholderTextColor={theme.muted}
                 value={content}
                 onChangeText={handleContentChange}
@@ -430,7 +432,7 @@ const facts = useFactsStore((s) => s.facts);
                     </View>
                   ) : mentionResults.length === 0 ? (
                     <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" themeColor="muted">No users found</ThemedText>
+                      <ThemedText type="small" themeColor="muted">{t('create:noUsersFound')}</ThemedText>
                     </View>
                   ) : (
                     <FlatList
@@ -473,7 +475,7 @@ const facts = useFactsStore((s) => s.facts);
                     </View>
                   ) : hashtagResults.length === 0 ? (
                     <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" themeColor="muted">No hashtags found</ThemedText>
+                      <ThemedText type="small" themeColor="muted">{t('create:noHashtagsFound')}</ThemedText>
                     </View>
                   ) : (
                     <FlatList
@@ -505,7 +507,7 @@ const facts = useFactsStore((s) => s.facts);
             </View>
           </View>
 
-{/* Buttons */}
+          {/* Buttons */}
           <View style={styles.buttons}>
             <AppPressable
               style={[
@@ -515,7 +517,7 @@ const facts = useFactsStore((s) => s.facts);
               ]}
               onPress={handleCancel}>
               <ThemedText type="smallBold" style={styles.cancelText}>
-                Cancel
+                {t('common:cancel')}
               </ThemedText>
             </AppPressable>
             <AppPressable
@@ -531,7 +533,7 @@ const facts = useFactsStore((s) => s.facts);
               onPress={isValid && hasChanges && !isSubmitting ? handleSubmit : undefined}
               disabled={!isValid || !hasChanges || isSubmitting}>
               <ThemedText type="smallBold" style={styles.submitText}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+                {isSubmitting ? t('create:saving') : t('create:saveChanges')}
               </ThemedText>
             </AppPressable>
           </View>
@@ -543,24 +545,24 @@ const facts = useFactsStore((s) => s.facts);
         <View style={styles.modalOverlay}>
           <ThemedView type="backgroundElement" style={styles.modalContent}>
             <ThemedText type="subtitle" style={styles.modalTitle}>
-              Discard changes?
+              {t('create:leaveConfirmTitle')}
             </ThemedText>
             <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-              You have unsaved changes. Are you sure you want to leave?
+              {t('create:leaveConfirmMessage')}
             </ThemedText>
             <View style={styles.modalButtons}>
               <AppPressable
                 onPress={handleCancelLeave}
                 style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
                 <ThemedText type="smallBold" style={styles.cancelModalText}>
-                  Keep editing
+                  {t('create:leaveConfirmStay')}
                 </ThemedText>
               </AppPressable>
               <AppPressable
                 onPress={handleConfirmLeave}
                 style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
                 <ThemedText type="smallBold" style={styles.confirmModalText}>
-                  Discard
+                  {t('create:leaveConfirmExit')}
                 </ThemedText>
               </AppPressable>
             </View>

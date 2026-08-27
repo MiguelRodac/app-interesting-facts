@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -94,6 +95,7 @@ export function CommentComposer({
   onCancelEdit,
   onPendingTextChange,
 }: CommentComposerProps) {
+  const { t } = useTranslation(['common', 'create']);
   const theme = useTheme();
   const { user } = useAuth();
   const keyboardHeight = useKeyboardHeight();
@@ -278,45 +280,77 @@ export function CommentComposer({
       setContent(newContent);
       setShowMentions(false);
       setMentionResults([]);
-      inputRef.current?.focus();
+      const newCursorPos = beforeAt.length + userMention.username.length + 2;
+      cursorPositionRef.current = newCursorPos;
+      setTimeout(() => {
+        inputRef.current?.setNativeProps({
+          selection: { start: newCursorPos, end: newCursorPos },
+        });
+      }, 50);
     },
     [content],
   );
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
+  const handleSubmit = useCallback(async () => {
+    const trimmed = content.trim();
+    if (trimmed.length < COMMENT_MIN_LENGTH || trimmed.length > COMMENT_MAX_LENGTH || isSubmitting) {
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (isEdit && commentId) {
         if (isRepost && repostEntryId) {
-          await updateRepostComment(repostEntryId, commentId, content.trim());
+          await updateRepostComment(repostEntryId, commentId, trimmed);
         } else if (factId) {
-          await updateComment(factId, commentId, content.trim());
+          await updateComment(factId, commentId, trimmed);
         }
+        setContent('');
+        onDone?.();
+      } else if (replyTo) {
+        if (isRepost && repostEntryId) {
+          await addRepostComment(repostEntryId, trimmed, replyTo.commentId);
+        } else if (factId) {
+          await addComment(factId, trimmed, replyTo.commentId);
+        }
+        setContent('');
+        onDone?.();
       } else {
         if (isRepost && repostEntryId) {
-          await addRepostComment(repostEntryId, content.trim(), replyTo?.commentId);
+          await addRepostComment(repostEntryId, trimmed);
         } else if (factId) {
-          await addComment(factId, content.trim(), replyTo?.commentId);
+          await addComment(factId, trimmed);
         }
+        setContent('');
+        onDone?.();
       }
-      setContent('');
-      setShowMentions(false);
-      setMentionResults([]);
-      onDone?.();
     } catch {
-      // Mutation errors surface via the comments store → uiStore error banner.
+      // Error handled by store → uiStore
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    content,
+    isSubmitting,
+    isEdit,
+    commentId,
+    isRepost,
+    repostEntryId,
+    factId,
+    replyTo,
+    updateRepostComment,
+    updateComment,
+    addRepostComment,
+    addComment,
+    onDone,
+  ]);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setContent('');
     setShowMentions(false);
     setMentionResults([]);
     onCancelEdit?.();
-  };
+  }, [onCancelEdit]);
 
   const handleEmojiPress = useCallback(() => setShowEmojiPicker((v) => !v), []);
 
@@ -328,7 +362,7 @@ export function CommentComposer({
     [],
   );
 
-  const postLabel = isEdit ? 'Save' : 'Post';
+  const postLabel = isEdit ? t('common:save') : t('common:post');
 
   return (
     <>
@@ -350,7 +384,7 @@ export function CommentComposer({
       {replyTo && !isEdit ? (
         <View style={styles.replyChipRow}>
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.replyChipText}>
-            Replying to <ThemedText type="smallBold">@{replyTo.username}</ThemedText>
+            {t('common:replyingTo')} <ThemedText type="smallBold">@{replyTo.username}</ThemedText>
           </ThemedText>
           <AppPressable onPress={onCancelReply} hitSlop={8} style={styles.replyCancel}>
             <Ionicons name="close-circle" size={17} color={theme.muted} />
@@ -380,7 +414,7 @@ export function CommentComposer({
                 styles.input,
                 { color: theme.text, height: inputHeight },
               ]}
-              placeholder={isEdit ? 'Edit your comment...' : 'Add a comment...'}
+              placeholder={isEdit ? t('common:editCommentPlaceholder') : t('common:addCommentPlaceholder')}
               placeholderTextColor={theme.muted}
               value={content}
               onChangeText={handleContentChange}
@@ -410,7 +444,7 @@ export function CommentComposer({
               ) : mentionResults.length === 0 ? (
                 <View style={styles.autocompleteState}>
                   <ThemedText type="small" style={styles.autocompleteEmptyText}>
-                    No users found
+                    {t('create:noUsersFound')}
                   </ThemedText>
                 </View>
               ) : (
@@ -454,7 +488,7 @@ export function CommentComposer({
           {isEdit ? (
             <AppPressable onPress={handleCancelEdit} disabled={isSubmitting} hitSlop={6} style={styles.textButton}>
               <ThemedText type="smallBold" themeColor="textSecondary" style={styles.cancelText}>
-                Cancel
+                {t('common:cancel')}
               </ThemedText>
             </AppPressable>
           ) : null}

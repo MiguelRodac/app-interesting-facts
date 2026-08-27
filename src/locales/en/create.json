@@ -9,8 +9,12 @@
   "noHashtagsFound": "No hashtags found",
   "submitButton": "Share Fact",
   "submittingButton": "Sharing...",
+  "editFactTitle": "Edit Fact",
+  "editFactSubtitle": "Update your fact",
+  "saveChanges": "Save Changes",
+  "saving": "Saving...",
   "leaveConfirmTitle": "Discard changes?",
   "leaveConfirmMessage": "You have unsaved changes. Are you sure you want to leave?",
-  "leaveConfirmStay": "Stay",
+  "leaveConfirmStay": "Keep editing",
   "leaveConfirmExit": "Discard"
 }

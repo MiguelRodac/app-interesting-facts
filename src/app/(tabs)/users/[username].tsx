@@ -3,6 +3,7 @@ import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native'
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/components/EmptyState';
 import { FactCard } from '@/components/FactCard';
@@ -22,16 +23,18 @@ import type { Fact } from '@/types';
 
 type ProfileTab = 'facts' | 'likes';
 
-function formatJoinDate(iso: string): string {
+function formatJoinDate(iso: string, locale: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return d.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
 export default function UserProfileScreen() {
+  const { t, i18n } = useTranslation(['profile', 'feed', 'common']);
   const { username } = useLocalSearchParams<{ username: string }>();
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
+  const dateLocale = i18n.language.startsWith('es') ? 'es-ES' : 'en-US';
   const {
     profile,
     facts,
@@ -63,28 +66,20 @@ export default function UserProfileScreen() {
     }
   }, [username, profile, fetchProfile, fetchUserFacts, refetchUserLikes]);
 
-useEffect(() => {
+  useEffect(() => {
     if (!username) {
-      // Route without the dynamic segment (/users without a username) — not a
-      // real page, send the visitor back to the feed instead of a dead end.
       router.replace('/(tabs)');
       return;
     }
-    fetchProfile(username).catch(() => {
-      // Error handled by store → uiStore
-    });
+    fetchProfile(username).catch(() => {});
     return () => {
       clearProfile();
     };
   }, [username, fetchProfile, clearProfile, router]);
 
-  // Fetch facts once profile is loaded (uses profile.id from GET /users/:username).
-  // Liked entries are fetched by useUserLikes when profile.id resolves.
   useEffect(() => {
     if (!profile) return;
-    fetchUserFacts(profile.id).catch(() => {
-      // Error handled by store → uiStore
-    });
+    fetchUserFacts(profile.id).catch(() => {});
   }, [profile, fetchUserFacts]);
 
   const handleFactPress = useCallback(
@@ -98,35 +93,42 @@ useEffect(() => {
     [router],
   );
 
-const handleLike = useCallback(
+  const handleLike = useCallback(
     (factId: string) => {
-      if (isAuthenticated) {
-        toggleLike(factId);
+      if (!isAuthenticated) {
+        router.push('/auth/login');
+        return;
       }
+      toggleLike(factId);
     },
-    [isAuthenticated, toggleLike],
+    [isAuthenticated, toggleLike, router],
   );
 
   const handleRepost = useCallback(
-    async (factId: string) => {
-      if (!isAuthenticated) return;
-      const ok = await toggleRepost(factId);
-      if (ok) Alert.alert('Listo', 'Repost publicado');
-    },
-    [isAuthenticated, toggleRepost],
-  );
-
-  const toggleRepostLike = useRepostsStore((s) => s.toggleRepostLike);
-  const handleRepostLike = useCallback(
-    (repostEntryId: string) => {
-      if (isAuthenticated) {
-        toggleRepostLike(repostEntryId);
+    (factId: string) => {
+      if (!isAuthenticated) {
+        router.push('/auth/login');
+        return;
       }
+      toggleRepost(factId).then((ok) => {
+        if (ok) Alert.alert(t('common:success'), t('feed:repostCreated'));
+      });
     },
-    [isAuthenticated, toggleRepostLike],
+    [isAuthenticated, toggleRepost, router, t],
   );
 
-const handleBack = useCallback(() => {
+  const handleRepostLike = useCallback(
+    (repostId: string) => {
+      if (!isAuthenticated) {
+        router.push('/auth/login');
+        return;
+      }
+      useRepostsStore.getState().toggleRepostLike(repostId).catch(() => {});
+    },
+    [isAuthenticated],
+  );
+
+  const handleBack = useCallback(() => {
     if (router.canGoBack()) {
       router.back();
     } else {
@@ -146,8 +148,8 @@ const handleBack = useCallback(() => {
     if (!profile) {
       return (
         <EmptyState
-          title="User not found"
-          subtitle="This user may not exist"
+          title={t('profile:userNotFound')}
+          subtitle={t('profile:userNotFoundSubtitle')}
           icon="person-outline"
         />
       );
@@ -155,12 +157,10 @@ const handleBack = useCallback(() => {
 
     return (
       <View style={styles.header}>
-        {/* Back button */}
         <AppPressable onPress={handleBack} style={styles.backButton} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </AppPressable>
 
-        {/* Profile card */}
         <ThemedView type="backgroundElement" style={[styles.profileCard, Shadows.md]}>
           <UserAvatar user={profile} size={72} />
           <ThemedText type="subtitle" numberOfLines={2} ellipsizeMode="tail" style={styles.displayName}>
@@ -170,11 +170,10 @@ const handleBack = useCallback(() => {
             @{profile.username}
           </ThemedText>
           <ThemedText type="small" themeColor="muted" style={styles.joinedDate}>
-            Joined {formatJoinDate(profile.createdAt)}
+            {t('profile:joinedDate', { date: formatJoinDate(profile.createdAt, dateLocale) })}
           </ThemedText>
         </ThemedView>
 
-        {/* Facts / Likes tabs */}
         <View style={styles.tabBar}>
           <AppPressable
             onPress={() => setActiveTab('facts')}
@@ -183,7 +182,7 @@ const handleBack = useCallback(() => {
             <ThemedText
               type="smallBold"
               style={{ color: activeTab === 'facts' ? theme.primary : theme.muted }}>
-              Facts
+              {t('profile:tabFacts')}
             </ThemedText>
             {activeTab === 'facts' && !factsLoading && (
               <ThemedText type="small" themeColor="muted">{facts.length}</ThemedText>
@@ -196,7 +195,7 @@ const handleBack = useCallback(() => {
             <ThemedText
               type="smallBold"
               style={{ color: activeTab === 'likes' ? theme.primary : theme.muted }}>
-              Likes
+              {t('profile:tabLikes')}
             </ThemedText>
             {activeTab === 'likes' && !likesLoading && (
               <ThemedText type="small" themeColor="muted">{likedEntries.length}</ThemedText>
@@ -205,21 +204,18 @@ const handleBack = useCallback(() => {
         </View>
 
         {activeTab === 'facts' && factsLoading && <LoadingSkeleton count={2} />}
-
         {activeTab === 'facts' && !factsLoading && facts.length === 0 && (
           <EmptyState
-            title="No facts yet"
-            subtitle="This user hasn't posted any facts"
+            title={t('profile:noFactsTitle')}
+            subtitle={t('profile:userNoFactsSubtitle')}
             icon="document-text-outline"
           />
         )}
-
         {activeTab === 'likes' && likesLoading && <LoadingSkeleton count={2} />}
-
         {activeTab === 'likes' && !likesLoading && likedEntries.length === 0 && (
           <EmptyState
-            title="No likes yet"
-            subtitle="This user hasn't liked any facts"
+            title={t('profile:noLikedTitle')}
+            subtitle={t('profile:userNoLikesSubtitle')}
             icon="heart-outline"
           />
         )}
@@ -227,8 +223,7 @@ const handleBack = useCallback(() => {
     );
   };
 
-  // Don't render the list at all while initial loading or if profile not found
-if (isLoading || !profile) {
+  if (isLoading || !profile) {
     return (
       <ThemedView style={styles.container}>
         <FlatList

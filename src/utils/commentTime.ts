@@ -1,3 +1,5 @@
+import i18n from '@/i18n';
+
 /**
  * Edit-window utilities for the comments module.
  * A comment can only be edited within 1 hour of creation (backend policy).
@@ -47,13 +49,14 @@ export function formatRelativeTime(createdAt: string, now: number = Date.now()):
   if (Number.isNaN(created)) return '';
 
   const diff = now - created;
-  if (diff < MINUTE_MS) return 'just now';
+  if (diff < MINUTE_MS) return i18n.t('common:justNow');
   if (diff < HOUR_MS) return `${Math.floor(diff / MINUTE_MS)}m`;
   if (diff < DAY_MS) return `${Math.floor(diff / HOUR_MS)}h`;
   if (diff < WEEK_MS) return `${Math.floor(diff / DAY_MS)}d`;
   if (diff < 4 * WEEK_MS) return `${Math.floor(diff / WEEK_MS)}w`;
 
   const d = new Date(created);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const locale = i18n.language.startsWith('es') ? 'es-ES' : 'en-US';
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 

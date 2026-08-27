@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { AppPressable } from '@/components/ui/app-pressable';
 import { StyledContent } from '@/components/StyledContent';
@@ -58,6 +59,7 @@ export function CommentItem({
   onDelete,
   onOpenLikes,
 }: CommentItemProps) {
+  const { t } = useTranslation(['common', 'feed']);
   const theme = useTheme();
   const toggleCommentLike = useCommentsStore((s) => s.toggleCommentLike);
   const toggleRepostCommentLike = useRepostsStore((s) => s.toggleRepostCommentLike);
@@ -172,7 +174,7 @@ export function CommentItem({
               hitSlop={6}
               style={styles.seeMore}>
               <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                {expanded ? 'See less' : 'See more'}
+                {expanded ? t('feed:seeLess') : t('feed:seeMore')}
               </ThemedText>
             </AppPressable>
           )}
@@ -183,7 +185,7 @@ export function CommentItem({
               {canReply && (
                 <AppPressable onPress={handleReply} hitSlop={8}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.actionLink}>
-                    Reply
+                    {t('common:reply')}
                   </ThemedText>
                 </AppPressable>
               )}
@@ -192,14 +194,14 @@ export function CommentItem({
               </ThemedText>
               {comment.edited && (
                 <ThemedText type="small" themeColor="muted">
-                  (edited)
+                  {t('common:edited')}
                 </ThemedText>
               )}
               {isOwn && canEdit && (
                 <AppPressable onPress={handleEdit} hitSlop={8} style={styles.actionWithIcon}>
                   <Ionicons name="create-outline" size={13} color={theme.muted} />
                   <ThemedText type="small" themeColor="textSecondary">
-                    Edit
+                    {t('common:edit')}
                   </ThemedText>
                 </AppPressable>
               )}
@@ -231,8 +233,8 @@ export function CommentItem({
             />
             <ThemedText type="small" themeColor="textSecondary" style={styles.repliesToggleText}>
               {repliesExpanded
-                ? `Hide ${replies.length === 1 ? 'reply' : 'replies'}`
-                : `View ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`}
+                ? (replies.length === 1 ? t('common:hideReply') : t('common:hideReplies'))
+                : (replies.length === 1 ? t('common:viewReply') : t('common:viewReplies', { count: replies.length }))}
             </ThemedText>
           </AppPressable>
 

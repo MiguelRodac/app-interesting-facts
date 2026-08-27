@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { CommentItem } from '@/components/comments/CommentItem';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -53,6 +54,7 @@ export function CommentSection({
   onEdit,
   onOpenCommentLikes,
 }: CommentSectionProps) {
+  const { t } = useTranslation('common');
   const theme = useTheme();
   const isRepost = !!repostEntryId;
   const entityId = repostEntryId ?? factId ?? '';
@@ -96,7 +98,7 @@ export function CommentSection({
   return (
     <View style={styles.section}>
       <ThemedText type="smallBold" style={styles.header}>
-        Comments
+        {t('common:comments')}
       </ThemedText>
 
       {loading ? (
@@ -106,7 +108,7 @@ export function CommentSection({
       ) : comments.length === 0 ? (
         <View style={styles.stateWrap}>
           <ThemedText type="small" themeColor="muted">
-            No comments yet. Be the first to share a thought.
+            {t('common:noCommentsYet')}
           </ThemedText>
         </View>
       ) : (
@@ -135,9 +137,10 @@ export function CommentSection({
       {/* Delete confirmation */}
       <ConfirmDialog
         visible={!!deleteTarget}
-        title="Delete Comment"
-        message="Are you sure you want to delete this comment? You can't delete a comment that has replies from other users."
-        confirmLabel="Delete"
+        title={t('common:deleteCommentTitle')}
+        message={t('common:deleteCommentMessage')}
+        confirmLabel={t('common:delete')}
+        cancelLabel={t('common:cancel')}
         destructive
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}

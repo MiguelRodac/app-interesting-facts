@@ -4,6 +4,7 @@ import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
@@ -33,7 +34,8 @@ interface CommentReplyTarget {
 }
 
 export default function FactDetailScreen() {
-const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
+  const { t, i18n } = useTranslation(['feed', 'common']);
+  const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const { facts, fetchFactById, toggleLike, toggleRepost, deleteFact } = useFacts();
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
@@ -326,10 +328,12 @@ const isOwner = fact && user?.id === fact.author.id;
   if (!fact) {
     return (
       <ThemedView style={styles.container}>
-        <EmptyState title="Fact not found" subtitle="This fact may have been deleted" icon="alert-circle-outline" />
+        <EmptyState title={t('common:factNotFound')} subtitle={t('common:factNotFoundSubtitle')} icon="alert-circle-outline" />
       </ThemedView>
     );
   }
+
+  const dateLocale = i18n.language.startsWith('es') ? 'es-ES' : 'en-US';
 
   return (
     <KeyboardAvoidingView
@@ -384,7 +388,7 @@ const isOwner = fact && user?.id === fact.author.id;
                       style={styles.tooltipItem}
                       hitSlop={8}>
                       <Ionicons name="create-outline" size={16} color={theme.primary} />
-                      <ThemedText type="small" style={{ color: theme.primary }}>Edit</ThemedText>
+                      <ThemedText type="small" style={{ color: theme.primary }}>{t('common:edit')}</ThemedText>
                     </AppPressable>
                     <View style={[styles.tooltipDivider, { backgroundColor: theme.border }]} />
                     <AppPressable
@@ -392,7 +396,7 @@ const isOwner = fact && user?.id === fact.author.id;
                       style={styles.tooltipItem}
                       hitSlop={8}>
                       <Ionicons name="trash-outline" size={16} color={theme.destructive} />
-                      <ThemedText type="small" style={{ color: theme.destructive }}>Delete</ThemedText>
+                      <ThemedText type="small" style={{ color: theme.destructive }}>{t('common:delete')}</ThemedText>
                     </AppPressable>
                     {/* Arrow */}
                     <View style={[styles.tooltipArrow, { borderTopColor: theme.border }]} />
@@ -422,22 +426,22 @@ const isOwner = fact && user?.id === fact.author.id;
           {isCollapsible && (
             <AppPressable onPress={() => setExpanded((current) => !current)} hitSlop={6} style={styles.seeMore}>
               <ThemedText type="smallBold" style={{ color: theme.primary }}>
-                {expanded ? 'See less' : 'See more'}
+                {expanded ? t('feed:seeLess') : t('feed:seeMore')}
               </ThemedText>
             </AppPressable>
           )}
 
           {/* Meta */}
           <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
-            {new Date(fact.createdAt).toLocaleDateString('en-US', {
+            {new Date(fact.createdAt).toLocaleDateString(dateLocale, {
               month: 'long',
               day: 'numeric',
               year: 'numeric',
             })}
           </ThemedText>
 
-{/* Likes line — "Liked by @alice, @bob and 3 more"; tap opens the full modal.
-        Shown to everyone; anonymous viewers route to login instead. */}
+          {/* Likes line — "Liked by @alice, @bob and 3 more"; tap opens the full modal.
+              Shown to everyone; anonymous viewers route to login instead. */}
           <LikedByLine
             likes={fact.likeBy}
             likesCount={fact.likesCount}
@@ -523,16 +527,16 @@ const isOwner = fact && user?.id === fact.author.id;
         />
       )}
 
-
       {/* Bottom tab bar */}
       <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
 
-{/* Delete confirmation */}
+      {/* Delete confirmation */}
       <ConfirmDialog
         visible={confirmDeleteVisible}
-        title="Delete Fact"
-        message="Are you sure you want to delete this fact?"
-        confirmLabel="Delete"
+        title={t('common:deleteFactTitle')}
+        message={t('common:deleteFactMessage')}
+        confirmLabel={t('common:delete')}
+        cancelLabel={t('common:cancel')}
         destructive
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmDeleteVisible(false)}
@@ -547,24 +551,24 @@ const isOwner = fact && user?.id === fact.author.id;
         <View style={styles.modalOverlay}>
           <ThemedView type="backgroundElement" style={styles.modalContent}>
             <ThemedText type="subtitle" style={styles.modalTitle}>
-              Discard comment?
+              {t('common:discardCommentTitle')}
             </ThemedText>
             <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-              You have an unsent comment. Are you sure you want to discard it?
+              {t('common:discardCommentMessage')}
             </ThemedText>
             <View style={styles.modalButtons}>
               <AppPressable
                 onPress={handleCancelDiscardComment}
                 style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
                 <ThemedText type="smallBold" style={styles.cancelModalText}>
-                  Keep editing
+                  {t('common:keepEditing')}
                 </ThemedText>
               </AppPressable>
               <AppPressable
                 onPress={handleConfirmDiscardComment}
                 style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
                 <ThemedText type="smallBold" style={styles.confirmModalText}>
-                  Discard
+                  {t('common:discard')}
                 </ThemedText>
               </AppPressable>
             </View>
@@ -575,7 +579,7 @@ const isOwner = fact && user?.id === fact.author.id;
       {/* Full likes list — signed-in only */}
       {user && (
         <LikesModal
-          factId={id}
+          factId={fact.id}
           visible={likesModalVisible}
           onClose={() => setLikesModalVisible(false)}
         />

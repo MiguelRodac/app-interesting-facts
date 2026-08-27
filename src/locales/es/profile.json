@@ -27,5 +27,11 @@
   "validEmailRequired": "Por favor ingresa un correo válido",
   "tapToChange": "Toca para cambiar",
   "confirmEmailTitle": "Confirma el cambio de correo",
-  "confirmEmailSubtitle": "Ingresa tu contraseña actual. Se enviará un enlace de verificación a tu nuevo correo."
+  "confirmEmailSubtitle": "Ingresa tu contraseña actual. Se enviará un enlace de verificación a tu nuevo correo.",
+  "userNotFound": "Usuario no encontrado",
+  "userNotFoundSubtitle": "Es posible que este usuario no exista",
+  "userNoFactsSubtitle": "Este usuario no ha publicado datos aún",
+  "userNoLikesSubtitle": "A este usuario no le ha gustado ningún dato aún",
+  "tabFacts": "Facts",
+  "tabLikes": "Me gusta"
 }

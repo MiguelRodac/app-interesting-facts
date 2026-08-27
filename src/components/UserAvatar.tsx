@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import type { Author } from '@/types';
@@ -29,6 +30,7 @@ function getInitials(name: string | undefined | null): string {
 }
 
 export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
+  const { t } = useTranslation('common');
   const [imageError, setImageError] = useState(false);
   const hasImage = user.avatarUrl != null && user.avatarUrl.length > 0 && !imageError;
 
@@ -61,7 +63,7 @@ export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
           contentFit="cover"
           transition={200}
           onError={() => setImageError(true)}
-          accessibilityLabel={`${user.displayName}'s avatar`}
+          accessibilityLabel={t('common:userAvatar', { name: user.displayName })}
         />
       ) : (
         <ThemedText

@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -22,13 +23,17 @@ export function ConfirmDialog({
   visible,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   destructive = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation('common');
   const theme = useTheme();
+
+  const finalConfirmLabel = confirmLabel ?? t('confirm');
+  const finalCancelLabel = cancelLabel ?? t('cancel');
 
   return (
 <AppModal visible={visible} transparent animationType="fade">
@@ -45,7 +50,7 @@ export function ConfirmDialog({
               onPress={onCancel}
               style={[styles.button, styles.cancelButton, { borderColor: theme.border }]}>
               <ThemedText type="smallBold" style={styles.cancelText}>
-                {cancelLabel}
+                {finalCancelLabel}
               </ThemedText>
             </AppPressable>
             <AppPressable
@@ -56,7 +61,7 @@ export function ConfirmDialog({
                 { backgroundColor: destructive ? theme.destructive : theme.primary },
               ]}>
               <ThemedText type="smallBold" style={styles.confirmText}>
-                {confirmLabel}
+                {finalConfirmLabel}
               </ThemedText>
             </AppPressable>
           </View>
