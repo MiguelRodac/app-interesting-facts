@@ -1,6 +1,6 @@
-import { Text, type StyleProp, type TextStyle } from 'react-native';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { Alert, Linking, Platform, Text, type StyleProp, type TextStyle } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 
 import { parseContent } from '@/utils/parseContent';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,10 +20,11 @@ interface StyledContentProps {
 }
 
 /**
- * Renders text content with styled hashtags and mentions.
+ * Renders text content with styled hashtags, mentions, and links.
  * Hashtags navigate to search screen with the hashtag pre-filled (unless
  * `enableHashtags={false}`, in which case they render as plain text).
  * Mentions navigate to the user's public profile.
+ * URLs prompt a leave-app confirmation before opening in the external browser.
  */
 export function StyledContent({
   content,
@@ -31,6 +32,7 @@ export function StyledContent({
   numberOfLines,
   enableHashtags = true,
 }: StyledContentProps) {
+  const { t } = useTranslation('common');
   const theme = useTheme();
   const router = useRouter();
   const { user } = useAuth();
@@ -51,6 +53,30 @@ export function StyledContent({
     } else {
       router.push(`/(tabs)/users/${username}`);
     }
+  };
+
+  const handleUrlPress = (url?: string) => {
+    if (!url) return;
+    Alert.alert(
+      t('leaveAppTitle'),
+      `${t('leaveAppMessage')}\n\n${url}`,
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('continue'),
+          onPress: async () => {
+            try {
+              await Linking.openURL(url);
+            } catch {
+              // Ignore open error
+            }
+          },
+        },
+      ]
+    );
   };
 
   // When numberOfLines is set (truncation mode), flatten all segments to a
@@ -90,6 +116,31 @@ export function StyledContent({
               key={index}
               style={{ color: theme.primary }}
               onPress={() => handleHashtagPress(segment.content)}
+            >
+              {segment.content}
+            </Text>
+          );
+        }
+
+        if (segment.type === 'url') {
+          const targetUrl = segment.url || segment.content;
+          return (
+            <Text
+              key={index}
+              accessibilityRole="link"
+              {...(Platform.OS === 'web'
+                ? {
+                    href: targetUrl,
+                    hrefAttrs: { target: '_blank', rel: 'noreferrer noopener' },
+                  }
+                : {})}
+              style={{ color: theme.primary, textDecorationLine: 'underline' }}
+              onPress={(e) => {
+                if (Platform.OS === 'web') {
+                  e?.preventDefault?.();
+                }
+                handleUrlPress(targetUrl);
+              }}
             >
               {segment.content}
             </Text>

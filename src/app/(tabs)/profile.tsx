@@ -112,7 +112,7 @@ export default function ProfileScreen() {
     ({ item }: { item: Fact }) => (
       <FactCard
         fact={item}
-        variant="full"
+        variant="preview"
         onPress={() => handleFactPress(item)}
         onLike={() => handleLike(item.id)}
         onRepost={() => handleRepost(item.originalFactId ?? item.id)}

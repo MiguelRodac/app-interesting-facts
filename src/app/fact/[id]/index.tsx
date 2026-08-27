@@ -25,6 +25,7 @@ import { notifyFactCommentsChanged, useFactComments } from '@/data/hooks/useFact
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
+import { useUIStore } from '@/data/stores/uiStore';
 import type { Comment, Fact } from '@/types';
 
 /** Reply target — enough to prefill the fixed composer in reply mode. */
@@ -40,6 +41,7 @@ export default function FactDetailScreen() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
+  const isDeletingRef = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const theme = useTheme();
   const topInset = useTopInset();
@@ -48,16 +50,19 @@ export default function FactDetailScreen() {
   const [overflowVisible, setOverflowVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const isCollapsible = fact ? fact.content.length > COLLAPSE_THRESHOLD : false;
+  const showToast = useUIStore((s) => s.showToast);
   const handleConfirmDelete = useCallback(async () => {
     if (!fact) return;
+    isDeletingRef.current = true;
     setConfirmDeleteVisible(false);
     try {
       await deleteFact(fact.id);
+      showToast(t('common:factDeleted'), 'success');
       router.replace('/(tabs)');
     } catch {
-      // Error handled by uiStore
+      isDeletingRef.current = false;
     }
-  }, [fact, deleteFact, router]);
+  }, [fact, deleteFact, router, showToast, t]);
 
 const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -176,27 +181,29 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
     }
   }, [isAuthenticated, isLoading, router]);
 
-// Prefer the store copy (feed already has it); on cold start / F5 the store
+  // Prefer the store copy (feed already has it); on cold start / F5 the store
   // is empty, so fetch the fact by ID instead of showing "not found".
   useEffect(() => {
-    if (!id) return;
+    if (!id || isDeletingRef.current) return;
     const found = facts.find((f) => f.id === id);
     if (found) {
       setFact(found);
       setLoading(false);
       return;
     }
+    if (isDeletingRef.current) return;
+
     let active = true;
     setLoading(true);
     fetchFactById(id)
       .then((fetched) => {
-        if (active) setFact(fetched);
+        if (active && !isDeletingRef.current) setFact(fetched);
       })
       .catch(() => {
-        if (active) setFact(null);
+        if (active && !isDeletingRef.current) setFact(null);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active && !isDeletingRef.current) setLoading(false);
       });
     return () => {
       active = false;
@@ -383,26 +390,32 @@ const isOwner = fact && user?.id === fact.author.id;
                   <Ionicons name="ellipsis-horizontal" size={22} color={theme.muted} />
                 </AppPressable>
                 {overflowVisible && (
-                  <View style={[styles.tooltip, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                  <>
                     <AppPressable
-                      onPress={() => { setOverflowVisible(false); handleEdit(); }}
-                      style={styles.tooltipItem}
-                      hitSlop={8}>
-                      <Ionicons name="create-outline" size={16} color={theme.primary} />
-                      <ThemedText type="small" style={{ color: theme.primary }}>{t('common:edit')}</ThemedText>
-                    </AppPressable>
-                    <View style={[styles.tooltipDivider, { backgroundColor: theme.border }]} />
-                    <AppPressable
-                      onPress={() => { setOverflowVisible(false); handleDelete(); }}
-                      style={styles.tooltipItem}
-                      hitSlop={8}>
-                      <Ionicons name="trash-outline" size={16} color={theme.destructive} />
-                      <ThemedText type="small" style={{ color: theme.destructive }}>{t('common:delete')}</ThemedText>
-                    </AppPressable>
-                    {/* Arrow */}
-                    <View style={[styles.tooltipArrow, { borderTopColor: theme.border }]} />
-                    <View style={[styles.tooltipArrowInner, { borderTopColor: theme.background }]} />
-                  </View>
+                      style={styles.tooltipBackdrop}
+                      onPress={() => setOverflowVisible(false)}
+                    />
+                    <View style={[styles.tooltip, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                      <AppPressable
+                        onPress={() => { setOverflowVisible(false); handleEdit(); }}
+                        style={styles.tooltipItem}
+                        hitSlop={8}>
+                        <Ionicons name="create-outline" size={16} color={theme.primary} />
+                        <ThemedText type="small" style={{ color: theme.primary }}>{t('common:edit')}</ThemedText>
+                      </AppPressable>
+                      <View style={[styles.tooltipDivider, { backgroundColor: theme.border }]} />
+                      <AppPressable
+                        onPress={() => { setOverflowVisible(false); handleDelete(); }}
+                        style={styles.tooltipItem}
+                        hitSlop={8}>
+                        <Ionicons name="trash-outline" size={16} color={theme.destructive} />
+                        <ThemedText type="small" style={{ color: theme.destructive }}>{t('common:delete')}</ThemedText>
+                      </AppPressable>
+                      {/* Arrow */}
+                      <View style={[styles.tooltipArrow, { borderBottomColor: theme.border }]} />
+                      <View style={[styles.tooltipArrowInner, { borderBottomColor: theme.background }]} />
+                    </View>
+                  </>
                 )}
               </View>
             ) : null}
@@ -617,6 +630,8 @@ const styles = StyleSheet.create({
   card: {
     padding: Spacing.four,
     borderRadius: Radii.lg,
+    position: 'relative',
+    zIndex: 1,
   },
   authorRow: {
     flexDirection: 'row',
@@ -647,7 +662,7 @@ const styles = StyleSheet.create({
   meta: {
     marginBottom: Spacing.three,
   },
-actions: {
+  actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
@@ -664,24 +679,38 @@ actions: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.two,
+    position: 'relative',
+    zIndex: 200,
+    elevation: 10,
   },
   overflowContainer: {
     position: 'relative',
     marginLeft: Spacing.one,
+    zIndex: 300,
+    elevation: 20,
   },
   overflowBtn: {
     padding: Spacing.one,
   },
+  tooltipBackdrop: {
+    position: 'absolute',
+    top: -1000,
+    left: -1000,
+    right: -1000,
+    bottom: -1000,
+    zIndex: 350,
+  },
   tooltip: {
     position: 'absolute',
-    bottom: '100%',
+    top: '100%',
     right: 0,
-    marginBottom: 6,
+    marginTop: 6,
     borderRadius: Radii.sm,
     borderWidth: 1,
     minWidth: 120,
-    ...Shadows.md,
-    zIndex: 10,
+    ...Shadows.lg,
+    zIndex: 400,
+    elevation: 30,
   },
   tooltipItem: {
     flexDirection: 'row',
@@ -696,25 +725,25 @@ actions: {
   },
   tooltipArrow: {
     position: 'absolute',
-    bottom: -7,
+    top: -7,
     right: 10,
     width: 0,
     height: 0,
     borderLeftWidth: 6,
     borderRightWidth: 6,
-    borderTopWidth: 6,
+    borderBottomWidth: 6,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
   },
   tooltipArrowInner: {
     position: 'absolute',
-    bottom: -5,
+    top: -5,
     right: 11,
     width: 0,
     height: 0,
     borderLeftWidth: 5,
     borderRightWidth: 5,
-    borderTopWidth: 5,
+    borderBottomWidth: 5,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
   },

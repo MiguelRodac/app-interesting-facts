@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppPressable } from '@/components/ui/app-pressable';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
 import { Radii, Shadows, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { useKeyboardHeight } from '@/hooks/use-keyboard-height';
 
 const EMOJI_DATA: Record<string, { label: string; icon: string; emojis: string[] }> = {
   smileys: {
@@ -133,7 +132,6 @@ export function EmojiPicker({ visible, onClose, onSelect }: EmojiPickerProps) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
-  const keyboardHeight = useKeyboardHeight();
 
   const emojis = useMemo(() => {
     if (query.trim()) {
@@ -148,97 +146,101 @@ export function EmojiPicker({ visible, onClose, onSelect }: EmojiPickerProps) {
     return c;
   }, [emojis]);
 
-  if (!visible) return null;
-
   return (
-    <>
-      <AppPressable style={styles.backdrop} onPress={onClose} />
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <AppPressable style={styles.backdrop} onPress={onClose} />
 
-      <View
-        style={[
-          styles.modal,
-          { backgroundColor: theme.background, borderColor: theme.border },
-          // When the keyboard is open, anchor the picker near the top so the
-          // search stays visible instead of staying centered under the IME.
-          keyboardHeight > 0 && { top: Spacing.six, transform: [{ translateX: '-50%' }] },
-        ]}>
-        {/* Search */}
-        <View style={[styles.searchRow, { borderBottomColor: theme.border }]}>
-          <Ionicons name="search" size={16} color={theme.muted} style={{ marginLeft: 4 }} />
-          <TextInput
-            style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Search emojis..."
-            placeholderTextColor={theme.muted}
-            value={query}
-            onChangeText={setQuery}
-            returnKeyType="search"
-          />
-          {query.length > 0 && (
-            <AppPressable onPress={() => setQuery('')} hitSlop={6}>
-              <Ionicons name="close-circle" size={18} color={theme.muted} />
-            </AppPressable>
-          )}
-        </View>
-
-        {/* Category tabs */}
-        {!query.trim() && (
-          <View style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
-            <FlatList
-              data={CATEGORIES}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(c) => c}
-              contentContainerStyle={styles.categoryList}
-              renderItem={({ item: cat }) => {
-                const isActive = activeCategory === cat;
-                return (
-                  <AppPressable
-                    onPress={() => setActiveCategory(cat)}
-                    style={[
-                      styles.categoryTab,
-                      isActive && { backgroundColor: theme.primary + '20' },
-                    ]}>
-                    <ThemedText style={styles.categoryIcon}>{EMOJI_DATA[cat].icon}</ThemedText>
-                    <ThemedText
-                      type="small"
-                      style={{ color: isActive ? theme.primary : theme.muted, marginLeft: 4 }}>
-                      {EMOJI_DATA[cat].label}
-                    </ThemedText>
-                  </AppPressable>
-                );
-              }}
+        <View
+          style={[
+            styles.modal,
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+          ]}>
+          {/* Search */}
+          <View style={[styles.searchRow, { borderBottomColor: theme.border }]}>
+            <Ionicons name="search" size={16} color={theme.muted} style={{ marginLeft: 4 }} />
+            <TextInput
+              style={[styles.searchInput, { color: theme.text }]}
+              placeholder="Search emojis..."
+              placeholderTextColor={theme.muted}
+              value={query}
+              onChangeText={setQuery}
+              returnKeyType="search"
             />
+            {query.length > 0 && (
+              <AppPressable onPress={() => setQuery('')} hitSlop={6}>
+                <Ionicons name="close-circle" size={18} color={theme.muted} />
+              </AppPressable>
+            )}
           </View>
-        )}
 
-        {/* Emoji grid — horizontal + vertical scroll for small screens */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.grid}
-          nestedScrollEnabled>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            style={styles.gridVertical}
-            nestedScrollEnabled>
-            <View style={styles.gridInner}>
-              {rows.map((row, rowIdx) => (
-                <View key={`row-${rowIdx}`} style={styles.row}>
-                  {row.map((emoji, colIdx) => (
+          {/* Category tabs */}
+          {!query.trim() && (
+            <View style={[styles.categoryRow, { borderBottomColor: theme.border }]}>
+              <FlatList
+                data={CATEGORIES}
+                horizontal
+                keyboardShouldPersistTaps="always"
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(c) => c}
+                contentContainerStyle={styles.categoryList}
+                renderItem={({ item: cat }) => {
+                  const isActive = activeCategory === cat;
+                  return (
                     <AppPressable
-                      key={`${emoji}-${colIdx}`}
-                      onPress={() => onSelect(emoji)}
-                      style={styles.emojiCell}>
-                      <ThemedText style={styles.emoji}>{emoji}</ThemedText>
+                      onPress={() => setActiveCategory(cat)}
+                      style={[
+                        styles.categoryTab,
+                        isActive && { backgroundColor: theme.primary + '20' },
+                      ]}>
+                      <ThemedText style={styles.categoryIcon}>{EMOJI_DATA[cat].icon}</ThemedText>
+                      <ThemedText
+                        type="small"
+                        style={{ color: isActive ? theme.primary : theme.muted, marginLeft: 4 }}>
+                        {EMOJI_DATA[cat].label}
+                      </ThemedText>
                     </AppPressable>
-                  ))}
-                </View>
-              ))}
+                  );
+                }}
+              />
             </View>
+          )}
+
+          {/* Emoji grid — horizontal + vertical scroll with keyboardShouldPersistTaps */}
+          <ScrollView
+            horizontal
+            keyboardShouldPersistTaps="always"
+            showsHorizontalScrollIndicator={false}
+            style={styles.grid}
+            nestedScrollEnabled>
+            <ScrollView
+              keyboardShouldPersistTaps="always"
+              showsVerticalScrollIndicator={false}
+              style={styles.gridVertical}
+              nestedScrollEnabled>
+              <View style={styles.gridInner}>
+                {rows.map((row, rowIdx) => (
+                  <View key={`row-${rowIdx}`} style={styles.row}>
+                    {row.map((emoji, colIdx) => (
+                      <AppPressable
+                        key={`${emoji}-${colIdx}`}
+                        onPress={() => onSelect(emoji)}
+                        style={styles.emojiCell}>
+                        <ThemedText style={styles.emoji}>{emoji}</ThemedText>
+                      </AppPressable>
+                    ))}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
           </ScrollView>
-        </ScrollView>
+        </View>
       </View>
-    </>
+    </Modal>
   );
 }
 
@@ -256,25 +258,26 @@ export function EmojiButton({ onPress, active }: { onPress: () => void; active?:
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.four,
+  },
   backdrop: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 9998,
   },
   modal: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: '-50%' }, { translateY: '-50%' }],
-    width: '90%',
+    width: '100%',
     maxWidth: 380,
-    height: 340,
+    height: 350,
     borderRadius: Radii.lg,
     borderWidth: 1,
-    zIndex: 9999,
     overflow: 'hidden',
     ...Shadows.lg,
   },

@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { CharCounter } from '@/components/CharCounter';
+import { EmojiPicker, EmojiButton } from '@/components/EmojiPicker';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
@@ -36,7 +37,7 @@ export default function EditFactScreen() {
   const { isAuthenticated, isLoading } = useAuth();
   const hasCheckedAuth = useRef(false);
 
-const facts = useFactsStore((s) => s.facts);
+  const facts = useFactsStore((s) => s.facts);
   const userFacts = useFactsStore((s) => s.userFacts);
   const fetchFactById = useFactsStore((s) => s.fetchFactById);
   const updateFact = useFactsStore((s) => s.updateFact);
@@ -47,6 +48,7 @@ const facts = useFactsStore((s) => s.facts);
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmLeaveVisible, setConfirmLeaveVisible] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Mention/hashtag autocomplete state
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -270,6 +272,17 @@ const facts = useFactsStore((s) => s.facts);
     contentInputRef.current?.focus();
   }, [content]);
 
+  const handleEmojiSelected = useCallback((emoji: string) => {
+    const pos = cursorPositionRef.current;
+    setContent((prev) => {
+      const before = prev.substring(0, pos);
+      const after = prev.substring(pos);
+      return `${before}${emoji}${after}`;
+    });
+    cursorPositionRef.current = pos + emoji.length;
+    requestAnimationFrame(() => contentInputRef.current?.focus());
+  }, []);
+
   const isValid = content.trim().length >= MIN_LENGTH && content.trim().length <= MAX_LENGTH;
   const hasChanges =
     fact !== null &&
@@ -397,7 +410,10 @@ const facts = useFactsStore((s) => s.facts);
               <ThemedText type="smallBold" themeColor="textSecondary">
                 {t('create:fieldContent')}
               </ThemedText>
-              <CharCounter current={content.trim().length} min={MIN_LENGTH} max={MAX_LENGTH} />
+              <View style={styles.fieldHeaderRight}>
+                <EmojiButton onPress={() => setShowEmojiPicker((v) => !v)} active={showEmojiPicker} />
+                <CharCounter current={content.trim().length} min={MIN_LENGTH} max={MAX_LENGTH} />
+              </View>
             </View>
             <View style={styles.contentContainer}>
               <TextInput
@@ -569,6 +585,12 @@ const facts = useFactsStore((s) => s.facts);
           </ThemedView>
         </View>
       </AppModal>
+      {/* Emoji picker */}
+      <EmojiPicker
+        visible={showEmojiPicker}
+        onClose={() => setShowEmojiPicker(false)}
+        onSelect={handleEmojiSelected}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -614,6 +636,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  fieldHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   input: {
     borderWidth: 1,

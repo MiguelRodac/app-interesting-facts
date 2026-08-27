@@ -53,5 +53,9 @@
   "discardCommentMessage": "Tienes cambios sin guardar. Si sales ahora, tu borrador se perderá.",
   "discard": "Descartar",
   "keepEditing": "Seguir editando",
-  "saving": "Guardando..."
+  "saving": "Guardando...",
+  "leaveAppTitle": "Salir de la aplicación",
+  "leaveAppMessage": "Vas a salir de la aplicación. ¿Deseas continuar?",
+  "continue": "Continuar",
+  "factDeleted": "Dato eliminado exitosamente"
 }

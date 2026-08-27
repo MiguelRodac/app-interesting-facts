@@ -330,19 +330,20 @@ export default function CreateFactScreen() {
     setShowHashtags(false);
     setHashtagQuery(null);
     setHashtagResults([]);
-
-    // Focus back on input
     contentInputRef.current?.focus();
   }, [content]);
 
   // Emoji picker.
-  const handleEmojiSelected = useCallback(
-    (emoji: string) => {
-      setContent((prev) => prev + emoji);
-      requestAnimationFrame(() => contentInputRef.current?.focus());
-    },
-    [],
-  );
+  const handleEmojiSelected = useCallback((emoji: string) => {
+    const pos = cursorPositionRef.current;
+    setContent((prev) => {
+      const before = prev.substring(0, pos);
+      const after = prev.substring(pos);
+      return `${before}${emoji}${after}`;
+    });
+    cursorPositionRef.current = pos + emoji.length;
+    requestAnimationFrame(() => contentInputRef.current?.focus());
+  }, []);
 
   // Show loading while checking auth
   if (isLoading) {

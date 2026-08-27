@@ -282,11 +282,7 @@ export function CommentComposer({
       setMentionResults([]);
       const newCursorPos = beforeAt.length + userMention.username.length + 2;
       cursorPositionRef.current = newCursorPos;
-      setTimeout(() => {
-        inputRef.current?.setNativeProps({
-          selection: { start: newCursorPos, end: newCursorPos },
-        });
-      }, 50);
+      inputRef.current?.focus();
     },
     [content],
   );
@@ -354,13 +350,16 @@ export function CommentComposer({
 
   const handleEmojiPress = useCallback(() => setShowEmojiPicker((v) => !v), []);
 
-  const handleEmojiSelected = useCallback(
-    (emoji: string) => {
-      setContent((prev) => prev + emoji);
-      requestAnimationFrame(() => inputRef.current?.focus());
-    },
-    [],
-  );
+  const handleEmojiSelected = useCallback((emoji: string) => {
+    const pos = cursorPositionRef.current;
+    setContent((prev) => {
+      const before = prev.substring(0, pos);
+      const after = prev.substring(pos);
+      return `${before}${emoji}${after}`;
+    });
+    cursorPositionRef.current = pos + emoji.length;
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }, []);
 
   const postLabel = isEdit ? t('common:save') : t('common:post');
 

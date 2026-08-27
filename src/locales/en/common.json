@@ -53,5 +53,9 @@
   "discardCommentMessage": "You have unsaved changes. If you leave now, your draft will be lost.",
   "discard": "Discard",
   "keepEditing": "Keep editing",
-  "saving": "Saving..."
+  "saving": "Saving...",
+  "leaveAppTitle": "Leave Application",
+  "leaveAppMessage": "You are leaving the application. Do you want to continue?",
+  "continue": "Continue",
+  "factDeleted": "Fact deleted successfully"
 }
