@@ -21,14 +21,62 @@ interface LogStoreState {
 
 const MAX_LOGS = 400;
 
+function serializeValue(val: unknown, depth = 0): unknown {
+  if (depth > 6) return '[Max Depth]';
+  if (val === undefined || val === null) return val;
+  if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') {
+    return val;
+  }
+  if (typeof val === 'function') {
+    return `[Function: ${val.name || 'anonymous'}]`;
+  }
+  if (val instanceof Error) {
+    const errorObj: Record<string, unknown> = {
+      name: val.name,
+      message: val.message,
+      stack: val.stack,
+    };
+    for (const key of Object.keys(val)) {
+      errorObj[key] = serializeValue((val as unknown as Record<string, unknown>)[key], depth + 1);
+    }
+    return errorObj;
+  }
+  if (Array.isArray(val)) {
+    return val.map((item) => serializeValue(item, depth + 1));
+  }
+  if (typeof val === 'object') {
+    const res: Record<string, unknown> = {};
+    const obj = val as Record<string, unknown>;
+    
+    // Copy all properties
+    for (const [k, v] of Object.entries(obj)) {
+      res[k] = serializeValue(v, depth + 1);
+    }
+    // Include common non-enumerable error props if present
+    if ('message' in obj && typeof obj.message === 'string' && res.message === undefined) {
+      res.message = obj.message;
+    }
+    if ('name' in obj && typeof obj.name === 'string' && res.name === undefined) {
+      res.name = obj.name;
+    }
+    if ('stack' in obj && typeof obj.stack === 'string' && res.stack === undefined) {
+      res.stack = obj.stack;
+    }
+    if ('code' in obj && res.code === undefined) {
+      res.code = obj.code;
+    }
+    return res;
+  }
+  return String(val);
+}
+
 function formatDetails(details: unknown): string | undefined {
   if (details === undefined || details === null) return undefined;
   if (typeof details === 'string') return details;
-  if (details instanceof Error) {
-    return `${details.name}: ${details.message}\n${details.stack ?? ''}`;
-  }
   try {
-    return JSON.stringify(details, null, 2);
+    const serialized = serializeValue(details);
+    if (typeof serialized === 'string') return serialized;
+    return JSON.stringify(serialized, null, 2);
   } catch {
     return String(details);
   }

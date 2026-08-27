@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AppError } from '@/types';
+import { useLogStore } from './logStore';
 
 export type ToastType = 'success' | 'info' | 'warning';
 
@@ -26,7 +27,10 @@ export const useUIStore = create<UIState>((set) => ({
   error: null,
   isLoading: false,
   toast: null,
-  setError: (error) => set({ error }),
+  setError: (error) => {
+    useLogStore.getState().addLog('error', `[AppError] ${error.code}: ${error.message}`, error, 'UI');
+    set({ error });
+  },
   clearError: () => set({ error: null }),
   setLoading: (isLoading) => set({ isLoading }),
   showToast: (message, type = 'info') =>

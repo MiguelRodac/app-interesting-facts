@@ -149,20 +149,50 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
 
           {item.details && (
             <View style={styles.detailsContainer}>
-              <AppPressable onPress={() => toggleExpand(item.id)} style={styles.detailsToggle}>
-                <Ionicons
-                  name={isExpanded ? 'chevron-down' : 'chevron-forward'}
-                  size={14}
-                  color={theme.primary}
-                />
-                <ThemedText type="smallBold" style={{ color: theme.primary, fontSize: 12 }}>
-                  {isExpanded ? 'Ocultar payload' : 'Ver payload / detalles'}
-                </ThemedText>
-              </AppPressable>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <AppPressable onPress={() => toggleExpand(item.id)} style={styles.detailsToggle}>
+                  <Ionicons
+                    name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                    size={14}
+                    color={item.level === 'error' ? '#FF453A' : theme.primary}
+                  />
+                  <ThemedText
+                    type="smallBold"
+                    style={{
+                      color: item.level === 'error' ? '#FF453A' : theme.primary,
+                      fontSize: 12,
+                    }}>
+                    {isExpanded
+                      ? 'Ocultar detalles'
+                      : item.level === 'error'
+                        ? '🔍 Ver detalle completo del error'
+                        : '🔍 Ver payload / request'}
+                  </ThemedText>
+                </AppPressable>
+                {isExpanded && (
+                  <AppPressable
+                    onPress={async () => {
+                      if (item.details) {
+                        await Clipboard.setStringAsync(item.details);
+                        showFeedbackToast('✓ Detalles copiados');
+                      }
+                    }}
+                    hitSlop={8}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 }}>
+                    <Ionicons name="copy-outline" size={12} color="#8E8E93" />
+                    <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 11 }}>
+                      Copiar JSON
+                    </ThemedText>
+                  </AppPressable>
+                )}
+              </View>
 
               {isExpanded && (
-                <View style={styles.payloadBox}>
-                  <ThemedText type="small" style={styles.payloadText} selectable>
+                <View style={[styles.payloadBox, item.level === 'error' && { borderColor: '#FF453A40' }]}>
+                  <ThemedText
+                    type="small"
+                    style={[styles.payloadText, item.level === 'error' && { color: '#FF9F0A' }]}
+                    selectable>
                     {item.details}
                   </ThemedText>
                 </View>

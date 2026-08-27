@@ -94,36 +94,36 @@ export default function UserProfileScreen() {
   );
 
   const handleLike = useCallback(
-    (factId: string) => {
+    (factId: string, fallbackFact?: Fact) => {
       if (!isAuthenticated) {
         router.push('/auth/login');
         return;
       }
-      toggleLike(factId);
+      toggleLike(factId, fallbackFact);
     },
     [isAuthenticated, toggleLike, router],
   );
 
   const handleRepost = useCallback(
-    (factId: string) => {
+    (factId: string, fallbackFact?: Fact) => {
       if (!isAuthenticated) {
         router.push('/auth/login');
         return;
       }
-      toggleRepost(factId).then((ok) => {
-        if (ok) Alert.alert(t('common:success'), t('feed:repostCreated'));
+      toggleRepost(factId, fallbackFact).then((ok) => {
+        if (ok) Alert.alert(t('common:ready'), t('feed:repostCreated'));
       });
     },
     [isAuthenticated, toggleRepost, router, t],
   );
 
   const handleRepostLike = useCallback(
-    (repostId: string) => {
+    (repostId: string, fallbackFact?: Fact) => {
       if (!isAuthenticated) {
         router.push('/auth/login');
         return;
       }
-      useRepostsStore.getState().toggleRepostLike(repostId).catch(() => {});
+      useRepostsStore.getState().toggleRepostLike(repostId, fallbackFact).catch(() => {});
     },
     [isAuthenticated],
   );
@@ -257,9 +257,9 @@ export default function UserProfileScreen() {
             isSignedIn={isAuthenticated}
             onRequireLogin={handleRequireLogin}
             onPress={() => handleFactPress(item)}
-            onLike={isAuthenticated && !item.isRepost ? () => handleLike(item.originalFactId ?? item.id) : undefined}
-            onRepost={isAuthenticated ? () => handleRepost(item.originalFactId ?? item.id) : undefined}
-            onRepostLike={isAuthenticated && item.isRepost ? () => handleRepostLike(item.id) : undefined}
+            onLike={isAuthenticated && !item.isRepost ? () => handleLike(item.originalFactId ?? item.id, item) : undefined}
+            onRepost={isAuthenticated ? () => handleRepost(item.originalFactId ?? item.id, item) : undefined}
+            onRepostLike={isAuthenticated && item.isRepost ? () => handleRepostLike(item.id, item) : undefined}
             onOpenLikes={isAuthenticated && !item.isRepost ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
             onOpenRepostLikes={isAuthenticated && item.isRepost ? () => setLikesRepostId(item.id) : undefined}
           />

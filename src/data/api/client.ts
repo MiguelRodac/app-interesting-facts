@@ -71,12 +71,32 @@ async function request<T>(options: RequestOptions): Promise<T> {
     const duration = Date.now() - startTime;
 
     if (response.status === 204) {
-      logger.api(method, path, 204, duration);
+      logger.api({
+        method,
+        path,
+        url: url.toString(),
+        params,
+        status: 204,
+        durationMs: duration,
+        requestBody: body,
+        responseBody: undefined,
+        hasAuthToken: !!token,
+      });
       return undefined as T;
     }
 
     const responseBody = await response.json().catch(() => null);
-    logger.api(method, path, response.status, duration, responseBody);
+    logger.api({
+      method,
+      path,
+      url: url.toString(),
+      params,
+      status: response.status,
+      durationMs: duration,
+      requestBody: body,
+      responseBody,
+      hasAuthToken: !!token,
+    });
 
     if (!response.ok) {
       // A 401 outside the auth flow means the session is gone/broken —
@@ -101,7 +121,17 @@ async function request<T>(options: RequestOptions): Promise<T> {
     return responseBody as T;
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error(`API ${method.toUpperCase()} ${path} failed (${duration}ms)`, error, 'NETWORK');
+    logger.api({
+      method,
+      path,
+      url: url.toString(),
+      params,
+      status: 0,
+      durationMs: duration,
+      requestBody: body,
+      hasAuthToken: !!token,
+      error,
+    });
     if (error && typeof error === "object" && "code" in error) {
       throw error;
     }

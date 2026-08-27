@@ -6,7 +6,8 @@ import type { ApiAuthor, ApiFact, ApiPaginatedResponse } from '../api/types';
 import { getIdToken } from '../auth/firebaseAuth';
 import { mapFactsDtos } from '../mappers/factMapper';
 import { mapAuthorDto } from '../mappers/userMapper';
-import { notifyFactLikesChanged } from '../hooks/useFactLikes';
+import { applyEntryUpdate, subscribeEntryUpdates } from '../hooks/entryUpdateBus';
+import { useFactsStore } from './factsStore';
 import { useUIStore } from './uiStore';
 
 const client = createApiClient(getIdToken);
@@ -18,8 +19,8 @@ interface UserProfileState {
   factsLoading: boolean;
   fetchProfile: (username: string, silent?: boolean) => Promise<void>;
   fetchUserFacts: (authorId: string, silent?: boolean) => Promise<void>;
-  toggleLike: (factId: string) => Promise<void>;
-  toggleRepost: (factId: string) => Promise<boolean>;
+  toggleLike: (factId: string, fallbackFact?: Fact) => Promise<void>;
+  toggleRepost: (factId: string, fallbackFact?: Fact) => Promise<boolean>;
   clearProfile: () => void;
 }
 
@@ -70,69 +71,29 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
     }
   },
 
-  toggleLike: async (factId: string) => {
+  toggleLike: async (factId: string, fallbackFact?: Fact) => {
     const { facts } = get();
-    const fact = facts.find((f) => f.id === factId);
-    if (!fact) return;
-
-    const wasLiked = fact.liked;
-    const nextFacts = facts.map((f) =>
-      f.id === factId
-        ? { ...f, liked: !wasLiked, likesCount: f.likesCount + (wasLiked ? -1 : 1) }
-        : f,
-    );
-    set({ facts: nextFacts });
-
-    try {
-      if (wasLiked) {
-        await client.del(`/facts/${factId}/likes`);
-      } else {
-        await client.post(`/facts/${factId}/likes`);
-      }
-      // Live-update "Liked by …" lines across every mounted screen
-      notifyFactLikesChanged(factId);
-    } catch (error) {
-      set({ facts });
-      if (error && typeof error === 'object' && 'code' in error) {
-        useUIStore.getState().setError(error as import('@/types').AppError);
-      }
-    }
+    const fact = facts.find((f) => f.id === factId) ?? fallbackFact;
+    await useFactsStore.getState().toggleLike(factId, fact);
   },
 
-  toggleRepost: async (factId: string): Promise<boolean> => {
+  toggleRepost: async (factId: string, fallbackFact?: Fact): Promise<boolean> => {
     const { facts } = get();
-    const fact = facts.find((f) => f.id === factId);
-    if (!fact) return false;
-
-    const wasReposted = fact.repostedByMe;
-    const nextFacts = facts.map((f) =>
-      f.id === factId
-        ? {
-            ...f,
-            repostedByMe: !wasReposted,
-            repostCount: f.repostCount + (wasReposted ? -1 : 1),
-          }
-        : f,
-    );
-    set({ facts: nextFacts });
-
-    try {
-      if (wasReposted) {
-        await client.del(`/facts/${factId}/reposts`);
-      } else {
-        await client.post(`/facts/${factId}/reposts`);
-      }
-      return true;
-    } catch (error) {
-      set({ facts });
-      if (error && typeof error === 'object' && 'code' in error) {
-        useUIStore.getState().setError(error as import('@/types').AppError);
-      }
-      return false;
-    }
+    const fact = facts.find((f) => f.id === factId || f.originalFactId === factId) ?? fallbackFact;
+    return useFactsStore.getState().toggleRepost(factId, fact);
   },
 
   clearProfile: () => {
     set({ profile: null, facts: [] });
   },
 }));
+
+// Synchronize userProfileStore with global entry update bus (likes, reposts, repost-likes)
+subscribeEntryUpdates((scope, anchor, patch) => {
+  const current = useUserProfileStore.getState().facts;
+  if (current.length === 0) return;
+  const updated = applyEntryUpdate(current, scope, anchor, patch);
+  if (updated !== current) {
+    useUserProfileStore.setState({ facts: updated });
+  }
+});
