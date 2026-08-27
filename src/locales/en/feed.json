@@ -9,7 +9,10 @@
   "youReposted": "You reposted this",
   "repostedBy": "Reposted by @{{username}}",
   "seeMore": "See more",
-  "seeLess": "See less",
   "anonymousGateTitle": "Sign in required",
-  "anonymousGateSubtitle": "Sign in to like, comment, and repost facts."
+  "anonymousGateSubtitle": "Sign in to like, comment, and repost facts.",
+  "guestBannerTitle": "Enjoy more interesting facts",
+  "guestBannerSubtitle": "Sign in or create an account to like, comment, and share your own facts.",
+  "guestBannerSignIn": "Sign In",
+  "guestBannerSignUp": "Create Account"
 }

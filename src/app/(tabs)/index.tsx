@@ -4,13 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
+import { AppPressable } from '@/components/ui/app-pressable';
 import { FactCard } from '@/components/FactCard';
 import { EmptyState } from '@/components/EmptyState';
 import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -126,6 +128,37 @@ export default function FeedScreen() {
   const renderFooter = useCallback(() => {
     if (isLoading && facts.length > 0) return <LoadingSkeleton count={1} />;
     if (!hasMore && facts.length > 0) {
+      if (!isAuthenticated) {
+        return (
+          <View style={styles.footerContainer}>
+            <ThemedView type="backgroundElement" style={[styles.guestCard, { borderColor: theme.border }]}>
+              <Ionicons name="sparkles" size={28} color={theme.primary} />
+              <ThemedText type="subtitle" style={styles.guestTitle}>
+                {t('feed:guestBannerTitle')}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" style={styles.guestSubtitle}>
+                {t('feed:guestBannerSubtitle')}
+              </ThemedText>
+              <View style={styles.guestButtons}>
+                <AppPressable
+                  style={[styles.guestButton, { backgroundColor: theme.primary }]}
+                  onPress={() => router.push('/auth/login')}>
+                  <ThemedText type="smallBold" style={styles.guestButtonText}>
+                    {t('feed:guestBannerSignIn')}
+                  </ThemedText>
+                </AppPressable>
+                <AppPressable
+                  style={[styles.guestButton, { borderColor: theme.border, borderWidth: 1 }]}
+                  onPress={() => router.push('/auth/register')}>
+                  <ThemedText type="smallBold" style={{ color: theme.text }}>
+                    {t('feed:guestBannerSignUp')}
+                  </ThemedText>
+                </AppPressable>
+              </View>
+            </ThemedView>
+          </View>
+        );
+      }
       return (
         <View style={styles.endOfList}>
           <Ionicons name="checkmark-circle-outline" size={28} color={theme.muted} />
@@ -139,7 +172,7 @@ export default function FeedScreen() {
       );
     }
     return null;
-  }, [isLoading, facts.length, hasMore, theme, t]);
+  }, [isLoading, facts.length, hasMore, isAuthenticated, theme, t, router]);
 
   const renderEmpty = useCallback(() => {
     if (isLoading) {
@@ -159,6 +192,7 @@ export default function FeedScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: topInset }]}>
         <ThemedText type="subtitle">{t('feed:title')}</ThemedText>
+        {!isAuthenticated && <LanguageToggle />}
       </View>
 
       {/* Facts list */}
@@ -205,10 +239,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.six,
     paddingBottom: Spacing.three,
-    gap: Spacing.two,
   },
   list: {
     paddingHorizontal: Spacing.three,
@@ -217,6 +253,43 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
+  },
+  footerContainer: {
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.two,
+  },
+  guestCard: {
+    borderWidth: 1,
+    borderRadius: Radii.lg,
+    padding: Spacing.four,
+    alignItems: 'center',
+    textAlign: 'center',
+    gap: Spacing.two,
+    marginVertical: Spacing.two,
+  },
+  guestTitle: {
+    textAlign: 'center',
+  },
+  guestSubtitle: {
+    textAlign: 'center',
+    maxWidth: 300,
+  },
+  guestButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    marginTop: Spacing.two,
+  },
+  guestButton: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    borderRadius: Radii.md,
+    minWidth: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guestButtonText: {
+    color: '#FFFFFF',
   },
   endOfList: {
     alignItems: 'center',

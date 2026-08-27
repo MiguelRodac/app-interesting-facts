@@ -9,7 +9,10 @@
   "youReposted": "Republicaste esto",
   "repostedBy": "Republicado por @{{username}}",
   "seeMore": "Ver más",
-  "seeLess": "Ver menos",
   "anonymousGateTitle": "Inicio de sesión requerido",
-  "anonymousGateSubtitle": "Inicia sesión para dar like, comentar y republicar datos curiosos."
+  "anonymousGateSubtitle": "Inicia sesión para dar like, comentar y republicar datos curiosos.",
+  "guestBannerTitle": "Disfruta de más datos curiosos",
+  "guestBannerSubtitle": "Inicia sesión o crea una cuenta para dar like, comentar y compartir tus propios datos.",
+  "guestBannerSignIn": "Iniciar Sesión",
+  "guestBannerSignUp": "Crear Cuenta"
 }

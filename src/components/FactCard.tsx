@@ -76,9 +76,8 @@ export function FactCard({
 
   // Helper to wrap actions with auth check
   const gate = (action?: () => void) => {
-    if (!action) return undefined;
-    if (isSignedIn) return action;
-    return onRequireLogin;
+    if (!isSignedIn) return onRequireLogin;
+    return action;
   };
 
   // Determine if content exceeds the collapse threshold
@@ -134,9 +133,8 @@ export function FactCard({
         </View>
       )}
 
-      {/* Author row — hidden only for the true 'anon' variant (unused by feeds;
-          anonymous view-mode now renders the row with @username only). */}
-      {(isSignedIn || anonView) && (
+      {/* Author row */}
+      {variant !== 'anon' && (
         <AppPressable
           onPress={(e) => {
             e.stopPropagation();
@@ -147,11 +145,7 @@ export function FactCard({
         >
           <UserAvatar user={fact.author} size={32} />
           <View style={styles.authorInfo}>
-            {anonView ? (
-              <ThemedText type="smallBold" numberOfLines={1} ellipsizeMode="tail">@{fact.author.username}</ThemedText>
-            ) : (
-              <ThemedText type="smallBold" numberOfLines={1} ellipsizeMode="tail">{fact.author.displayName}</ThemedText>
-            )}
+            <ThemedText type="smallBold" numberOfLines={1} ellipsizeMode="tail">{fact.author.displayName}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               @{fact.author.username} · {formatDate(fact.createdAt, i18n.language)}
             </ThemedText>
@@ -181,9 +175,8 @@ export function FactCard({
         </AppPressable>
       )}
 
-      {/* Likes line — opens the full likes modal. Shown to everyone except the
-          true 'anon' variant; anonymous view-mode taps route to login. */}
-      {(isSignedIn || anonView) && (
+      {/* Likes line — opens the full likes modal */}
+      {variant !== 'anon' && (
         <LikedByLine
           likes={fact.isRepost ? (fact.likeBy ?? []) : fact.likeBy}
           likesCount={fact.isRepost ? (fact.repostLikeCount ?? 0) : fact.likesCount}
@@ -192,43 +185,40 @@ export function FactCard({
       )}
 
       {/* Actions row */}
-      {(isSignedIn || anonView) && (
+      {variant !== 'anon' && (
         <View style={styles.actionsRow}>
           <LikeButton
             liked={fact.isRepost ? (fact.repostLiked ?? false) : fact.liked}
             likesCount={fact.isRepost ? (fact.repostLikeCount ?? 0) : fact.likesCount}
             onPress={gate(fact.isRepost ? onRepostLike : onLike)}
-            disabled={fact.isRepost ? (!onRepostLike && !anonView) : (!onLike && !anonView)}
+            disabled={isSignedIn && (fact.isRepost ? !onRepostLike : !onLike)}
           />
           <ThemedText type="small" themeColor="textSecondary">
             {fact.isRepost ? (fact.repostLikeCount ?? 0) : fact.likesCount}
           </ThemedText>
 
           <AppPressable
-            onPress={gate(onPress)}
+            onPress={onPress}
             hitSlop={8}
-            style={styles.commentBtn}
-            disabled={!onPress && !anonView}>
+            style={styles.commentBtn}>
             <Ionicons name="chatbubble-outline" size={18} color={theme.muted} />
             <ThemedText type="small" themeColor="textSecondary">
               {fact.isRepost ? (fact.repostCommentCount ?? 0) : fact.commentsCount}
             </ThemedText>
           </AppPressable>
 
-          {(variant === 'full' || anonView) && (onShare || anonView) && (
-            <AppPressable onPress={gate(onShare)} hitSlop={8} style={styles.actionBtn}>
+          {variant === 'full' && onShare && (
+            <AppPressable onPress={onShare} hitSlop={8} style={styles.actionBtn}>
               <Ionicons name="share-outline" size={20} color={theme.muted} />
             </AppPressable>
           )}
 
-          {/* Repost — optimistic toggle wired to the reposts module. Follows
-              the like button pattern: tinted+filled when repostedByMe, muted
-              otherwise; anonymous view-mode routes to the login gate. */}
+          {/* Repost — optimistic toggle wired to the reposts module. */}
           <AppPressable
             onPress={gate(onRepost)}
             hitSlop={8}
             style={styles.actionBtn}
-            disabled={!onRepost && !anonView}>
+            disabled={isSignedIn && !onRepost}>
             <Ionicons
               name={fact.repostedByMe ? 'repeat' : 'repeat-outline'}
               size={20}
