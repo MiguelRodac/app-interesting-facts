@@ -1,15 +1,15 @@
 {
   "title": "Datos Curiosos",
-  "emptyTitle": "No hay facts todavía",
-  "emptySubtitle": "¡Sé el primero en compartir un fact!",
-  "endOfListTitle": "No hay más facts para mostrar",
+  "emptyTitle": "No hay datos curiosos todavía",
+  "emptySubtitle": "¡Sé el primero en compartir un dato curioso!",
+  "endOfListTitle": "No hay más datos para mostrar",
   "endOfListSubtitle": "Desliza hacia arriba para ver los más recientes",
-  "repostPublished": "Repost publicado",
+  "repostPublished": "Dato republicado",
   "repostRemoved": "Repost eliminado",
   "youReposted": "Republicaste esto",
   "repostedBy": "Republicado por @{{username}}",
   "seeMore": "Ver más",
   "seeLess": "Ver menos",
   "anonymousGateTitle": "Inicio de sesión requerido",
-  "anonymousGateSubtitle": "Inicia sesión para dar like, comentar y republicar facts."
+  "anonymousGateSubtitle": "Inicia sesión para dar like, comentar y republicar datos curiosos."
 }

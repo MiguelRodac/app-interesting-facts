@@ -367,7 +367,7 @@ export default function CreateFactScreen() {
       setTitle('');
       setContent('');
       clearGuard();
-      showToast('Your fact has been shared!', 'success');
+      showToast(t('create:factSharedSuccess'), 'success');
       router.navigate('/(tabs)');
     } catch {
       // Error is handled by uiStore → ErrorBanner

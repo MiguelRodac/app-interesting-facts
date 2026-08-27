@@ -338,7 +338,7 @@ const facts = useFactsStore((s) => s.facts);
     return (
       <ThemedView style={styles.centered}>
         <ThemedText type="default" themeColor="textSecondary">
-          Fact not found
+          {t('common:factNotFound')}
         </ThemedText>
       </ThemedView>
     );

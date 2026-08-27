@@ -16,5 +16,6 @@
   "leaveConfirmTitle": "Discard changes?",
   "leaveConfirmMessage": "You have unsaved changes. Are you sure you want to leave?",
   "leaveConfirmStay": "Keep editing",
-  "leaveConfirmExit": "Discard"
+  "leaveConfirmExit": "Discard",
+  "factSharedSuccess": "Your fact has been shared!"
 }

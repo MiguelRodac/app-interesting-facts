@@ -1,20 +1,21 @@
 {
-  "title": "Crear Fact",
+  "title": "Crear Dato Curioso",
   "subtitle": "Comparte algo interesante con el mundo",
   "fieldTitle": "Título (opcional)",
-  "titlePlaceholder": "Dale un título a tu fact...",
+  "titlePlaceholder": "Dale un título a tu dato curioso...",
   "fieldContent": "Contenido",
-  "contentPlaceholder": "Comparte un fact interesante... Usa @ para mencionar usuarios",
+  "contentPlaceholder": "Comparte un dato curioso interesante... Usa @ para mencionar usuarios",
   "noUsersFound": "No se encontraron usuarios",
   "noHashtagsFound": "No se encontraron hashtags",
-  "submitButton": "Compartir Fact",
+  "submitButton": "Compartir Dato",
   "submittingButton": "Compartiendo...",
-  "editFactTitle": "Editar Fact",
-  "editFactSubtitle": "Actualiza tu fact",
+  "editFactTitle": "Editar Dato",
+  "editFactSubtitle": "Actualiza tu dato curioso",
   "saveChanges": "Guardar Cambios",
   "saving": "Guardando...",
   "leaveConfirmTitle": "¿Descartar cambios?",
   "leaveConfirmMessage": "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?",
   "leaveConfirmStay": "Seguir editando",
-  "leaveConfirmExit": "Descartar"
+  "leaveConfirmExit": "Descartar",
+  "factSharedSuccess": "¡Tu dato curioso ha sido compartido!"
 }
