@@ -52,6 +52,9 @@ package-lock.json
 
 example
 
+.idea/
+.gradle/
+
 # generated native folders
 /ios
 /android
