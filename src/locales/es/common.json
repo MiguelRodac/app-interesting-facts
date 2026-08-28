@@ -57,5 +57,8 @@
   "leaveAppTitle": "Salir de la aplicación",
   "leaveAppMessage": "Vas a salir de la aplicación. ¿Deseas continuar?",
   "continue": "Continuar",
-  "factDeleted": "Dato eliminado exitosamente"
+  "factDeleted": "Dato eliminado exitosamente",
+  "getStarted": "Comenzar",
+  "browseWithoutSignIn": "Explorar sin iniciar sesión",
+  "welcomeSubtitle": "Descubre y comparte datos fascinantes con el mundo"
 }

@@ -1,21 +1,27 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { LANDING_ENABLED } from '@/config/landing';
-import { Spacing } from '@/constants/theme';
+import { Spacing, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
+import { useTopInset } from '@/hooks/use-top-inset';
+import { useBottomInset } from '@/hooks/use-bottom-inset';
 
 export default function HomeScreen() {
+  const { t } = useTranslation(['common', 'landing']);
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const theme = useTheme();
+  const topInset = useTopInset();
+  const bottomInset = useBottomInset();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -36,23 +42,38 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
+      <View
+        style={[
+          styles.content,
+          {
+            paddingTop: topInset + Spacing.two,
+            paddingBottom: Math.max(Spacing.six, bottomInset + Spacing.four),
+          },
+        ]}>
+        {/* Top Header with Language Toggle */}
+        <View style={styles.topBar}>
+          <View style={{ flex: 1 }} />
+          <LanguageToggle />
+        </View>
+
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
           <Ionicons name="bulb-outline" size={80} color={theme.primary} />
           <ThemedText type="title" style={styles.title}>
-            Interesting Facts
+            {t('landing:title')}
           </ThemedText>
-          <ThemedText type="subtitle" style={styles.subtitle}>
-            Discover and share fascinating facts with the world
+          <ThemedText type="subtitle" themeColor="textSecondary" style={styles.subtitle}>
+            {t('common:welcomeSubtitle')}
           </ThemedText>
-        </ThemedView>
+        </View>
 
-        <ThemedView style={styles.buttons}>
+        {/* Action Buttons */}
+        <View style={styles.buttons}>
           <AppPressable
             style={[styles.ctaButton, { backgroundColor: theme.primary }]}
             onPress={() => router.push('/auth/login')}>
             <ThemedText type="default" style={styles.ctaText}>
-              Get Started
+              {t('common:getStarted')}
             </ThemedText>
           </AppPressable>
 
@@ -60,11 +81,11 @@ export default function HomeScreen() {
             style={[styles.ghostButton, { borderColor: theme.border }]}
             onPress={() => router.replace('/(tabs)')}>
             <ThemedText type="default" style={{ color: theme.text }}>
-              Browse without signing in
+              {t('common:browseWithoutSignIn')}
             </ThemedText>
           </AppPressable>
-        </ThemedView>
-      </SafeAreaView>
+        </View>
+      </View>
     </ThemedView>
   );
 }
@@ -73,47 +94,58 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    flexDirection: 'row',
+    alignItems: 'center',
   },
-  safeArea: {
+  content: {
     flex: 1,
+    width: '100%',
+    maxWidth: MaxContentWidth,
     paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.six,
+    justifyContent: 'space-between',
+  },
+  topBar: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   heroSection: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.three,
+    marginVertical: 'auto',
   },
   title: {
     textAlign: 'center',
   },
   subtitle: {
     textAlign: 'center',
-    maxWidth: 300,
+    maxWidth: 320,
   },
   buttons: {
+    width: '100%',
+    maxWidth: 320,
     gap: Spacing.three,
     alignItems: 'center',
   },
   ctaButton: {
-    paddingHorizontal: Spacing.six,
+    width: '100%',
     paddingVertical: Spacing.three,
     borderRadius: 9999,
-    minWidth: 200,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   ctaText: {
     color: '#ffffff',
+    fontWeight: '600',
   },
   ghostButton: {
-    paddingHorizontal: Spacing.six,
-    paddingVertical: Spacing.two,
+    width: '100%',
+    paddingVertical: Spacing.three,
     borderRadius: 9999,
     borderWidth: 1,
-    minWidth: 200,
     alignItems: 'center',
+    justifyContent: 'center',
   },
 });

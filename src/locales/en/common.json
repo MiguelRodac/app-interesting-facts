@@ -57,5 +57,8 @@
   "leaveAppTitle": "Leave Application",
   "leaveAppMessage": "You are leaving the application. Do you want to continue?",
   "continue": "Continue",
-  "factDeleted": "Fact deleted successfully"
+  "factDeleted": "Fact deleted successfully",
+  "getStarted": "Get Started",
+  "browseWithoutSignIn": "Browse without signing in",
+  "welcomeSubtitle": "Discover and share fascinating facts with the world"
 }
