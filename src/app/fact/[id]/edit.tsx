@@ -16,6 +16,7 @@ import { useFactsStore } from '@/data/stores/factsStore';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
+import { useBottomInset } from '@/hooks/use-bottom-inset';
 import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
 import type { ApiUserSearchResult, ApiHashtag } from '@/data/api/types';
@@ -33,6 +34,7 @@ export default function EditFactScreen() {
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
+  const bottomInset = useBottomInset();
   const segments = useSegments();
   const { isAuthenticated, isLoading } = useAuth();
   const hasCheckedAuth = useRef(false);
@@ -362,7 +364,7 @@ export default function EditFactScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { paddingBottom: Math.max(Spacing.four, bottomInset) }]}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: topInset }]}>
           <AppPressable onPress={handleCancel} hitSlop={8} style={styles.backButton}>

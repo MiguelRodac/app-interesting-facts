@@ -11,6 +11,7 @@ import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
+import { useBottomInset } from '@/hooks/use-bottom-inset';
 import { PasswordField } from '@/components/PasswordField';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { createApiClient } from '@/data/api/client';
@@ -39,6 +40,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
+  const bottomInset = useBottomInset();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const checkUsername = useCallback(async (value: string) => {
@@ -159,7 +161,13 @@ const isValid =
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
       <ThemedView style={styles.container}>
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + Spacing.three }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: topInset + Spacing.three,
+              paddingBottom: Math.max(Spacing.six, bottomInset + Spacing.four),
+            },
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           {/* Top Bar */}

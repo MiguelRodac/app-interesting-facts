@@ -18,6 +18,7 @@ import { isFirebaseAuthError, mapFirebaseError } from '@/data/auth/firebaseError
 import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
+import { useBottomInset } from '@/hooks/use-bottom-inset';
 import { isValidEmail, MAX_DISPLAY_NAME_LENGTH } from '@/utils/validation';
 
 export default function EditProfileScreen() {
@@ -28,6 +29,7 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
+  const bottomInset = useBottomInset();
 
   // Pending changes — only sent to backend on "Done"
   const [pendingDisplayName, setPendingDisplayName] = useState(user?.displayName ?? '');
@@ -258,7 +260,12 @@ export default function EditProfileScreen() {
           </AppPressable>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingBottom: Math.max(Spacing.six, bottomInset + Spacing.four) },
+          ]}
+          keyboardShouldPersistTaps="handled">
           {/* Avatar section */}
           <View style={styles.avatarSection}>
             <AppPressable onPress={() => setIsAvatarModalVisible(true)} style={styles.avatarContainer}>

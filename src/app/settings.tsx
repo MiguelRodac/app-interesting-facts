@@ -13,6 +13,7 @@ import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useThemeContext, type ThemePreference } from '@/hooks/theme-provider';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
+import { useBottomInset } from '@/hooks/use-bottom-inset';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useLanguage } from '@/hooks/use-language';
 import { useUIStore } from '@/data/stores/uiStore';
@@ -25,6 +26,7 @@ export default function SettingsScreen() {
   const { t } = useTranslation(['settings', 'auth', 'common']);
   const theme = useTheme();
   const topInset = useTopInset();
+  const bottomInset = useBottomInset();
   const router = useRouter();
   const { preference: themePreference, setPreference: setThemePreference } = useThemeContext();
   const { preference: langPreference, setLanguagePreference } = useLanguage();
@@ -66,25 +68,26 @@ export default function SettingsScreen() {
   const handleLogout = async () => {
     setLogoutModalVisible(false);
     await logout();
-    router.replace('/auth/login');
+    router.replace('/(tabs)');
   };
 
   const handleVersionTap = () => {
     const nextCount = tapCount + 1;
     setTapCount(nextCount);
-    if (nextCount >= REQUIRED_TAPS) {
+
+    if (nextCount === REQUIRED_TAPS) {
       setTapCount(0);
-      showToast('Consola de Logs abierta 🛠️', 'success');
       setLogsModalVisible(true);
-    } else if (nextCount >= 6) {
-      showToast(`Estás a ${REQUIRED_TAPS - nextCount} toques de ver los logs 🛠️`, 'info');
+    } else if (nextCount >= 5) {
+      const remaining = REQUIRED_TAPS - nextCount;
+      showToast(t('settings:devLogsTapCountdown', { count: remaining }));
     }
   };
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: topInset }]}>
-      {/* Header */}
-      <View style={styles.header}>
+    <ThemedView style={styles.container}>
+      {/* Top Header */}
+      <View style={[styles.header, { paddingTop: topInset }]}>
         <AppPressable
           onPress={() => {
             if (router.canGoBack()) {
@@ -102,7 +105,7 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(Spacing.six, bottomInset + Spacing.four) }]}
         keyboardShouldPersistTaps="handled">
         {/* Appearance */}
         <View style={styles.section}>

@@ -1,22 +1,24 @@
-import React, { useState, useMemo, useCallback } from 'react';
+﻿import React, { useState, useMemo, useCallback } from 'react';
 import {
   FlatList,
-  Modal,
-  Platform,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
-  Alert,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useLogStore, type LogEntry, type LogLevel } from '@/data/stores/logStore';
+import { useUIStore } from '@/data/stores/uiStore';
+import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTopInset } from '@/hooks/use-top-inset';
+import { useBottomInset } from '@/hooks/use-bottom-inset';
 
 interface DevLogsModalProps {
   visible: boolean;
@@ -73,15 +75,18 @@ function tryParseApiLog(details?: string): ParsedApiDetails | null {
 
 export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const topInset = useTopInset();
+  const bottomInset = useBottomInset();
   const logs = useLogStore((s) => s.logs);
   const clearLogs = useLogStore((s) => s.clearLogs);
+  const showConfirm = useUIStore((s) => s.showConfirm);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<LogLevel | 'all'>('all');
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [confirmClearVisible, setConfirmClearVisible] = useState(false);
 
   const showFeedbackToast = (msg: string) => {
     setToastMessage(msg);
@@ -117,7 +122,17 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
 
   const handleClear = () => {
     if (logs.length === 0) return;
-    setConfirmClearVisible(true);
+    showConfirm({
+      title: '¿Vaciar todos los logs?',
+      message: `Se eliminarán los ${logs.length} eventos almacenados en memoria durante esta sesión.`,
+      confirmLabel: 'Vaciar Logs',
+      cancelLabel: 'Cancelar',
+      destructive: true,
+      onConfirm: () => {
+        clearLogs();
+        showFeedbackToast('🗑️ Logs vaciados');
+      },
+    });
   };
 
   const handleCopyAll = async () => {
@@ -159,7 +174,7 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
       const isResponseExpanded = !!expandedIds[`${item.id}:response`];
 
       return (
-        <ThemedView type="backgroundElement" style={styles.logCard}>
+        <ThemedView type="backgroundElement" style={[styles.logCard, { borderColor: theme.border }]}>
           <AppPressable onPress={() => handleCopySingle(item)} style={styles.logHeader}>
             <View style={styles.headerLeft}>
               <View style={[styles.badge, { backgroundColor: levelStyle.bg }]}>
@@ -171,8 +186,8 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                 {formatTime(item.timestamp)}
               </ThemedText>
               {item.tag && (
-                <View style={styles.tagBadge}>
-                  <ThemedText type="smallBold" style={styles.tagText}>
+                <View style={[styles.tagBadge, { backgroundColor: isDark ? '#242F48' : '#E2E8F0' }]}>
+                  <ThemedText type="smallBold" style={[styles.tagText, { color: isDark ? '#A0AEC0' : '#4A5568' }]}>
                     {item.tag}
                   </ThemedText>
                 </View>
@@ -192,7 +207,7 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                 <View style={{ gap: 6, marginTop: 4 }}>
                   {/* 1. Headers Accordion */}
                   {apiData.headers && (
-                    <View style={styles.subAccordionCard}>
+                    <View style={[styles.subAccordionCard, { backgroundColor: isDark ? '#0E1422' : '#F1F5F9', borderColor: theme.border }]}>
                       <View style={styles.subAccordionHeader}>
                         <AppPressable
                           onPress={() => toggleExpand(`${item.id}:headers`)}
@@ -219,26 +234,28 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                             }}
                             hitSlop={8}
                             style={styles.subCopyBtn}>
-                            <Ionicons name="copy-outline" size={11} color="#8E8E93" />
-                            <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 10 }}>
+                            <Ionicons name="copy-outline" size={11} color={theme.muted} />
+                            <ThemedText type="small" style={{ color: theme.muted, fontSize: 10 }}>
                               Copiar
                             </ThemedText>
                           </AppPressable>
                         )}
                       </View>
                       {isHeadersExpanded && (
-                        <View style={styles.payloadBox}>
-                          <ThemedText type="small" style={styles.payloadText} selectable>
-                            {JSON.stringify(apiData.headers, null, 2)}
-                          </ThemedText>
-                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                          <View style={[styles.payloadBox, { backgroundColor: isDark ? '#0A0E18' : '#FFFFFF', borderColor: theme.border }]}>
+                            <ThemedText type="small" style={styles.payloadText} selectable>
+                              {JSON.stringify(apiData.headers, null, 2)}
+                            </ThemedText>
+                          </View>
+                        </ScrollView>
                       )}
                     </View>
                   )}
 
                   {/* 2. Request Accordion (Endpoint / Params) */}
                   {apiData.request && (
-                    <View style={styles.subAccordionCard}>
+                    <View style={[styles.subAccordionCard, { backgroundColor: isDark ? '#0E1422' : '#F1F5F9', borderColor: theme.border }]}>
                       <View style={styles.subAccordionHeader}>
                         <AppPressable
                           onPress={() => toggleExpand(`${item.id}:request`)}
@@ -266,35 +283,37 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                             }}
                             hitSlop={8}
                             style={styles.subCopyBtn}>
-                            <Ionicons name="copy-outline" size={11} color="#8E8E93" />
-                            <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 10 }}>
+                            <Ionicons name="copy-outline" size={11} color={theme.muted} />
+                            <ThemedText type="small" style={{ color: theme.muted, fontSize: 10 }}>
                               Copiar
                             </ThemedText>
                           </AppPressable>
                         )}
                       </View>
                       {isRequestExpanded && (
-                        <View style={styles.payloadBox}>
-                          <ThemedText type="small" style={[styles.payloadText, { color: '#86EFAC' }]} selectable>
-                            {JSON.stringify(
-                              {
-                                method: apiData.request.method,
-                                path: apiData.request.path,
-                                fullUrl: apiData.request.fullUrl,
-                                queryParams: apiData.request.queryParams,
-                              },
-                              null,
-                              2
-                            )}
-                          </ThemedText>
-                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                          <View style={[styles.payloadBox, { backgroundColor: isDark ? '#0A0E18' : '#FFFFFF', borderColor: theme.border }]}>
+                            <ThemedText type="small" style={[styles.payloadText, { color: '#10B981' }]} selectable>
+                              {JSON.stringify(
+                                {
+                                  method: apiData.request.method,
+                                  path: apiData.request.path,
+                                  fullUrl: apiData.request.fullUrl,
+                                  queryParams: apiData.request.queryParams,
+                                },
+                                null,
+                                2
+                              )}
+                            </ThemedText>
+                          </View>
+                        </ScrollView>
                       )}
                     </View>
                   )}
 
-                  {/* 3. Payload (Body) Accordion — Only for requests that carry a body */}
+                  {/* 3. Payload (Body) Accordion */}
                   {apiData.request?.body !== undefined && apiData.request?.body !== null && (
-                    <View style={styles.subAccordionCard}>
+                    <View style={[styles.subAccordionCard, { backgroundColor: isDark ? '#0E1422' : '#F1F5F9', borderColor: theme.border }]}>
                       <View style={styles.subAccordionHeader}>
                         <AppPressable
                           onPress={() => toggleExpand(`${item.id}:payload`)}
@@ -320,28 +339,30 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                             }}
                             hitSlop={8}
                             style={styles.subCopyBtn}>
-                            <Ionicons name="copy-outline" size={11} color="#8E8E93" />
-                            <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 10 }}>
+                            <Ionicons name="copy-outline" size={11} color={theme.muted} />
+                            <ThemedText type="small" style={{ color: theme.muted, fontSize: 10 }}>
                               Copiar
                             </ThemedText>
                           </AppPressable>
                         )}
                       </View>
                       {isPayloadExpanded && (
-                        <View style={[styles.payloadBox, { borderColor: '#F59E0B30' }]}>
-                          <ThemedText type="small" style={[styles.payloadText, { color: '#FDE68A' }]} selectable>
-                            {typeof apiData.request.body === 'string'
-                              ? apiData.request.body
-                              : JSON.stringify(apiData.request.body, null, 2)}
-                          </ThemedText>
-                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                          <View style={[styles.payloadBox, { backgroundColor: isDark ? '#0A0E18' : '#FFFFFF', borderColor: '#F59E0B30' }]}>
+                            <ThemedText type="small" style={[styles.payloadText, { color: '#D97706' }]} selectable>
+                              {typeof apiData.request.body === 'string'
+                                ? apiData.request.body
+                                : JSON.stringify(apiData.request.body, null, 2)}
+                            </ThemedText>
+                          </View>
+                        </ScrollView>
                       )}
                     </View>
                   )}
 
                   {/* 4. Response Accordion */}
                   {apiData.response && (
-                    <View style={styles.subAccordionCard}>
+                    <View style={[styles.subAccordionCard, { backgroundColor: isDark ? '#0E1422' : '#F1F5F9', borderColor: theme.border }]}>
                       <View style={styles.subAccordionHeader}>
                         <AppPressable
                           onPress={() => toggleExpand(`${item.id}:response`)}
@@ -380,22 +401,29 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                             }}
                             hitSlop={8}
                             style={styles.subCopyBtn}>
-                            <Ionicons name="copy-outline" size={11} color="#8E8E93" />
-                            <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 10 }}>
+                            <Ionicons name="copy-outline" size={11} color={theme.muted} />
+                            <ThemedText type="small" style={{ color: theme.muted, fontSize: 10 }}>
                               Copiar
                             </ThemedText>
                           </AppPressable>
                         )}
                       </View>
                       {isResponseExpanded && (
-                        <View style={[styles.payloadBox, item.level === 'error' && { borderColor: '#FF453A40' }]}>
-                          <ThemedText
-                            type="small"
-                            style={[styles.payloadText, item.level === 'error' ? { color: '#FF9F0A' } : { color: '#D8B4FE' }]}
-                            selectable>
-                            {JSON.stringify(apiData.response, null, 2)}
-                          </ThemedText>
-                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                          <View
+                            style={[
+                              styles.payloadBox,
+                              { backgroundColor: isDark ? '#0A0E18' : '#FFFFFF' },
+                              item.level === 'error' ? { borderColor: '#FF453A40' } : { borderColor: theme.border },
+                            ]}>
+                            <ThemedText
+                              type="small"
+                              style={[styles.payloadText, item.level === 'error' ? { color: '#DC2626' } : { color: '#9333EA' }]}
+                              selectable>
+                              {JSON.stringify(apiData.response, null, 2)}
+                            </ThemedText>
+                          </View>
+                        </ScrollView>
                       )}
                     </View>
                   )}
@@ -433,8 +461,8 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                         }}
                         hitSlop={8}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 }}>
-                        <Ionicons name="copy-outline" size={12} color="#8E8E93" />
-                        <ThemedText type="small" style={{ color: '#8E8E93', fontSize: 11 }}>
+                        <Ionicons name="copy-outline" size={12} color={theme.muted} />
+                        <ThemedText type="small" style={{ color: theme.muted, fontSize: 11 }}>
                           Copiar JSON
                         </ThemedText>
                       </AppPressable>
@@ -442,14 +470,21 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                   </View>
 
                   {isExpanded && (
-                    <View style={[styles.payloadBox, item.level === 'error' && { borderColor: '#FF453A40' }]}>
-                      <ThemedText
-                        type="small"
-                        style={[styles.payloadText, item.level === 'error' && { color: '#FF9F0A' }]}
-                        selectable>
-                        {item.details}
-                      </ThemedText>
-                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+                      <View
+                        style={[
+                          styles.payloadBox,
+                          { backgroundColor: isDark ? '#0A0E18' : '#FFFFFF' },
+                          item.level === 'error' ? { borderColor: '#FF453A40' } : { borderColor: theme.border },
+                        ]}>
+                        <ThemedText
+                          type="small"
+                          style={[styles.payloadText, item.level === 'error' ? { color: '#DC2626' } : { color: theme.text }]}
+                          selectable>
+                          {item.details}
+                        </ThemedText>
+                      </View>
+                    </ScrollView>
                   )}
                 </View>
               )}
@@ -458,30 +493,27 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
         </ThemedView>
       );
     },
-    [expandedIds, theme]
+    [expandedIds, theme, isDark]
   );
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View
+    <AppModal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <ThemedView
         style={[
           styles.safeArea,
           {
-            backgroundColor: '#0B0F19',
-            paddingTop: Math.max(insets.top, Platform.OS === 'android' ? 28 : 12),
-            paddingBottom: Math.max(insets.bottom, 16),
-            paddingLeft: insets.left,
-            paddingRight: insets.right,
+            paddingTop: topInset,
+            paddingBottom: Math.max(Spacing.four, bottomInset),
           },
         ]}>
         <View style={styles.responsiveContainer}>
           {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <ThemedText type="subtitle" style={{ color: '#FFFFFF' }}>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
+            <View style={styles.headerTitleWrap}>
+              <ThemedText type="subtitle">
                 🛠️ Developer Logs
               </ThemedText>
-              <ThemedText type="small" style={{ color: '#8E8E93' }}>
+              <ThemedText type="small" themeColor="textSecondary">
                 {logs.length} eventos en memoria
               </ThemedText>
             </View>
@@ -494,69 +526,95 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                   </ThemedText>
                 </View>
               )}
-              <AppPressable onPress={handleCopyAll} style={styles.iconButton}>
-                <Ionicons name="copy-outline" size={20} color="#0A84FF" />
+              <AppPressable
+                onPress={handleCopyAll}
+                style={[styles.iconButton, { backgroundColor: theme.backgroundElement }]}
+                accessibilityLabel="Copiar todos los logs">
+                <Ionicons name="copy-outline" size={18} color={theme.primary} />
               </AppPressable>
-              <AppPressable onPress={handleClear} style={styles.iconButton}>
-                <Ionicons name="trash-outline" size={20} color="#FF453A" />
+              <AppPressable
+                onPress={handleClear}
+                style={[styles.iconButton, { backgroundColor: theme.backgroundElement }]}
+                accessibilityLabel="Vaciar logs">
+                <Ionicons name="trash-outline" size={18} color="#FF453A" />
               </AppPressable>
-              <AppPressable onPress={onClose} style={styles.iconButton}>
-                <Ionicons name="close" size={24} color="#FFFFFF" />
+              <AppPressable
+                onPress={onClose}
+                style={[styles.iconButton, { backgroundColor: theme.backgroundElement }]}
+                accessibilityLabel="Cerrar modal">
+                <Ionicons name="close" size={20} color={theme.text} />
               </AppPressable>
             </View>
           </View>
 
           {/* Search */}
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={16} color="#8E8E93" style={styles.searchIcon} />
+          <View style={[styles.searchBar, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <Ionicons name="search" size={16} color={theme.muted} style={styles.searchIcon} />
             <TextInput
               placeholder="Buscar por mensaje, tag o error..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={theme.muted}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: theme.text }]}
               autoCapitalize="none"
               autoCorrect={false}
             />
             {searchQuery ? (
               <AppPressable onPress={() => setSearchQuery('')} hitSlop={8}>
-                <Ionicons name="close-circle" size={16} color="#8E8E93" />
+                <Ionicons name="close-circle" size={16} color={theme.muted} />
               </AppPressable>
             ) : null}
           </View>
 
-          {/* Filter Pills */}
-          <View style={styles.filterRow}>
-            {(
-              [
-                { id: 'all' as const, label: `Todos (${counts.all})`, color: undefined },
-                { id: 'error' as const, label: `Errores (${counts.error})`, color: '#FF453A' },
-                { id: 'warn' as const, label: `Warns (${counts.warn})`, color: '#FF9F0A' },
-                { id: 'api' as const, label: `API (${counts.api})`, color: '#BF5AF2' },
-                { id: 'info' as const, label: `Info (${counts.info})`, color: '#0A84FF' },
-              ]
-            ).map((filter) => {
-              const isSelected = selectedLevel === filter.id;
-              return (
-                <AppPressable
-                  key={filter.id}
-                  onPress={() => setSelectedLevel(filter.id)}
-                  style={[
-                    styles.filterPill,
-                    isSelected && styles.filterPillSelected,
-                    filter.color && !isSelected ? { borderColor: `${filter.color}50` } : undefined,
-                  ]}>
-                  <ThemedText
-                    type="smallBold"
+          {/* Filter Pills — Horizontal scroll for seamless mobile / tablet / desktop adaptation */}
+          <View style={styles.filterContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterScrollContent}>
+              {(
+                [
+                  { id: 'all' as const, label: `Todos (${counts.all})`, color: undefined },
+                  { id: 'error' as const, label: `Errores (${counts.error})`, color: '#FF453A' },
+                  { id: 'warn' as const, label: `Warns (${counts.warn})`, color: '#FF9F0A' },
+                  { id: 'api' as const, label: `API (${counts.api})`, color: '#BF5AF2' },
+                  { id: 'info' as const, label: `Info (${counts.info})`, color: '#0A84FF' },
+                ]
+              ).map((filter) => {
+                const isSelected = selectedLevel === filter.id;
+                return (
+                  <AppPressable
+                    key={filter.id}
+                    onPress={() => setSelectedLevel(filter.id)}
                     style={[
-                      styles.filterPillText,
-                      isSelected ? { color: '#FFFFFF' } : filter.color ? { color: filter.color } : { color: '#8E8E93' },
+                      styles.filterPill,
+                      {
+                        backgroundColor: isSelected
+                          ? theme.primary
+                          : theme.backgroundElement,
+                        borderColor: isSelected
+                          ? theme.primary
+                          : filter.color
+                            ? `${filter.color}60`
+                            : theme.border,
+                      },
                     ]}>
-                    {filter.label}
-                  </ThemedText>
-                </AppPressable>
-              );
-            })}
+                    <ThemedText
+                      type="smallBold"
+                      style={[
+                        styles.filterPillText,
+                        isSelected
+                          ? { color: '#FFFFFF' }
+                          : filter.color
+                            ? { color: filter.color }
+                            : { color: theme.muted },
+                      ]}>
+                      {filter.label}
+                    </ThemedText>
+                  </AppPressable>
+                );
+              })}
+            </ScrollView>
           </View>
 
           {/* Logs list */}
@@ -567,57 +625,16 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Ionicons name="terminal-outline" size={48} color="#48484A" />
-                <ThemedText type="smallBold" style={{ color: '#8E8E93', marginTop: 12 }}>
+                <Ionicons name="terminal-outline" size={44} color={theme.muted} />
+                <ThemedText type="smallBold" themeColor="muted" style={{ marginTop: 12 }}>
                   No hay logs registrados para este filtro
                 </ThemedText>
               </View>
             }
           />
         </View>
-
-        {/* Custom in-app Confirmation Modal */}
-        <Modal
-          visible={confirmClearVisible}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setConfirmClearVisible(false)}>
-          <View style={styles.confirmOverlay}>
-            <View style={styles.confirmCard}>
-              <View style={styles.confirmIconContainer}>
-                <Ionicons name="trash" size={28} color="#FF453A" />
-              </View>
-              <ThemedText type="subtitle" style={styles.confirmTitle}>
-                ¿Vaciar todos los logs?
-              </ThemedText>
-              <ThemedText type="small" style={styles.confirmMessage}>
-                Se eliminarán los {logs.length} eventos almacenados en memoria durante esta sesión.
-              </ThemedText>
-              <View style={styles.confirmActions}>
-                <AppPressable
-                  onPress={() => setConfirmClearVisible(false)}
-                  style={styles.confirmCancelBtn}>
-                  <ThemedText type="smallBold" style={{ color: '#8E8E93' }}>
-                    Cancelar
-                  </ThemedText>
-                </AppPressable>
-                <AppPressable
-                  onPress={() => {
-                    setConfirmClearVisible(false);
-                    clearLogs();
-                    showFeedbackToast('🗑️ Logs vaciados');
-                  }}
-                  style={styles.confirmDeleteBtn}>
-                  <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>
-                    Vaciar Logs
-                  </ThemedText>
-                </AppPressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      </View>
-    </Modal>
+      </ThemedView>
+    </AppModal>
   );
 }
 
@@ -628,7 +645,7 @@ const styles = StyleSheet.create({
   responsiveContainer: {
     flex: 1,
     width: '100%',
-    maxWidth: 720,
+    maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
   header: {
@@ -638,7 +655,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C2436',
+  },
+  headerTitleWrap: {
+    flex: 1,
+    gap: 2,
   },
   headerActions: {
     flexDirection: 'row',
@@ -647,8 +667,9 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: Spacing.two,
-    borderRadius: Radii.sm,
-    backgroundColor: '#161D2F',
+    borderRadius: Radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   toast: {
     backgroundColor: '#30D15820',
@@ -659,13 +680,11 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161D2F',
     marginHorizontal: Spacing.four,
     marginTop: Spacing.three,
     borderRadius: Radii.md,
     paddingHorizontal: Spacing.three,
     borderWidth: 1,
-    borderColor: '#242F48',
   },
   searchIcon: {
     marginRight: Spacing.two,
@@ -673,27 +692,22 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
-    color: '#FFFFFF',
     fontSize: 14,
   },
-  filterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+  filterContainer: {
+    paddingVertical: Spacing.two,
+  },
+  filterScrollContent: {
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
+    gap: Spacing.two,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   filterPill: {
     paddingHorizontal: Spacing.three,
     paddingVertical: 6,
     borderRadius: Radii.full,
     borderWidth: 1,
-    borderColor: '#242F48',
-    backgroundColor: '#161D2F',
-  },
-  filterPillSelected: {
-    backgroundColor: '#0A84FF',
-    borderColor: '#0A84FF',
   },
   filterPillText: {
     fontSize: 12,
@@ -704,11 +718,9 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.six,
   },
   logCard: {
-    backgroundColor: '#131A29',
     borderRadius: Radii.md,
     padding: Spacing.three,
     borderWidth: 1,
-    borderColor: '#1F293D',
     gap: Spacing.two,
   },
   logHeader: {
@@ -720,6 +732,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+    flexWrap: 'wrap',
   },
   badge: {
     paddingHorizontal: 6,
@@ -731,17 +744,14 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   tagBadge: {
-    backgroundColor: '#242F48',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: Radii.sm,
   },
   tagText: {
-    color: '#A0AEC0',
     fontSize: 10,
   },
   messageText: {
-    color: '#E2E8F0',
     fontSize: 13,
     lineHeight: 18,
     fontFamily: 'monospace',
@@ -756,11 +766,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   subAccordionCard: {
-    backgroundColor: '#0E1422',
     borderRadius: Radii.sm,
     padding: Spacing.two,
     borderWidth: 1,
-    borderColor: '#1C2538',
   },
   subAccordionHeader: {
     flexDirection: 'row',
@@ -786,16 +794,17 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     paddingHorizontal: 4,
   },
+  horizontalScroll: {
+    maxWidth: '100%',
+  },
   payloadBox: {
-    backgroundColor: '#0A0E18',
     borderRadius: Radii.sm,
     padding: Spacing.three,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    minWidth: '100%',
   },
   payloadText: {
-    color: '#38BDF8',
     fontSize: 11,
     fontFamily: 'monospace',
     lineHeight: 16,
@@ -804,64 +813,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
-  },
-  confirmOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.four,
-  },
-  confirmCard: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: '#131A29',
-    borderRadius: Radii.lg,
-    padding: Spacing.four,
-    borderWidth: 1,
-    borderColor: '#242F48',
-    gap: Spacing.two,
-  },
-  confirmIconContainer: {
-    alignSelf: 'center',
-    width: 52,
-    height: 52,
-    borderRadius: Radii.full,
-    backgroundColor: '#FF453A20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  confirmTitle: {
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  confirmMessage: {
-    color: '#A0AEC0',
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: Spacing.two,
-  },
-  confirmActions: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  confirmCancelBtn: {
-    flex: 1,
-    paddingVertical: Spacing.two + 4,
-    borderRadius: Radii.md,
-    borderWidth: 1,
-    borderColor: '#2D3748',
-    backgroundColor: '#1A202C',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confirmDeleteBtn: {
-    flex: 1,
-    paddingVertical: Spacing.two + 4,
-    borderRadius: Radii.md,
-    backgroundColor: '#E53E3E',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

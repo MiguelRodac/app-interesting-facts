@@ -13,6 +13,7 @@ import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
+import { useBottomInset } from '@/hooks/use-bottom-inset';
 import { isValidEmail, MIN_PASSWORD_LENGTH } from '@/utils/validation';
 
 export default function LoginScreen() {
@@ -24,6 +25,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
+  const bottomInset = useBottomInset();
 
   const isValid = isValidEmail(email) && password.length >= MIN_PASSWORD_LENGTH;
 
@@ -58,7 +60,13 @@ export default function LoginScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
       <ThemedView style={styles.container}>
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + Spacing.three }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: topInset + Spacing.three,
+              paddingBottom: Math.max(Spacing.six, bottomInset + Spacing.four),
+            },
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           {/* Top Bar */}
