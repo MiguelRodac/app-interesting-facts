@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -20,7 +21,7 @@ const APK_URL = process.env.EXPO_PUBLIC_APK_URL ?? 'https://app-interesting-fact
  * Full-screen blocker rendered by the root layout. Stays hidden until the
  * API client flags an outdated/missing app version, then covers every
  * screen with a clear notice, current version indicator, reassurance message,
- * and direct actions (web landing and consent-guarded APK download).
+ * and direct actions (direct APK download and in-app web landing).
  */
 export function AppUpdateGate() {
   const { t } = useTranslation(['common']);
@@ -33,10 +34,21 @@ export function AppUpdateGate() {
     setAppUpdateHandler(() => useUpdateStore.getState().flagUpdateRequired());
   }, []);
 
-  const handleGoToWeb = useCallback(() => {
+  const handleGoToWeb = useCallback(async () => {
     if (!WEB_URL) return;
-    Linking.openURL(WEB_URL).catch(() => {});
-  }, []);
+    try {
+      if (Platform.OS === 'web') {
+        window.open(WEB_URL, '_blank');
+      } else {
+        await WebBrowser.openBrowserAsync(WEB_URL, {
+          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+          controlsColor: theme.primary,
+        });
+      }
+    } catch {
+      Linking.openURL(WEB_URL).catch(() => {});
+    }
+  }, [theme.primary]);
 
   const handleConfirmDownload = useCallback(async () => {
     setConfirmModalVisible(false);
@@ -61,46 +73,46 @@ export function AppUpdateGate() {
 
         <View style={[styles.versionBadge, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <ThemedText type="smallBold" themeColor="textSecondary">
-            {t('common:currentVersion', { version: APP_VERSION })}
+            {t('common:currentVersion', { version: APP_VERSION, defaultValue: `Versión actual: v${APP_VERSION}` })}
           </ThemedText>
         </View>
 
         <ThemedText type="subtitle" style={styles.title}>
-          {t('common:updateTitle')}
+          {t('common:updateTitle', { defaultValue: 'Versión desactualizada' })}
         </ThemedText>
 
         <ThemedText type="small" themeColor="textSecondary" style={styles.message}>
-          {t('common:updateMessage')}
+          {t('common:updateMessage', { defaultValue: 'Estás usando una versión que ya no es compatible. Visita nuestra página para actualizar a la última versión.' })}
         </ThemedText>
 
         <View style={[styles.infoBox, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <Ionicons name="information-circle-outline" size={20} color={theme.primary} style={styles.infoIcon} />
           <ThemedText type="small" themeColor="textSecondary" style={styles.infoText}>
-            {t('common:updateReinstallHint')}
+            {t('common:updateReinstallHint', { defaultValue: 'Al descargar el archivo APK, ábrelo desde las notificaciones o tu carpeta de Descargas para instalar la actualización. No perderás tu sesión ni tus datos.' })}
           </ThemedText>
         </View>
 
         <View style={styles.buttonsContainer}>
-          {WEB_URL ? (
+          {APK_URL ? (
             <AppPressable
               style={[styles.primaryButton, { backgroundColor: theme.primary }]}
-              onPress={handleGoToWeb}
+              onPress={() => setConfirmModalVisible(true)}
               hitSlop={6}>
-              <Ionicons name="globe-outline" size={18} color="#FFFFFF" />
+              <Ionicons name="download-outline" size={18} color="#FFFFFF" />
               <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                {t('common:updateGoToWeb')}
+                {t('common:updateDownloadDirect', { defaultValue: 'Descargar actualización (APK)' })}
               </ThemedText>
             </AppPressable>
           ) : null}
 
-          {APK_URL ? (
+          {WEB_URL ? (
             <AppPressable
               style={[styles.secondaryButton, { borderColor: theme.border }]}
-              onPress={() => setConfirmModalVisible(true)}
+              onPress={handleGoToWeb}
               hitSlop={6}>
-              <Ionicons name="download-outline" size={16} color={theme.text} />
+              <Ionicons name="globe-outline" size={16} color={theme.text} />
               <ThemedText type="small" themeColor="text">
-                {t('common:updateDownloadDirect')}
+                {t('common:updateGoToWeb', { defaultValue: 'Ver en la página web' })}
               </ThemedText>
             </AppPressable>
           ) : null}
@@ -111,7 +123,7 @@ export function AppUpdateGate() {
             hitSlop={8}>
             <Ionicons name="help-circle-outline" size={16} color={theme.primary} />
             <ThemedText type="small" style={{ color: theme.primary, textDecorationLine: 'underline' }}>
-              {t('common:howToInstallButton')}
+              {t('common:howToInstallButton', { defaultValue: '¿Cómo instalar el APK?' })}
             </ThemedText>
           </AppPressable>
         </View>
@@ -127,24 +139,24 @@ export function AppUpdateGate() {
           <ThemedView type="backgroundElement" style={[styles.modalContent, { borderColor: theme.border }, Shadows.lg]}>
             <Ionicons name="download-outline" size={40} color={theme.primary} />
             <ThemedText type="subtitle" style={styles.modalTitle}>
-              {t('common:downloadApkTitle')}
+              {t('common:downloadApkTitle', { defaultValue: 'Descargar actualización' })}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.modalMessage}>
-              {t('common:downloadApkConsent')}
+              {t('common:downloadApkConsent', { defaultValue: '¿Deseas descargar el archivo APK de la nueva versión en tu dispositivo?' })}
             </ThemedText>
             <View style={styles.modalButtons}>
               <AppPressable
                 style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.border }]}
                 onPress={() => setConfirmModalVisible(false)}>
                 <ThemedText type="smallBold" themeColor="text">
-                  {t('common:cancel')}
+                  {t('common:cancel', { defaultValue: 'Cancelar' })}
                 </ThemedText>
               </AppPressable>
               <AppPressable
                 style={[styles.modalButton, { backgroundColor: theme.primary }]}
                 onPress={handleConfirmDownload}>
                 <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                  {t('common:download')}
+                  {t('common:download', { defaultValue: 'Descargar' })}
                 </ThemedText>
               </AppPressable>
             </View>
@@ -162,34 +174,34 @@ export function AppUpdateGate() {
           <ThemedView type="backgroundElement" style={[styles.modalContent, { borderColor: theme.border }, Shadows.lg]}>
             <Ionicons name="phone-portrait-outline" size={36} color={theme.primary} />
             <ThemedText type="subtitle" style={styles.modalTitle}>
-              {t('common:howToInstallTitle')}
+              {t('common:howToInstallTitle', { defaultValue: '¿Cómo instalar la actualización?' })}
             </ThemedText>
 
             <View style={styles.stepsContainer}>
               <View style={styles.stepItem}>
                 <ThemedText type="smallBold" themeColor="text">
-                  {t('common:installStep1Title')}
+                  {t('common:installStep1Title', { defaultValue: '1. Descarga el archivo' })}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.stepDesc}>
-                  {t('common:installStep1Desc')}
+                  {t('common:installStep1Desc', { defaultValue: 'Presiona Descargar y espera a que termine la descarga del archivo APK.' })}
                 </ThemedText>
               </View>
 
               <View style={styles.stepItem}>
                 <ThemedText type="smallBold" themeColor="text">
-                  {t('common:installStep2Title')}
+                  {t('common:installStep2Title', { defaultValue: '2. Permite la instalación' })}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.stepDesc}>
-                  {t('common:installStep2Desc')}
+                  {t('common:installStep2Desc', { defaultValue: 'Si Android lo solicita, activa "Permitir desde esta fuente" en tu navegador.' })}
                 </ThemedText>
               </View>
 
               <View style={styles.stepItem}>
                 <ThemedText type="smallBold" themeColor="text">
-                  {t('common:installStep3Title')}
+                  {t('common:installStep3Title', { defaultValue: '3. Abre e instala' })}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.stepDesc}>
-                  {t('common:installStep3Desc')}
+                  {t('common:installStep3Desc', { defaultValue: 'Toca la notificación de descarga completa o busca el archivo en tus Descargas y presiona Instalar.' })}
                 </ThemedText>
               </View>
             </View>
@@ -198,7 +210,7 @@ export function AppUpdateGate() {
               style={[styles.modalButton, { backgroundColor: theme.primary, width: '100%', marginTop: Spacing.one }]}
               onPress={() => setGuideModalVisible(false)}>
               <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                {t('common:understand')}
+                {t('common:understand', { defaultValue: 'Entendido' })}
               </ThemedText>
             </AppPressable>
           </ThemedView>

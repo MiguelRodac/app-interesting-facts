@@ -43,23 +43,27 @@
 ## 🛠️ Tecnologías
 
 ### Core
+
 - **React Native 0.86** — Framework mobile
 - **Expo SDK 57** — Toolchain y desarrollo
 - **TypeScript 6.0** — Type safety
 - **Expo Router** — File-based routing (similar a Next.js)
 
 ### State & Data
+
 - **Zustand** — State management ligero y performante
 - **React Query** — Server state y cache (si aplica)
 - **Firebase Auth** — Autenticación y persistencia de sesión
 
 ### UI/UX
+
 - **React Native Reanimated** — Animaciones fluidas
 - **React Native Gesture Handler** — Gestos nativos
 - **Expo Vector Icons** — Iconografía consistente
 - **Custom Theme System** — Dark/Light mode con detección automática
 
 ### Build & Deploy
+
 - **EAS Build** — Builds nativos en la nube
 - **Vercel** — Deploy web automático
 - **Expo Go** — Desarrollo rápido en dispositivos
@@ -148,7 +152,7 @@ Edita `.env` con tus credenciales:
 
 ```env
 # API Backend
-EXPO_PUBLIC_API_URL=https://api-interesting-facts-mu.vercel.app
+EXPO_PUBLIC_API_URL=https://api-interesting-facts.onrender.com
 
 # Versión de la app — se envía como header X-App-Version (version check del backend)
 EXPO_PUBLIC_APP_VERSION=1.0.0
@@ -186,14 +190,14 @@ Escanea el QR code con Expo Go o presiona `a`/`i`/`w` para abrir automáticament
 
 ## 📦 Scripts Disponibles
 
-| Comando | Descripción |
-|---------|-------------|
-| `pnpm start` | Inicia el servidor de desarrollo Expo |
-| `pnpm android` | Abre en Android |
-| `pnpm ios` | Abre en iOS |
-| `pnpm web` | Abre en navegador web |
-| `pnpm lint` | Ejecuta ESLint |
-| `pnpm build:web` | Build para producción web |
+| Comando              | Descripción                               |
+| -------------------- | ----------------------------------------- |
+| `pnpm start`         | Inicia el servidor de desarrollo Expo     |
+| `pnpm android`       | Abre en Android                           |
+| `pnpm ios`           | Abre en iOS                               |
+| `pnpm web`           | Abre en navegador web                     |
+| `pnpm lint`          | Ejecuta ESLint                            |
+| `pnpm build:web`     | Build para producción web                 |
 | `pnpm build:android` | Build APK/AAB para Android (requiere EAS) |
 
 ---
@@ -284,6 +288,7 @@ Este proyecto está bajo la licencia MIT.
 Desarrollado con ❤️ por **Miguel Rodac** usando React Native + Expo
 
 **Stack:**
+
 - Frontend: React Native, Expo, TypeScript, Zustand
 - Backend: API REST (Node.js)
 - Auth: Firebase Authentication

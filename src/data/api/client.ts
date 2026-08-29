@@ -1,15 +1,11 @@
-import { Platform } from "react-native";
-import Constants from "expo-constants";
-import { createNetworkError, mapApiError } from "./errors";
 import { logger } from "@/lib/logger";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
+import { createNetworkError, mapApiError } from "./errors";
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ??
-  "https://api-interesting-facts-mu.vercel.app";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 const APP_VERSION =
-  process.env.EXPO_PUBLIC_APP_VERSION ??
-  Constants.expoConfig?.version ??
-  "0.0.5";
+  process.env.EXPO_PUBLIC_APP_VERSION ?? Constants.expoConfig?.version ?? '0.0.8';
 
 type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -112,16 +108,17 @@ async function request<T>(options: RequestOptions): Promise<T> {
       // A 401 outside the auth flow means the session is gone/broken —
       // notify the app so it can clear auth state in a controlled way
       // (the screen shows a "session expired" message instead of a crash).
-      if (response.status === 401 && !path.startsWith('/auth/')) {
+      if (response.status === 401 && !path.startsWith("/auth/")) {
         unauthorizedHandler?.();
       }
       // Outdated client — backend version check rejected the request. Flag it
       // so the root gate blocks the UI and points to the latest download.
-      const errorCode = (responseBody as { error_code?: string } | null)?.error_code;
+      const errorCode = (responseBody as { error_code?: string } | null)
+        ?.error_code;
       if (
         response.status === 426 ||
-        errorCode === 'APP_VERSION_OUTDATED' ||
-        errorCode === 'APP_VERSION_MISSING'
+        errorCode === "APP_VERSION_OUTDATED" ||
+        errorCode === "APP_VERSION_MISSING"
       ) {
         appUpdateHandler?.();
       }
