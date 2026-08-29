@@ -37,7 +37,18 @@
   "installStep2Title": "2. Allow installation",
   "installStep2Desc": "If prompted by Android, enable \"Allow from this source\" in your browser.",
   "installStep3Title": "3. Open & Install",
-  "installStep3Desc": "Tap the completed download notification or find the file in Downloads and tap Install.",
   "downloadModalTitle": "Download Application",
-  "downloadModalConsent": "Do you want to download the APK installation file to your device?"
+  "downloadModalConsent": "Do you want to download the APK installation file to your device?",
+  "pwaIosStep1": "1. Tap the Share button",
+  "pwaIosStep1Desc": "In Safari's bottom bar, tap the share icon (the square with an arrow pointing up).",
+  "pwaIosStep2": "2. Add to Home Screen",
+  "pwaIosStep2Desc": "Scroll down the menu and select \"Add to Home Screen\".",
+  "pwaAndroidStep1": "1. Open browser menu",
+  "pwaAndroidStep1Desc": "Tap the three dots (⋮) in the top-right corner of Chrome or your browser.",
+  "pwaAndroidStep2": "2. Install application",
+  "pwaAndroidStep2Desc": "Select \"Install app\" or \"Add to Home screen\".",
+  "pwaDesktopStep1": "1. Installation icon",
+  "pwaDesktopStep1Desc": "In Chrome, Edge, or Brave, click the install icon (computer or +) on the right side of the address bar.",
+  "pwaDesktopStep2": "2. Confirm installation",
+  "pwaDesktopStep2Desc": "Click \"Install\" in the popup to add the app to your desktop."
 }

@@ -37,7 +37,18 @@
   "installStep2Title": "2. Permite la instalación",
   "installStep2Desc": "Si Android lo solicita, activa \"Permitir desde esta fuente\" en tu navegador.",
   "installStep3Title": "3. Abre e instala",
-  "installStep3Desc": "Toca la notificación de descarga completa o busca el archivo en tus Descargas y presiona Instalar.",
   "downloadModalTitle": "Descargar aplicación",
-  "downloadModalConsent": "¿Deseas descargar el archivo APK de instalación en tu dispositivo?"
+  "downloadModalConsent": "¿Deseas descargar el archivo APK de instalación en tu dispositivo?",
+  "pwaIosStep1": "1. Toca el botón Compartir",
+  "pwaIosStep1Desc": "En la barra inferior de Safari, presiona el icono de compartir (el cuadrado con la flecha hacia arriba).",
+  "pwaIosStep2": "2. Agregar a pantalla de inicio",
+  "pwaIosStep2Desc": "Desplázate hacia abajo en el menú y selecciona \"Agregar a pantalla de inicio\".",
+  "pwaAndroidStep1": "1. Abre el menú del navegador",
+  "pwaAndroidStep1Desc": "Toca los tres puntos (⋮) en la esquina superior de Chrome o tu navegador.",
+  "pwaAndroidStep2": "2. Instalar aplicación",
+  "pwaAndroidStep2Desc": "Selecciona \"Instalar aplicación\" o \"Agregar a la pantalla principal\".",
+  "pwaDesktopStep1": "1. Icono de instalación",
+  "pwaDesktopStep1Desc": "En Chrome, Edge o Brave, haz clic en el icono de instalación (computadora o +) a la derecha de la barra de direcciones.",
+  "pwaDesktopStep2": "2. Confirmar instalación",
+  "pwaDesktopStep2Desc": "Haz clic en \"Instalar\" en la ventana emergente para tener la app en tu escritorio."
 }

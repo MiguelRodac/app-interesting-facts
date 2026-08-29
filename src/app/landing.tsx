@@ -35,6 +35,7 @@ export default function LandingScreen() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [activeAccordion, setActiveAccordion] = useState<'apk' | 'pwa' | null>(null);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [pwaGuideModalVisible, setPwaGuideModalVisible] = useState(false);
   const [guideY, setGuideY] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -118,11 +119,18 @@ export default function LandingScreen() {
   }, []);
 
   const handleInstall = async () => {
-    if (!installPrompt) return;
-    await installPrompt.prompt();
-    const choice = await installPrompt.userChoice;
-    if (choice.outcome === 'accepted') {
-      setInstallPrompt(null);
+    if (installPrompt) {
+      try {
+        await installPrompt.prompt();
+        const choice = await installPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+          setInstallPrompt(null);
+        }
+      } catch {
+        setPwaGuideModalVisible(true);
+      }
+    } else {
+      setPwaGuideModalVisible(true);
     }
   };
 
@@ -358,7 +366,7 @@ export default function LandingScreen() {
                   </View>
                 </View>
 
-                {installPrompt && (
+                {Platform.OS === 'web' && (
                   <AppPressable
                     style={[
                       styles.ctaPrimary,
@@ -368,7 +376,7 @@ export default function LandingScreen() {
                     onPress={handleInstall}>
                     <Ionicons name="phone-portrait-outline" size={20} color="#FFFFFF" />
                     <ThemedText type="default" style={styles.ctaPrimaryText}>
-                      {t('landing:installDirectlyButton')}
+                      {t('landing:installDirectlyButton', { defaultValue: 'Instalar en este dispositivo' })}
                     </ThemedText>
                   </AppPressable>
                 )}
@@ -408,27 +416,116 @@ export default function LandingScreen() {
           <ThemedView type="backgroundElement" style={[styles.modalContent, { borderColor: theme.border }, Shadows.lg]}>
             <Ionicons name="download-outline" size={40} color={theme.primary} />
             <ThemedText type="subtitle" style={styles.modalTitle}>
-              {t('landing:downloadModalTitle')}
+              {t('landing:downloadModalTitle', { defaultValue: 'Descargar aplicación' })}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.modalMessage}>
-              {t('landing:downloadModalConsent')}
+              {t('landing:downloadModalConsent', { defaultValue: '¿Deseas descargar el archivo APK de instalación en tu dispositivo?' })}
             </ThemedText>
             <View style={styles.modalButtons}>
               <AppPressable
                 style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.border }]}
                 onPress={() => setConfirmModalVisible(false)}>
                 <ThemedText type="smallBold" themeColor="text">
-                  {t('common:cancel')}
+                  {t('common:cancel', { defaultValue: 'Cancelar' })}
                 </ThemedText>
               </AppPressable>
               <AppPressable
                 style={[styles.modalButton, { backgroundColor: theme.primary }]}
                 onPress={handleConfirmDownload}>
                 <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                  {t('common:download')}
+                  {t('common:download', { defaultValue: 'Descargar' })}
                 </ThemedText>
               </AppPressable>
             </View>
+          </ThemedView>
+        </View>
+      </AppModal>
+
+      {/* PWA Manual Installation Guide Modal */}
+      <AppModal
+        visible={pwaGuideModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPwaGuideModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <ThemedView type="backgroundElement" style={[styles.modalContent, { borderColor: theme.border }, Shadows.lg]}>
+            <Ionicons
+              name={deviceType === 'ios' ? 'logo-apple' : deviceType === 'android' ? 'logo-android' : 'laptop-outline'}
+              size={36}
+              color={theme.primary}
+            />
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              {t('landing:tabPwaTitle', { defaultValue: 'Instalar Web App' })}
+            </ThemedText>
+
+            <View style={styles.stepsContainer}>
+              {deviceType === 'ios' ? (
+                <>
+                  <View style={styles.stepItem}>
+                    <ThemedText type="smallBold" themeColor="text">
+                      {t('landing:pwaIosStep1', { defaultValue: '1. Toca el botón Compartir' })}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.stepDesc}>
+                      {t('landing:pwaIosStep1Desc', { defaultValue: 'En la barra inferior de Safari, presiona el icono de compartir (el cuadrado con la flecha hacia arriba).' })}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.stepItem}>
+                    <ThemedText type="smallBold" themeColor="text">
+                      {t('landing:pwaIosStep2', { defaultValue: '2. Agregar a pantalla de inicio' })}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.stepDesc}>
+                      {t('landing:pwaIosStep2Desc', { defaultValue: 'Desplázate hacia abajo en el menú y selecciona "Agregar a pantalla de inicio".' })}
+                    </ThemedText>
+                  </View>
+                </>
+              ) : deviceType === 'android' ? (
+                <>
+                  <View style={styles.stepItem}>
+                    <ThemedText type="smallBold" themeColor="text">
+                      {t('landing:pwaAndroidStep1', { defaultValue: '1. Abre el menú del navegador' })}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.stepDesc}>
+                      {t('landing:pwaAndroidStep1Desc', { defaultValue: 'Toca los tres puntos (⋮) en la esquina superior de Chrome o tu navegador.' })}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.stepItem}>
+                    <ThemedText type="smallBold" themeColor="text">
+                      {t('landing:pwaAndroidStep2', { defaultValue: '2. Instalar aplicación' })}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.stepDesc}>
+                      {t('landing:pwaAndroidStep2Desc', { defaultValue: 'Selecciona "Instalar aplicación" o "Agregar a la pantalla principal".' })}
+                    </ThemedText>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.stepItem}>
+                    <ThemedText type="smallBold" themeColor="text">
+                      {t('landing:pwaDesktopStep1', { defaultValue: '1. Icono de instalación' })}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.stepDesc}>
+                      {t('landing:pwaDesktopStep1Desc', { defaultValue: 'En Chrome, Edge o Brave, haz clic en el icono de instalación (computadora o +) a la derecha de la barra de direcciones.' })}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.stepItem}>
+                    <ThemedText type="smallBold" themeColor="text">
+                      {t('landing:pwaDesktopStep2', { defaultValue: '2. Confirmar instalación' })}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.stepDesc}>
+                      {t('landing:pwaDesktopStep2Desc', { defaultValue: 'Haz clic en "Instalar" en la ventana emergente para tener la app en tu escritorio.' })}
+                    </ThemedText>
+                  </View>
+                </>
+              )}
+            </View>
+
+            <AppPressable
+              style={[styles.modalButton, { backgroundColor: theme.primary, width: '100%', marginTop: Spacing.one }]}
+              onPress={() => setPwaGuideModalVisible(false)}>
+              <ThemedText type="smallBold" style={styles.primaryButtonText}>
+                {t('common:understand', { defaultValue: 'Entendido' })}
+              </ThemedText>
+            </AppPressable>
           </ThemedView>
         </View>
       </AppModal>
@@ -693,5 +790,16 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#FFFFFF',
+  },
+  stepsContainer: {
+    width: '100%',
+    gap: Spacing.two,
+  },
+  stepItem: {
+    gap: Spacing.half,
+  },
+  stepDesc: {
+    lineHeight: 18,
+    fontSize: 13,
   },
 });
