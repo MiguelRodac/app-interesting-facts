@@ -27,9 +27,6 @@ const MIN_LENGTH = 10;
 const MAX_LENGTH = 1000;
 const TITLE_MAX_LENGTH = 50;
 
-const DROPDOWN_BG = '#26262E';
-const DROPDOWN_BORDER = '#3A3A46';
-
 export default function CreateFactScreen() {
   const { t } = useTranslation(['create', 'common']);
   const [title, setTitle] = useState('');
@@ -478,14 +475,14 @@ export default function CreateFactScreen() {
 
               {/* Mention autocomplete dropdown */}
               {showMentions && (
-                <View style={[styles.autocompleteDropdown, { backgroundColor: DROPDOWN_BG, borderColor: DROPDOWN_BORDER }]}>
+                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                   {isSearchingMentions ? (
                     <View style={styles.autocompleteLoading}>
                       <ActivityIndicator size="small" color={theme.muted} />
                     </View>
                   ) : mentionResults.length === 0 ? (
                     <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" style={styles.autocompleteEmptyText}>{t('create:noUsersFound')}</ThemedText>
+                      <ThemedText type="small" themeColor="muted">{t('create:noUsersFound')}</ThemedText>
                     </View>
                   ) : (
                     <FlatList
@@ -496,7 +493,7 @@ export default function CreateFactScreen() {
                         <AppPressable
                           style={[
                             styles.autocompleteItem,
-                            index === selectedMentionIndex && styles.autocompleteItemSelected,
+                            index === selectedMentionIndex && { backgroundColor: theme.backgroundSelected },
                           ]}
                           onPress={() => handleSelectMention(item)}
                           onPressIn={() => setSelectedMentionIndex(index)}>
@@ -505,10 +502,10 @@ export default function CreateFactScreen() {
                             size={30}
                           />
                           <View style={styles.autocompleteInfo}>
-                            <ThemedText type="smallBold" style={styles.autocompleteName}>
+                            <ThemedText type="smallBold" themeColor="text">
                               {item.username}
                             </ThemedText>
-                            <ThemedText type="small" style={styles.autocompleteSubtext}>
+                            <ThemedText type="small" themeColor="textSecondary">
                               {item.displayName}
                             </ThemedText>
                           </View>
@@ -521,14 +518,14 @@ export default function CreateFactScreen() {
 
               {/* Hashtag autocomplete dropdown */}
               {showHashtags && (
-                <View style={[styles.autocompleteDropdown, { backgroundColor: DROPDOWN_BG, borderColor: DROPDOWN_BORDER }]}>
+                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                   {isSearchingHashtags ? (
                     <View style={styles.autocompleteLoading}>
                       <ActivityIndicator size="small" color={theme.muted} />
                     </View>
                   ) : hashtagResults.length === 0 ? (
                     <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" style={styles.autocompleteEmptyText}>{t('create:noHashtagsFound')}</ThemedText>
+                      <ThemedText type="small" themeColor="muted">{t('create:noHashtagsFound')}</ThemedText>
                     </View>
                   ) : (
                     <FlatList
@@ -539,15 +536,15 @@ export default function CreateFactScreen() {
                         <AppPressable
                           style={[
                             styles.autocompleteItem,
-                            index === selectedHashtagIndex && styles.autocompleteItemSelected,
+                            index === selectedHashtagIndex && { backgroundColor: theme.backgroundSelected },
                           ]}
                           onPress={() => handleSelectHashtag(item)}
                           onPressIn={() => setSelectedHashtagIndex(index)}>
-                          <View style={styles.hashtagIcon}>
-                            <ThemedText type="smallBold" style={styles.hashtagIconText}>#</ThemedText>
+                          <View style={[styles.hashtagIcon, { backgroundColor: theme.backgroundSelected }]}>
+                            <ThemedText type="smallBold" style={{ color: theme.primary }}>#</ThemedText>
                           </View>
                           <View style={styles.autocompleteInfo}>
-                            <ThemedText type="smallBold" style={styles.autocompleteName}>
+                            <ThemedText type="smallBold" themeColor="text">
                               {item.tag}
                             </ThemedText>
                           </View>
@@ -710,9 +707,6 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     alignItems: 'center',
   },
-  autocompleteEmptyText: {
-    color: '#B0B0C0',
-  },
   autocompleteItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -720,20 +714,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     gap: Spacing.two + 4,
   },
-  autocompleteItemSelected: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
   autocompleteInfo: {
     flex: 1,
     gap: 1,
-  },
-  autocompleteName: {
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-  autocompleteSubtext: {
-    fontSize: 12,
-    color: '#A0A0B0',
   },
   hashtagIcon: {
     width: 30,
@@ -741,11 +724,6 @@ const styles = StyleSheet.create({
     borderRadius: Radii.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  hashtagIconText: {
-    color: '#FFFFFF',
-    fontSize: 13,
   },
   buttons: {
     flexDirection: 'row',

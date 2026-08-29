@@ -16,6 +16,7 @@ import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useUserProfile } from '@/data/hooks/useUserProfile';
 import { useUserLikes } from '@/data/hooks/useUserLikes';
 import { useRepostsStore } from '@/data/stores/repostsStore';
+import { useUIStore } from '@/data/stores/uiStore';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
@@ -110,8 +111,13 @@ export default function UserProfileScreen() {
         router.push('/auth/login');
         return;
       }
-      toggleRepost(factId, fallbackFact).then((ok) => {
-        if (ok) Alert.alert(t('common:ready'), t('feed:repostCreated'));
+      toggleRepost(factId, fallbackFact).then((res) => {
+        if (res?.success) {
+          useUIStore.getState().showToast(
+            res.reposted ? t('feed:repostPublished') : t('feed:repostRemoved'),
+            'success'
+          );
+        }
       });
     },
     [isAuthenticated, toggleRepost, router, t],

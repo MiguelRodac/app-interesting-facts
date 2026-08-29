@@ -35,9 +35,6 @@ const INITIAL_LINE_HEIGHT = 34;
 /** Auto-expansion cap — beyond this the input scrolls internally instead of growing. */
 const MAX_HEIGHT = 96;
 
-const DROPDOWN_BG = '#26262E';
-const DROPDOWN_BORDER = '#3A3A46';
-
 export interface ReplyTarget {
   commentId: string;
   username: string;
@@ -449,7 +446,7 @@ export function CommentComposer({
             <View
               style={[
                 styles.autocompleteDropdown,
-                { backgroundColor: DROPDOWN_BG, borderColor: DROPDOWN_BORDER },
+                { backgroundColor: theme.backgroundElement, borderColor: theme.border },
               ]}>
               {isSearchingMentions ? (
                 <View style={styles.autocompleteState}>
@@ -457,7 +454,7 @@ export function CommentComposer({
                 </View>
               ) : mentionResults.length === 0 ? (
                 <View style={styles.autocompleteState}>
-                  <ThemedText type="small" style={styles.autocompleteEmptyText}>
+                  <ThemedText type="small" themeColor="muted">
                     {t('create:noUsersFound')}
                   </ThemedText>
                 </View>
@@ -470,7 +467,7 @@ export function CommentComposer({
                     <AppPressable
                       style={[
                         styles.autocompleteItem,
-                        index === selectedMentionIndex && styles.autocompleteItemSelected,
+                        index === selectedMentionIndex && { backgroundColor: theme.backgroundSelected },
                       ]}
                       onPress={() => handleSelectMention(item)}
                       onPressIn={() => setSelectedMentionIndex(index)}>
@@ -483,10 +480,10 @@ export function CommentComposer({
                         size={28}
                       />
                       <View style={styles.autocompleteInfo}>
-                        <ThemedText type="smallBold" style={styles.autocompleteName}>
+                        <ThemedText type="smallBold" themeColor="text">
                           {item.username}
                         </ThemedText>
-                        <ThemedText type="small" style={styles.autocompleteSubtext}>
+                        <ThemedText type="small" themeColor="textSecondary">
                           {item.displayName}
                         </ThemedText>
                       </View>
@@ -597,9 +594,6 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     alignItems: 'center',
   },
-  autocompleteEmptyText: {
-    color: '#B0B0C0',
-  },
   autocompleteItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -607,20 +601,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     gap: Spacing.two,
   },
-  autocompleteItemSelected: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
   autocompleteInfo: {
     flex: 1,
     gap: 1,
-  },
-  autocompleteName: {
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-  autocompleteSubtext: {
-    fontSize: 12,
-    color: '#A0A0B0',
   },
   actions: {
     flexDirection: 'row',

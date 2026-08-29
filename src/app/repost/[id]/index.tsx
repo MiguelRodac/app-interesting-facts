@@ -23,6 +23,7 @@ import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useRepostComments, notifyRepostCommentsChanged } from '@/data/hooks/useRepostComments';
 import { useAuth } from '@/data/hooks/useAuth';
+import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import type { Comment, Fact } from '@/types';
@@ -242,10 +243,15 @@ export default function RepostDetailScreen() {
       return;
     }
     if (fact) {
-      const ok = await toggleRepost(fact.originalFactId ?? fact.id);
-      if (ok) Alert.alert('Listo', 'Repost publicado');
+      const res = await toggleRepost(fact.originalFactId ?? fact.id);
+      if (res?.success) {
+        useUIStore.getState().showToast(
+          res.reposted ? t('feed:repostPublished') : t('feed:repostRemoved'),
+          'success'
+        );
+      }
     }
-  }, [fact, toggleRepost, isAuthenticated, router]);
+  }, [fact, toggleRepost, isAuthenticated, router, t]);
 
   const handleShare = useCallback(async () => {
     if (!fact) return;

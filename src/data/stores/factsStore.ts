@@ -71,6 +71,11 @@ function optimisticRepostBy(repostBy: FactLike[], user: Author, reposted: boolea
   return [entry, ...withoutUser].slice(0, 3);
 }
 
+export interface ToggleRepostResult {
+  success: boolean;
+  reposted: boolean;
+}
+
 interface FactsState {
   facts: Fact[];
   userFacts: Fact[];
@@ -84,7 +89,7 @@ interface FactsState {
   fetchRepostById: (repostId: string) => Promise<Fact>;
   fetchUserFacts: (userId: string, silent?: boolean) => Promise<void>;
   toggleLike: (factId: string, fallbackFact?: Fact) => Promise<void>;
-  toggleRepost: (factId: string, fallbackFact?: Fact) => Promise<boolean>;
+  toggleRepost: (factId: string, fallbackFact?: Fact) => Promise<ToggleRepostResult>;
   addFact: (fact: { title?: string; content: string }) => Promise<Fact>;
   updateFact: (factId: string, data: { title?: string; content?: string }) => Promise<Fact>;
   deleteFact: (factId: string) => Promise<void>;
@@ -287,7 +292,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     }
   },
 
-  toggleRepost: async (originalFactId: string, fallbackFact?: Fact): Promise<boolean> => {
+  toggleRepost: async (originalFactId: string, fallbackFact?: Fact): Promise<ToggleRepostResult> => {
     const { facts, userFacts } = get();
     // Find the fact to read current state — could be the original fact entry
     // or a repost entry that references it, in the feed, in user facts, or
@@ -295,9 +300,10 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     const findEntry = (list: Fact[]) =>
       list.find((f) => f.id === originalFactId || f.originalFactId === originalFactId);
     const fact = findEntry(facts) ?? findEntry(userFacts) ?? fallbackFact;
-    if (!fact) return false;
+    if (!fact) return { success: false, reposted: false };
 
     const wasReposted = fact.repostedByMe;
+    const nowReposted = !wasReposted;
     const currentUser = useAuthStore.getState().user;
 
     // Matches any entry that IS the original fact or references it as a repost.
@@ -306,10 +312,10 @@ export const useFactsStore = create<FactsState>((set, get) => ({
 
     // Optimistic update — sync all related entries across feed + user facts.
     const repostPatch = {
-      repostedByMe: !wasReposted,
+      repostedByMe: nowReposted,
       repostCount: fact.repostCount + (wasReposted ? -1 : 1),
       repostBy: currentUser
-        ? optimisticRepostBy(fact.repostBy, currentUser, !wasReposted)
+        ? optimisticRepostBy(fact.repostBy, currentUser, nowReposted)
         : fact.repostBy,
     };
     const applyOptimistic = (f: Fact): Fact => (matches(f) ? { ...f, ...repostPatch } : f);
@@ -341,7 +347,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       } catch {
         // keep optimistic state
       }
-      return true;
+      return { success: true, reposted: nowReposted };
     } catch (error) {
       set({ facts, userFacts });
       broadcastEntryUpdate('repost-tree', { id: originalFactId }, {
@@ -352,7 +358,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
-      return false;
+      return { success: false, reposted: wasReposted };
     }
   },
 

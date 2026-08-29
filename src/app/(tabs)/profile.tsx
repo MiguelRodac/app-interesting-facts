@@ -20,6 +20,7 @@ import { useUserLikes } from '@/data/hooks/useUserLikes';
 import { useMentionedFacts } from '@/data/hooks/useMentionedFacts';
 import { useFactsStore } from '@/data/stores/factsStore';
 import { useRepostsStore } from '@/data/stores/repostsStore';
+import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import type { Fact } from '@/types';
@@ -86,8 +87,13 @@ export default function ProfileScreen() {
 
   const handleRepost = useCallback(
     async (factId: string) => {
-      const ok = await toggleRepost(factId);
-      if (ok) Alert.alert(t('common:ready'), t('feed:repostPublished'));
+      const res = await toggleRepost(factId);
+      if (res?.success) {
+        useUIStore.getState().showToast(
+          res.reposted ? t('feed:repostPublished') : t('feed:repostRemoved'),
+          'success'
+        );
+      }
     },
     [toggleRepost, t],
   );

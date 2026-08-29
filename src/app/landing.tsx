@@ -1,6 +1,7 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Linking, Platform, StyleSheet, ScrollView, View, useWindowDimensions } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
+import { AppModal } from '@/components/ui/app-modal';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -10,7 +11,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { APK_URL } from '@/config/landing';
-import { Radii, Spacing } from '@/constants/theme';
+import { Radii, Spacing, Shadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useThemeContext } from '@/hooks/theme-provider';
 
@@ -32,6 +33,10 @@ export default function LandingScreen() {
   const isNarrow = width < BREAKPOINT;
   const [deviceType, setDeviceType] = useState<'ios' | 'android' | 'desktop'>('desktop');
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [activeAccordion, setActiveAccordion] = useState<'apk' | 'pwa' | null>(null);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [guideY, setGuideY] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const features = useMemo(
     () => [
@@ -81,14 +86,36 @@ export default function LandingScreen() {
     };
   }, []);
 
-  const handleDownload = () => {
+  const handleScrollToGuide = useCallback(() => {
+    if (Platform.OS === 'web') {
+      const el = document.getElementById('installation-guide');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
+    scrollViewRef.current?.scrollTo({ y: Math.max(0, guideY - 20), animated: true });
+  }, [guideY]);
+
+  const handleConfirmDownload = useCallback(() => {
+    setConfirmModalVisible(false);
     if (!APK_URL) return;
     if (Platform.OS === 'web') {
-      window.open(APK_URL, '_blank');
+      try {
+        const a = document.createElement('a');
+        a.href = APK_URL;
+        a.download = 'app-interesting-facts.apk';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch {
+        window.location.href = APK_URL;
+      }
     } else {
-      Linking.openURL(APK_URL);
+      Linking.openURL(APK_URL).catch(() => {});
     }
-  };
+  }, []);
 
   const handleInstall = async () => {
     if (!installPrompt) return;
@@ -105,7 +132,7 @@ export default function LandingScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={[styles.scroll, isNarrow && styles.scrollNarrow]}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={[styles.scroll, isNarrow && styles.scrollNarrow]}>
         {/* Hero */}
         <View style={styles.hero}>
           <Image
@@ -123,29 +150,16 @@ export default function LandingScreen() {
             {t('landing:tagline')}
           </ThemedText>
 
-          {/* CTAs — one install path per device, plus the universal
-              "try in the browser" fallback */}
+          {/* CTAs */}
           <View style={[styles.ctas, isNarrow && styles.ctasNarrow]}>
-            {deviceType === 'android' && APK_URL && (
-              <AppPressable
-                style={[styles.ctaPrimary, isNarrow && styles.ctaNarrow, { backgroundColor: theme.primary }]}
-                onPress={handleDownload}>
-                <Ionicons name="download-outline" size={20} color="#FFFFFF" />
-                <ThemedText type="default" style={styles.ctaPrimaryText}>
-                  {t('landing:downloadApk')}
-                </ThemedText>
-              </AppPressable>
-            )}
-            {deviceType === 'desktop' && installPrompt && (
-              <AppPressable
-                style={[styles.ctaGhost, isNarrow && styles.ctaNarrow, { borderColor: theme.border }]}
-                onPress={handleInstall}>
-                <Ionicons name="phone-portrait-outline" size={20} color={theme.text} />
-                <ThemedText type="default" style={{ color: theme.text }}>
-                  {t('landing:installApp')}
-                </ThemedText>
-              </AppPressable>
-            )}
+            <AppPressable
+              style={[styles.ctaPrimary, isNarrow && styles.ctaNarrow, { backgroundColor: theme.primary }]}
+              onPress={handleScrollToGuide}>
+              <Ionicons name="download-outline" size={20} color="#FFFFFF" />
+              <ThemedText type="default" style={styles.ctaPrimaryText}>
+                {t('landing:downloadApp')}
+              </ThemedText>
+            </AppPressable>
             <AppPressable
               style={[styles.ctaGhost, isNarrow && styles.ctaNarrow, { borderColor: theme.border }]}
               onPress={handleTryApp}>
@@ -175,27 +189,193 @@ export default function LandingScreen() {
           ))}
         </View>
 
-        {/* Install hint: iOS installs via Share → Add to Home Screen,
-            other browsers without an install prompt install from their menu */}
-        {(deviceType === 'ios' || (deviceType === 'desktop' && !installPrompt)) && (
-          <ThemedView
-            type="backgroundElement"
-            style={[styles.iosHint, styles.staticCard, { borderColor: theme.border }]}>
-            <Ionicons name="phone-portrait-outline" size={24} color={theme.primary} />
-            <View style={styles.iosHintText}>
-              <ThemedText type="smallBold">{t('landing:iosHintTitle')}</ThemedText>
-              {deviceType === 'ios' ? (
-                <ThemedText type="small" themeColor="textSecondary" style={styles.iosHintDescription}>
-                  {t('landing:iosHint')}
-                </ThemedText>
-              ) : (
-                <ThemedText type="small" themeColor="textSecondary" style={styles.iosHintDescription}>
-                  {t('landing:desktopHint')}
-                </ThemedText>
+        {/* Unified Installation Guide Accordion */}
+        <ThemedView
+          nativeID="installation-guide"
+          onLayout={(e) => setGuideY(e.nativeEvent.layout.y)}
+          type="backgroundElement"
+          style={[styles.guideCard, isNarrow && styles.guideCardNarrow, Shadows.sm]}>
+          <View style={styles.guideHeader}>
+            <Ionicons name="cloud-download-outline" size={26} color={theme.primary} />
+            <View style={{ flex: 1, gap: Spacing.half }}>
+              <ThemedText type="subtitle" style={styles.guideTitle}>
+                {t('landing:installGuideTitle')}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {t('landing:downloadZoneSubtitle')}
+              </ThemedText>
+            </View>
+          </View>
+
+          {/* Accordion Item 1: Android APK */}
+          {APK_URL && (
+            <View style={[styles.accordionItem, { borderColor: theme.border }]}>
+              <AppPressable
+                style={[
+                  styles.accordionHeader,
+                  activeAccordion === 'apk' && { borderBottomWidth: 1, borderBottomColor: theme.border },
+                ]}
+                onPress={() => setActiveAccordion((prev) => (prev === 'apk' ? null : 'apk'))}>
+                <View style={styles.accordionHeaderLeft}>
+                  <Ionicons name="logo-android" size={22} color={theme.primary} />
+                  <View style={styles.accordionTitleWrap}>
+                    <ThemedText type="smallBold" themeColor="text">
+                      {t('landing:tabApkTitle')}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {t('landing:tabApkSubtitle')}
+                    </ThemedText>
+                  </View>
+                </View>
+                <Ionicons
+                  name={activeAccordion === 'apk' ? 'chevron-up-outline' : 'chevron-down-outline'}
+                  size={20}
+                  color={theme.textSecondary}
+                />
+              </AppPressable>
+
+              {activeAccordion === 'apk' && (
+                <View style={styles.accordionBody}>
+                  <View style={[styles.guideSteps, isNarrow && styles.guideStepsNarrow]}>
+                    <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                      <View style={[styles.guideStepNumber, { backgroundColor: theme.primary }]}>
+                        <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>1</ThemedText>
+                      </View>
+                      <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
+                        {t('landing:installStep1Title')}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
+                        {t('landing:installStep1Desc')}
+                      </ThemedText>
+                    </View>
+
+                    <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                      <View style={[styles.guideStepNumber, { backgroundColor: theme.primary }]}>
+                        <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>2</ThemedText>
+                      </View>
+                      <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
+                        {t('landing:installStep2Title')}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
+                        {t('landing:installStep2Desc')}
+                      </ThemedText>
+                    </View>
+
+                    <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                      <View style={[styles.guideStepNumber, { backgroundColor: theme.primary }]}>
+                        <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>3</ThemedText>
+                      </View>
+                      <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
+                        {t('landing:installStep3Title')}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
+                        {t('landing:installStep3Desc')}
+                      </ThemedText>
+                    </View>
+                  </View>
+
+                  <AppPressable
+                    style={[
+                      styles.ctaPrimary,
+                      isNarrow && styles.ctaNarrow,
+                      { backgroundColor: theme.primary, alignSelf: 'center', marginTop: Spacing.three },
+                    ]}
+                    onPress={() => setConfirmModalVisible(true)}>
+                    <Ionicons name="download-outline" size={20} color="#FFFFFF" />
+                    <ThemedText type="default" style={styles.ctaPrimaryText}>
+                      {t('landing:downloadApk')}
+                    </ThemedText>
+                  </AppPressable>
+                </View>
               )}
             </View>
-          </ThemedView>
-        )}
+          )}
+
+          {/* Accordion Item 2: PWA / Web App (iOS, Android, Desktop) */}
+          <View style={[styles.accordionItem, { borderColor: theme.border }]}>
+            <AppPressable
+              style={[
+                styles.accordionHeader,
+                activeAccordion === 'pwa' && { borderBottomWidth: 1, borderBottomColor: theme.border },
+              ]}
+              onPress={() => setActiveAccordion((prev) => (prev === 'pwa' ? null : 'pwa'))}>
+              <View style={styles.accordionHeaderLeft}>
+                <Ionicons name="globe-outline" size={22} color={theme.primary} />
+                <View style={styles.accordionTitleWrap}>
+                  <ThemedText type="smallBold" themeColor="text">
+                    {t('landing:tabPwaTitle')}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {t('landing:tabPwaSubtitle')}
+                  </ThemedText>
+                </View>
+              </View>
+              <Ionicons
+                name={activeAccordion === 'pwa' ? 'chevron-up-outline' : 'chevron-down-outline'}
+                size={20}
+                color={theme.textSecondary}
+              />
+            </AppPressable>
+
+            {activeAccordion === 'pwa' && (
+              <View style={styles.accordionBody}>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.pwaIntroText}>
+                  {t('landing:pwaIntro')}
+                </ThemedText>
+
+                <View style={[styles.guideSteps, isNarrow && styles.guideStepsNarrow]}>
+                  {/* iOS */}
+                  <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                    <Ionicons name="logo-apple" size={24} color={theme.text} style={{ marginBottom: Spacing.half }} />
+                    <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
+                      {t('landing:pwaIosTitle')}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
+                      {t('landing:pwaIosDesc')}
+                    </ThemedText>
+                  </View>
+
+                  {/* Android Browser */}
+                  <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                    <Ionicons name="logo-android" size={24} color="#3DDC84" style={{ marginBottom: Spacing.half }} />
+                    <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
+                      {t('landing:pwaAndroidTitle')}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
+                      {t('landing:pwaAndroidDesc')}
+                    </ThemedText>
+                  </View>
+
+                  {/* Desktop */}
+                  <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                    <Ionicons name="laptop-outline" size={24} color={theme.primary} style={{ marginBottom: Spacing.half }} />
+                    <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
+                      {t('landing:pwaDesktopTitle')}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
+                      {t('landing:pwaDesktopDesc')}
+                    </ThemedText>
+                  </View>
+                </View>
+
+                {installPrompt && (
+                  <AppPressable
+                    style={[
+                      styles.ctaPrimary,
+                      isNarrow && styles.ctaNarrow,
+                      { backgroundColor: theme.primary, alignSelf: 'center', marginTop: Spacing.three },
+                    ]}
+                    onPress={handleInstall}>
+                    <Ionicons name="phone-portrait-outline" size={20} color="#FFFFFF" />
+                    <ThemedText type="default" style={styles.ctaPrimaryText}>
+                      {t('landing:installDirectlyButton')}
+                    </ThemedText>
+                  </AppPressable>
+                )}
+              </View>
+            )}
+          </View>
+        </ThemedView>
 
         {/* Footer */}
         <ThemedText type="small" themeColor="textSecondary" style={styles.footer}>
@@ -217,16 +397,44 @@ export default function LandingScreen() {
           <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={20} color={theme.text} />
         </AppPressable>
       </View>
+
+      {/* Explicit User Consent Modal */}
+      <AppModal
+        visible={confirmModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <ThemedView type="backgroundElement" style={[styles.modalContent, { borderColor: theme.border }, Shadows.lg]}>
+            <Ionicons name="download-outline" size={40} color={theme.primary} />
+            <ThemedText type="subtitle" style={styles.modalTitle}>
+              {t('landing:downloadModalTitle')}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.modalMessage}>
+              {t('landing:downloadModalConsent')}
+            </ThemedText>
+            <View style={styles.modalButtons}>
+              <AppPressable
+                style={[styles.modalButton, styles.modalCancelButton, { borderColor: theme.border }]}
+                onPress={() => setConfirmModalVisible(false)}>
+                <ThemedText type="smallBold" themeColor="text">
+                  {t('common:cancel')}
+                </ThemedText>
+              </AppPressable>
+              <AppPressable
+                style={[styles.modalButton, { backgroundColor: theme.primary }]}
+                onPress={handleConfirmDownload}>
+                <ThemedText type="smallBold" style={styles.primaryButtonText}>
+                  {t('common:download')}
+                </ThemedText>
+              </AppPressable>
+            </View>
+          </ThemedView>
+        </View>
+      </AppModal>
     </ThemedView>
   );
 }
-
-const Shadows = {
-  sm: {
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
-  },
-};
 
 const styles = StyleSheet.create({
   container: {
@@ -363,26 +571,127 @@ const styles = StyleSheet.create({
   featureDescription: {
     lineHeight: 20,
   },
-  staticCard: {
-    width: '100%',
-    maxWidth: 420,
-    padding: Spacing.three,
-    borderRadius: Radii.lg,
-    gap: Spacing.three,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  iosHint: {
-    borderWidth: 1,
-  },
-  iosHintText: {
-    flex: 1,
-    gap: Spacing.one,
-  },
-  iosHintDescription: {
-    lineHeight: 20,
-  },
   footer: {
     textAlign: 'center',
+  },
+  guideCard: {
+    width: '100%',
+    maxWidth: 640,
+    padding: Spacing.four,
+    borderRadius: Radii.lg,
+    gap: Spacing.three,
+  },
+  guideCardNarrow: {
+    padding: Spacing.three,
+  },
+  guideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  guideTitle: {
+    fontSize: 18,
+  },
+  accordionItem: {
+    width: '100%',
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  accordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.three,
+  },
+  accordionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    flex: 1,
+  },
+  accordionTitleWrap: {
+    flex: 1,
+    gap: Spacing.half,
+  },
+  accordionBody: {
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  pwaIntroText: {
+    lineHeight: 20,
+    marginBottom: Spacing.two,
+  },
+  guideSteps: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+  },
+  guideStepsNarrow: {
+    flexDirection: 'column',
+    gap: Spacing.two,
+  },
+  guideStepItem: {
+    flex: 1,
+    padding: Spacing.three,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    gap: Spacing.one,
+  },
+  guideStepNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: Radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.half,
+  },
+  guideStepTitle: {
+    fontSize: 14,
+  },
+  guideStepDesc: {
+    lineHeight: 18,
+    fontSize: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.four,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: Radii.lg,
+    padding: Spacing.four,
+    alignItems: 'center',
+    gap: Spacing.three,
+    borderWidth: 1,
+  },
+  modalTitle: {
+    textAlign: 'center',
+  },
+  modalMessage: {
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    width: '100%',
+    marginTop: Spacing.two,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: Spacing.three,
+    borderRadius: Radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelButton: {
+    borderWidth: 1,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
   },
 });

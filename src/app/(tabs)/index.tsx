@@ -15,6 +15,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
+import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import { registerScrollToTop } from '@/lib/scrollToTop';
@@ -88,8 +89,13 @@ export default function FeedScreen() {
   const handleRepost = useCallback(
     async (factId: string) => {
       if (!isAuthenticated) return;
-      const ok = await toggleRepost(factId);
-      if (ok) Alert.alert(t('common:ready'), t('feed:repostPublished'));
+      const res = await toggleRepost(factId);
+      if (res?.success) {
+        useUIStore.getState().showToast(
+          res.reposted ? t('feed:repostPublished') : t('feed:repostRemoved'),
+          'success'
+        );
+      }
     },
     [isAuthenticated, toggleRepost, t],
   );

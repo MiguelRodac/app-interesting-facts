@@ -443,7 +443,7 @@ export default function EditFactScreen() {
 
               {/* Mention autocomplete dropdown */}
               {showMentions && (
-                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement }]}>
+                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                   {isSearchingMentions ? (
                     <View style={styles.autocompleteLoading}>
                       <ActivityIndicator size="small" color={theme.muted} />
@@ -470,10 +470,10 @@ export default function EditFactScreen() {
                             size={30}
                           />
                           <View style={styles.autocompleteInfo}>
-                            <ThemedText type="smallBold" style={[styles.autocompleteName, { color: theme.text }]}>
+                            <ThemedText type="smallBold" themeColor="text">
                               {item.username}
                             </ThemedText>
-                            <ThemedText type="small" style={[styles.autocompleteSubtext, { color: theme.textSecondary }]}>
+                            <ThemedText type="small" themeColor="textSecondary">
                               {item.displayName}
                             </ThemedText>
                           </View>
@@ -486,7 +486,7 @@ export default function EditFactScreen() {
 
               {/* Hashtag autocomplete dropdown */}
               {showHashtags && (
-                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement }]}>
+                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                   {isSearchingHashtags ? (
                     <View style={styles.autocompleteLoading}>
                       <ActivityIndicator size="small" color={theme.muted} />

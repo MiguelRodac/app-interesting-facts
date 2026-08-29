@@ -7,7 +7,7 @@ import { getIdToken } from '../auth/firebaseAuth';
 import { mapFactsDtos } from '../mappers/factMapper';
 import { mapAuthorDto } from '../mappers/userMapper';
 import { applyEntryUpdate, subscribeEntryUpdates } from '../hooks/entryUpdateBus';
-import { useFactsStore } from './factsStore';
+import { useFactsStore, type ToggleRepostResult } from './factsStore';
 import { useUIStore } from './uiStore';
 
 const client = createApiClient(getIdToken);
@@ -20,7 +20,7 @@ interface UserProfileState {
   fetchProfile: (username: string, silent?: boolean) => Promise<void>;
   fetchUserFacts: (authorId: string, silent?: boolean) => Promise<void>;
   toggleLike: (factId: string, fallbackFact?: Fact) => Promise<void>;
-  toggleRepost: (factId: string, fallbackFact?: Fact) => Promise<boolean>;
+  toggleRepost: (factId: string, fallbackFact?: Fact) => Promise<ToggleRepostResult>;
   clearProfile: () => void;
 }
 
@@ -77,7 +77,7 @@ export const useUserProfileStore = create<UserProfileState>((set, get) => ({
     await useFactsStore.getState().toggleLike(factId, fact);
   },
 
-  toggleRepost: async (factId: string, fallbackFact?: Fact): Promise<boolean> => {
+  toggleRepost: async (factId: string, fallbackFact?: Fact): Promise<ToggleRepostResult> => {
     const { facts } = get();
     const fact = facts.find((f) => f.id === factId || f.originalFactId === factId) ?? fallbackFact;
     return useFactsStore.getState().toggleRepost(factId, fact);

@@ -143,11 +143,11 @@ function RootLayoutInner() {
                 { backgroundColor: screenBackground },
               ]}>
               <View style={styles.root}>
+                {appStack}
+                <AppUpdateGate />
                 <ErrorBanner />
                 <Toast />
                 <GlobalConfirmDialog />
-                {appStack}
-                <AppUpdateGate />
               </View>
             </View>
           </View>
@@ -156,11 +156,11 @@ function RootLayoutInner() {
         <>
           {/* Native app or web landing page — plain full-screen layout */}
           <View style={styles.root}>
+            {appStack}
+            <AppUpdateGate />
             <ErrorBanner />
             <Toast />
             <GlobalConfirmDialog />
-            {appStack}
-            <AppUpdateGate />
           </View>
         </>
       )}

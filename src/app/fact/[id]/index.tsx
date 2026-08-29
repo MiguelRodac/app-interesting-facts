@@ -277,8 +277,13 @@ const isOwner = fact && user?.id === fact.author.id;
       return;
     }
     if (fact) {
-      const ok = await toggleRepost(fact.originalFactId ?? fact.id);
-      if (ok) Alert.alert(t('common:ready'), t('feed:repostPublished'));
+      const res = await toggleRepost(fact.originalFactId ?? fact.id);
+      if (res?.success) {
+        useUIStore.getState().showToast(
+          res.reposted ? t('feed:repostPublished') : t('feed:repostRemoved'),
+          'success'
+        );
+      }
     }
   }, [fact, toggleRepost, isAuthenticated, router, t]);
 
