@@ -4,6 +4,8 @@ import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTranslation } from 'react-i18next';
+
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { AlertColors, Radii, Shadows, Spacing } from '@/constants/theme';
@@ -12,6 +14,7 @@ import { useUIStore } from '@/data/stores/uiStore';
 const AUTO_DISMISS_MS = 5000;
 
 export function ErrorBanner() {
+  const { t, i18n } = useTranslation(['errors', 'common']);
   const error = useUIStore((s) => s.error);
   const clearError = useUIStore((s) => s.clearError);
   const insets = useSafeAreaInsets();
@@ -35,6 +38,10 @@ export function ErrorBanner() {
   if (!error) return null;
 
   const colors = AlertColors.error;
+  const localizedMessage =
+    error.code && i18n.exists(`errors:${error.code}`)
+      ? t(`errors:${error.code}`)
+      : error.userMessage;
 
   return (
     <Animated.View
@@ -45,7 +52,7 @@ export function ErrorBanner() {
       <ThemedView style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }, Shadows.lg]}>
         <Ionicons name="alert-circle" size={22} color={colors.icon} />
         <ThemedText type="small" style={[styles.message, { color: colors.text }]} numberOfLines={3}>
-          {error.userMessage}
+          {localizedMessage}
         </ThemedText>
         <AppPressable onPress={clearError} hitSlop={8} style={styles.dismiss}>
           <Ionicons name="close" size={18} color={colors.text} />

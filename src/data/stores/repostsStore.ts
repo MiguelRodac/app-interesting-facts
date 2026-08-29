@@ -228,6 +228,7 @@ export const useRepostsStore = create<RepostsState>(() => ({
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as AppError);
       }
+      throw error;
     }
   },
 
@@ -255,6 +256,7 @@ export const useRepostsStore = create<RepostsState>(() => ({
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as AppError);
       }
+      throw error;
     }
   },
 
@@ -279,6 +281,7 @@ export const useRepostsStore = create<RepostsState>(() => ({
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as AppError);
       }
+      throw error;
     }
   },
 

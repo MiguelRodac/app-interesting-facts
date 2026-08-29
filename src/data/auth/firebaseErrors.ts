@@ -1,23 +1,5 @@
+import i18n from 'i18next';
 import type { AppError } from '@/types';
-
-/**
- * Maps Firebase Auth errors (FirebaseError with code "auth/...") to a domain
- * AppError so the UI can show a readable message.
- * API errors pass through unchanged; anything else becomes a generic error.
- */
-const FIREBASE_ERROR_MESSAGES: Record<string, string> = {
-  'auth/invalid-credential': 'Incorrect email or password.',
-  'auth/invalid-login-credentials': 'Incorrect email or password.',
-  'auth/wrong-password': 'Incorrect email or password.',
-  'auth/user-not-found': 'No account found with this email.',
-  'auth/email-already-in-use': 'This email is already registered.',
-  'auth/weak-password': 'Password is too weak. Use at least 6 characters.',
-  'auth/too-many-requests': 'Too many attempts. Please try again later.',
-  'auth/network-request-failed': 'Network error. Please check your connection and try again.',
-  'auth/invalid-email': 'The email address is invalid.',
-  'auth/operation-not-allowed': 'This sign-in method is not enabled.',
-  'auth/user-disabled': 'This account has been disabled.',
-};
 
 export function isFirebaseAuthError(error: unknown): boolean {
   return (
@@ -36,10 +18,15 @@ export function mapFirebaseError(error: unknown): AppError {
       ? error.message
       : 'Authentication failed';
 
+  const userMessage =
+    i18n.isInitialized && i18n.exists(`errors:${code}`)
+      ? i18n.t(`errors:${code}`)
+      : message;
+
   return {
     code,
     message,
-    userMessage: FIREBASE_ERROR_MESSAGES[code] ?? message,
+    userMessage,
     status: 0,
   };
 }

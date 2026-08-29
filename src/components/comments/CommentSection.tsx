@@ -1,9 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { CommentItem } from '@/components/comments/CommentItem';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
@@ -11,6 +10,7 @@ import { useFactComments } from '@/data/hooks/useFactComments';
 import { useRepostComments } from '@/data/hooks/useRepostComments';
 import { useCommentsStore } from '@/data/stores/commentsStore';
 import { useRepostsStore } from '@/data/stores/repostsStore';
+import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import type { Comment, CommentAuthor } from '@/types';
 
@@ -41,8 +41,7 @@ interface CommentSectionProps {
  * The write composer is NOT rendered here: the fact detail screen mounts a
  * single FIXED bottom composer (Instagram/Facebook style) that stays pinned
  * above the tab bar while this thread scrolls. Reply/edit state lives in the
- * parent and is coordinated through onReply/onEdit. This section only renders
- * the comment thread plus the delete ConfirmDialog.
+ * parent and is coordinated through onReply/onEdit.
  */
 export function CommentSection({
   factId,
@@ -67,8 +66,6 @@ export function CommentSection({
   const deleteFactComment = useCommentsStore((s) => s.deleteComment);
   const deleteRepostComment = useRepostsStore((s) => s.deleteRepostComment);
 
-  const [deleteTarget, setDeleteTarget] = useState<Comment | null>(null);
-
   // If the cache already has comments, skip the loading spinner (warm cache).
   const loading = factLoading && comments.length === 0;
 
@@ -76,23 +73,26 @@ export function CommentSection({
   const currentUsername = user?.username;
 
   const handleDelete = useCallback((comment: Comment) => {
-    setDeleteTarget(comment);
-  }, []);
-
-  const handleConfirmDelete = useCallback(() => {
-    if (!deleteTarget) return;
-    const targetId = deleteTarget.id;
-    setDeleteTarget(null);
-    if (isRepost && repostEntryId) {
-      deleteRepostComment(repostEntryId, targetId).catch(() => {});
-    } else if (factId) {
-      deleteFactComment(factId, targetId).catch(() => {});
-    }
-  }, [deleteTarget, factId, repostEntryId, isRepost, deleteFactComment, deleteRepostComment]);
-
-  const handleCancelDelete = useCallback(() => {
-    setDeleteTarget(null);
-  }, []);
+    useUIStore.getState().showConfirm({
+      title: t('common:deleteCommentTitle'),
+      message: t('common:deleteCommentMessage'),
+      confirmLabel: t('common:delete'),
+      cancelLabel: t('common:cancel'),
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          if (isRepost && repostEntryId) {
+            await deleteRepostComment(repostEntryId, comment.id);
+          } else if (factId) {
+            await deleteFactComment(factId, comment.id);
+          }
+          useUIStore.getState().showToast(t('common:commentDeleted'), 'success');
+        } catch {
+          // Error handled by store
+        }
+      },
+    });
+  }, [factId, repostEntryId, isRepost, deleteFactComment, deleteRepostComment, t]);
 
   return (
     <View style={styles.section}>
@@ -132,18 +132,6 @@ export function CommentSection({
           )}
         />
       )}
-
-      {/* Delete confirmation */}
-      <ConfirmDialog
-        visible={!!deleteTarget}
-        title={t('common:deleteCommentTitle')}
-        message={t('common:deleteCommentMessage')}
-        confirmLabel={t('common:delete')}
-        cancelLabel={t('common:cancel')}
-        destructive
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-      />
     </View>
   );
 }

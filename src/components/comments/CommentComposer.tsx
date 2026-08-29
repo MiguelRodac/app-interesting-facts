@@ -21,6 +21,7 @@ import { useAuth } from '@/data/hooks/useAuth';
 import type { ApiUserSearchResult } from '@/data/api/types';
 import { useCommentsStore } from '@/data/stores/commentsStore';
 import { useRepostsStore } from '@/data/stores/repostsStore';
+import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import { EmojiPicker, EmojiButton } from '@/components/EmojiPicker';
 
@@ -307,6 +308,7 @@ export function CommentComposer({
           await updateComment(factId, commentId, trimmed);
         }
         setContent('');
+        useUIStore.getState().showToast(t('common:commentUpdated'), 'success');
         onDone?.();
       } else if (replyTo) {
         if (isRepost && repostEntryId) {

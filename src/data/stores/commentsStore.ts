@@ -134,6 +134,7 @@ export const useCommentsStore = create<CommentsState>(() => ({
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as AppError);
       }
+      throw error;
     }
   },
 
@@ -161,6 +162,7 @@ export const useCommentsStore = create<CommentsState>(() => ({
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as AppError);
       }
+      throw error;
     }
   },
 
@@ -183,6 +185,7 @@ export const useCommentsStore = create<CommentsState>(() => ({
         // DELETE_BLOCKED_HAS_REPLIES user message for 403s.
         useUIStore.getState().setError(error as AppError);
       }
+      throw error;
     }
   },
 

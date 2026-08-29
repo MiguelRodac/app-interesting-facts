@@ -1,26 +1,12 @@
+import i18n from 'i18next';
 import type { AppError } from '@/types';
 import type { ApiErrorResponse } from './types';
 
-const ERROR_MESSAGES: Record<string, string> = {
-  UNAUTHORIZED: 'Please log in to continue.',
-  FORBIDDEN: 'You do not have permission to do that.',
-  NOT_FOUND: 'The requested resource was not found.',
-  VALIDATION_ERROR: 'Please check your input and try again.',
-  CONFLICT: 'This action conflicts with the current state.',
-  FACT_NOT_FOUND: 'This fact no longer exists.',
-  USER_NOT_FOUND: 'User not found.',
-  EMAIL_ALREADY_EXISTS: 'An account with this email already exists.',
-  USERNAME_ALREADY_EXISTS: 'This username is already taken.',
-  INVALID_CREDENTIALS: 'Invalid email or password.',
-  RATE_LIMITED: 'Too many requests. Please try again later.',
-  EDIT_WINDOW_EXPIRED: 'The 1-hour edit window has expired.',
-  DELETE_BLOCKED_HAS_REPLIES:
-    "This comment has replies and can't be deleted.",
-  VERSION_TOO_OLD: 'Please update the app to continue.',
-};
-
 function getUserMessage(code: string, fallback: string): string {
-  return ERROR_MESSAGES[code] ?? fallback;
+  if (i18n.isInitialized && i18n.exists(`errors:${code}`)) {
+    return i18n.t(`errors:${code}`);
+  }
+  return fallback;
 }
 
 /**
@@ -63,10 +49,14 @@ export function mapApiError(status: number, body: unknown): AppError {
 export function createNetworkError(cause?: unknown): AppError {
   const message =
     cause instanceof Error ? cause.message : 'Network request failed';
+  const userMessage =
+    i18n.isInitialized && i18n.exists('errors:NETWORK_ERROR')
+      ? i18n.t('errors:NETWORK_ERROR')
+      : 'Unable to connect. Please check your connection and try again.';
   return {
     code: 'NETWORK_ERROR',
     message,
-    userMessage: 'Unable to connect. Please check your connection and try again.',
+    userMessage,
     status: 0,
   };
 }

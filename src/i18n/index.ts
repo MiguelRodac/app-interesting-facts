@@ -11,6 +11,7 @@ import enCreate from '@/locales/en/create.json';
 import enProfile from '@/locales/en/profile.json';
 import enSettings from '@/locales/en/settings.json';
 import enLanding from '@/locales/en/landing.json';
+import enErrors from '@/locales/en/errors.json';
 
 import esCommon from '@/locales/es/common.json';
 import esAuth from '@/locales/es/auth.json';
@@ -20,6 +21,7 @@ import esCreate from '@/locales/es/create.json';
 import esProfile from '@/locales/es/profile.json';
 import esSettings from '@/locales/es/settings.json';
 import esLanding from '@/locales/es/landing.json';
+import esErrors from '@/locales/es/errors.json';
 
 export const LANGUAGE_STORAGE_KEY = 'app_language_preference';
 
@@ -35,6 +37,7 @@ export const resources = {
     profile: enProfile,
     settings: enSettings,
     landing: enLanding,
+    errors: enErrors,
   },
   es: {
     common: esCommon,
@@ -45,6 +48,7 @@ export const resources = {
     profile: esProfile,
     settings: esSettings,
     landing: esLanding,
+    errors: esErrors,
   },
 } as const;
 

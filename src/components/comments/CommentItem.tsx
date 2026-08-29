@@ -305,11 +305,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: Spacing.half,
+    gap: Spacing.two,
   },
   actionsLeft: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: Spacing.two,
+    rowGap: Spacing.half,
   },
   actionLink: {
     fontWeight: 600,

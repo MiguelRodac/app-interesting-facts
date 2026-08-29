@@ -36,13 +36,13 @@ export function ConfirmDialog({
   const finalCancelLabel = cancelLabel ?? t('cancel');
 
   return (
-<AppModal visible={visible} transparent animationType="fade">
+    <AppModal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <ThemedView type="backgroundElement" style={styles.card}>
+        <ThemedView type="backgroundElement" style={[styles.card, { borderColor: theme.border }]}>
           <ThemedText type="subtitle" style={styles.title}>
             {title}
           </ThemedText>
-          <ThemedText type="default" themeColor="textSecondary" style={styles.message}>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.message}>
             {message}
           </ThemedText>
           <View style={styles.buttons}>
@@ -67,40 +67,45 @@ export function ConfirmDialog({
           </View>
         </ThemedView>
       </View>
-</AppModal> 
+    </AppModal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.four,
   },
   card: {
     width: '100%',
-    maxWidth: 340,
-    borderRadius: Radii.lg,
+    maxWidth: 360,
+    borderRadius: Radii.xl,
     padding: Spacing.four,
-    gap: Spacing.three,
+    gap: Spacing.two + 2,
+    borderWidth: 1,
   },
   title: {
     textAlign: 'center',
+    fontSize: 18,
+    lineHeight: 24,
   },
   message: {
     textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: Spacing.one,
   },
   buttons: {
     flexDirection: 'row',
-    gap: Spacing.three,
-    marginTop: Spacing.one,
+    gap: Spacing.two + 2,
+    marginTop: Spacing.two,
   },
   button: {
     flex: 1,
-    paddingVertical: Spacing.three,
-    borderRadius: Radii.md,
+    paddingVertical: Spacing.two + 4,
+    borderRadius: Radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -108,7 +113,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cancelText: {
-    opacity: 0.7,
+    opacity: 0.8,
   },
   confirmButton: {},
   confirmText: {
