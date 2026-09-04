@@ -96,6 +96,9 @@ interface FactsState {
   reset: () => void;
 }
 
+// Runtime cache of deleted fact IDs to prevent zombie refetches across the app
+const deletedFactIds = new Set<string>();
+
 export const useFactsStore = create<FactsState>((set, get) => ({
   facts: [],
   userFacts: [],
@@ -170,6 +173,9 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   },
 
   fetchFactById: async (factId: string) => {
+    if (deletedFactIds.has(factId)) {
+      throw new Error(`Fact ${factId} has been deleted`);
+    }
     try {
       const dto = await client.get<ApiFact>(`/facts/${factId}`);
       const fact = mapFactDto(dto);
@@ -401,6 +407,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   },
 
   deleteFact: async (factId: string) => {
+    deletedFactIds.add(factId);
     try {
       await client.del(`/facts/${factId}`);
       set((state) => ({
@@ -408,6 +415,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
         userFacts: state.userFacts.filter((f) => f.id !== factId),
       }));
     } catch (error) {
+      deletedFactIds.delete(factId);
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
@@ -416,6 +424,7 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   },
 
   reset: () => {
+    deletedFactIds.clear();
     set({
       facts: [],
       userFacts: [],

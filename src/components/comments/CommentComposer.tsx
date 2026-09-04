@@ -114,11 +114,21 @@ export function CommentComposer({
   const [inputHeight, setInputHeight] = useState(INITIAL_LINE_HEIGHT);
   const [focused, setFocused] = useState(false);
 
+  useEffect(() => {
+    if (!content) {
+      setInputHeight(INITIAL_LINE_HEIGHT);
+    }
+  }, [content]);
+
   const handleContentSizeChange = useCallback((event: {
     nativeEvent: { contentSize: { height: number } };
   }) => {
-    setInputHeight(Math.min(event.nativeEvent.contentSize.height, MAX_HEIGHT));
-  }, []);
+    if (!content) {
+      setInputHeight(INITIAL_LINE_HEIGHT);
+      return;
+    }
+    setInputHeight(Math.max(INITIAL_LINE_HEIGHT, Math.min(event.nativeEvent.contentSize.height, MAX_HEIGHT)));
+  }, [content]);
 
   const handleFocus = useCallback(() => setFocused(true), []);
 
@@ -174,6 +184,7 @@ export function CommentComposer({
       });
     } else {
       setContent('');
+      setInputHeight(INITIAL_LINE_HEIGHT);
       setShowMentions(false);
       setMentionResults([]);
     }
@@ -229,6 +240,9 @@ export function CommentComposer({
   const handleContentChange = useCallback(
     (text: string) => {
       setContent(text);
+      if (!text) {
+        setInputHeight(INITIAL_LINE_HEIGHT);
+      }
 
       // Same cursor-fallback logic as create.tsx: onSelectionChange fires
       // after onChangeText, so on a keystroke the ref holds the OLD cursor.
@@ -308,6 +322,7 @@ export function CommentComposer({
           await updateComment(factId, commentId, trimmed);
         }
         setContent('');
+        setInputHeight(INITIAL_LINE_HEIGHT);
         useUIStore.getState().showToast(t('common:commentUpdated'), 'success');
         onDone?.();
       } else if (replyTo) {
@@ -317,6 +332,7 @@ export function CommentComposer({
           await addComment(factId, trimmed, replyTo.commentId);
         }
         setContent('');
+        setInputHeight(INITIAL_LINE_HEIGHT);
         onDone?.();
       } else {
         if (isRepost && repostEntryId) {
@@ -325,6 +341,7 @@ export function CommentComposer({
           await addComment(factId, trimmed);
         }
         setContent('');
+        setInputHeight(INITIAL_LINE_HEIGHT);
         onDone?.();
       }
     } catch {
@@ -346,10 +363,12 @@ export function CommentComposer({
     addRepostComment,
     addComment,
     onDone,
+    t,
   ]);
 
   const handleCancelEdit = useCallback(() => {
     setContent('');
+    setInputHeight(INITIAL_LINE_HEIGHT);
     setShowMentions(false);
     setMentionResults([]);
     onCancelEdit?.();
@@ -357,6 +376,7 @@ export function CommentComposer({
 
   const handleCancelReply = useCallback(() => {
     setContent('');
+    setInputHeight(INITIAL_LINE_HEIGHT);
     setShowMentions(false);
     setMentionResults([]);
     onCancelReply?.();

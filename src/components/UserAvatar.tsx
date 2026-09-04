@@ -5,8 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import type { Author } from '@/types';
-
-const FALLBACK_COLOR = '#64B5F6';
+import { useTheme } from '@/hooks/use-theme';
 
 interface UserAvatarProps {
   user: Pick<Author, 'displayName'> & {
@@ -31,8 +30,10 @@ function getInitials(name: string | undefined | null): string {
 
 export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
   const { t } = useTranslation('common');
+  const theme = useTheme();
   const [imageError, setImageError] = useState(false);
   const hasImage = user.avatarUrl != null && user.avatarUrl.length > 0 && !imageError;
+  const hasColor = !!user.avatarColor;
 
   useEffect(() => {
     setImageError(false);
@@ -40,7 +41,7 @@ export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
 
   const initials = getInitials(user?.displayName ?? '?');
   const fontSize = Math.round(size * 0.38);
-  const backgroundColor = user.avatarColor ?? (hasImage ? 'transparent' : FALLBACK_COLOR);
+  const backgroundColor = user.avatarColor ?? (hasImage ? 'transparent' : theme.backgroundElement);
 
   return (
     <View
@@ -51,6 +52,8 @@ export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
           height: size,
           borderRadius: size / 2,
           backgroundColor,
+          borderWidth: !hasImage && !hasColor ? 1 : 0,
+          borderColor: theme.border,
         },
       ]}>
       {hasImage ? (
@@ -68,7 +71,10 @@ export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
       ) : (
         <ThemedText
           type="smallBold"
-          style={[styles.initials, { fontSize, color: '#FFFFFF' }]}>
+          style={[
+            styles.initials,
+            { fontSize, color: hasColor ? '#FFFFFF' : theme.textSecondary },
+          ]}>
           {initials}
         </ThemedText>
       )}

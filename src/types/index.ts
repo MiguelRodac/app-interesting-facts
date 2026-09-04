@@ -9,7 +9,7 @@ export interface Author {
   username: string;
   displayName: string;
   email?: string;
-  avatarColor: string;
+  avatarColor: string | null;
   avatarUrl: string | null;
 }
 

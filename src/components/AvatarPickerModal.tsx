@@ -61,15 +61,7 @@ export function AvatarPickerModal({
   }, [visible, currentColor, currentAvatarUrl, fetchAvatarOptions]);
 
   const handlePickColor = (color: string) => {
-    // If the currently pending avatar has this same color, keep the avatar;
-    // otherwise clear the avatar image so the picked color is visible.
-    const matchingAvatar = avatarOptions.find(
-      (opt) => opt.url === pendingUrl && opt.color === color,
-    );
     setPendingColor(color);
-    if (!matchingAvatar) {
-      setPendingUrl(null);
-    }
   };
 
   const handlePickNoColor = () => {
@@ -78,10 +70,6 @@ export function AvatarPickerModal({
 
   const handlePickAvatar = (option: ApiAvatarOption) => {
     setPendingUrl(option.url!);
-    // Also auto-select the avatar's background color if it has one
-    if (option.color) {
-      setPendingColor(option.color);
-    }
   };
 
   const handlePickNoAvatar = () => {
@@ -130,9 +118,10 @@ export function AvatarPickerModal({
                         onPress={handlePickNoColor}
                         style={[
                           styles.noColorOption,
+                          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
                           pendingColor === null && styles.optionSelected,
                         ]}>
-                        <Ionicons name="close" size={20} color="#FFFFFF" />
+                        <Ionicons name="ban-outline" size={20} color={theme.textSecondary} />
                         {pendingColor === null && (
                           <View style={styles.checkBadge}>
                             <Ionicons name="checkmark" size={14} color="#FFFFFF" />
@@ -312,12 +301,10 @@ const styles = StyleSheet.create({
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
     borderRadius: CIRCLE_SIZE / 2,
-    backgroundColor: '#616161',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: '#999',
   },
   colorGrid: {
     flexDirection: 'row',

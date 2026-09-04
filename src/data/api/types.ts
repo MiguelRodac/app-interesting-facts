@@ -53,7 +53,7 @@ export interface ApiRepostResponse {
   author: ApiAuthor;
   title: string | null;
   content: string;
-  hashtags: ApiHashtag[];
+  hashtags: (ApiHashtag | string)[];
   repostCount: number;
   repostedBy: ApiRepostAuthor;
   liked: boolean;
@@ -137,7 +137,7 @@ export interface ApiFact {
   repostBy?: ApiUserAvatarPreview[];
   comments?: number;
   commentsDetails?: ApiCommentPreview | null;
-  hashtags: ApiHashtag[];
+  hashtags: (ApiHashtag | string)[];
   createdAt: string;
   updatedAt?: string;
 }
@@ -206,11 +206,13 @@ export interface ApiAvatarOption {
 /** Response from GET /facts/search */
 export interface ApiSearchResponse {
   users: ApiAuthor[];
-  results: ApiFact[];
   hashtags: ApiHashtag[];
+  results: ApiFactFeedItem[];
   page: number;
   limit: number;
   hasMore: boolean;
+  /** Optional fallback for backwards compatibility */
+  facts?: (ApiFactFeedItem | ApiFact)[];
 }
 
 /** Response from GET /users/:userId/likes — paginated feed entries (facts + reposts) ordered by like date */

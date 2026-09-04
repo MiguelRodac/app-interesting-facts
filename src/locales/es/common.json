@@ -57,6 +57,7 @@
   "leaveAppTitle": "Salir de la aplicación",
   "leaveAppMessage": "Vas a salir de la aplicación. ¿Deseas continuar?",
   "factDeleted": "Dato eliminado exitosamente",
+  "factUpdated": "Dato actualizado exitosamente",
   "commentUpdated": "Comentario actualizado exitosamente",
   "commentDeleted": "Comentario eliminado exitosamente",
   "getStarted": "Comenzar",

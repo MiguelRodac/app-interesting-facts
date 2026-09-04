@@ -58,6 +58,7 @@
   "leaveAppMessage": "You are leaving the application. Do you want to continue?",
   "continue": "Continue",
   "factDeleted": "Fact deleted successfully",
+  "factUpdated": "Fact updated successfully",
   "commentUpdated": "Comment updated successfully",
   "commentDeleted": "Comment deleted successfully",
   "getStarted": "Get Started",

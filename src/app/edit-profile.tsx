@@ -130,21 +130,8 @@ export default function EditProfileScreen() {
   }, [editEmailValue, pendingEmail]);
 
   const handleSelectAvatarOption = useCallback((color: string | null, url: string | null) => {
-    if (url) {
-      // Option with an image — override the image, keep color as fallback
-      setPendingAvatarUrl(url);
-      if (color) {
-        setPendingAvatarColor(color);
-      }
-    } else if (color) {
-      // Color-only option — remove any custom image
-      setPendingAvatarColor(color);
-      setPendingAvatarUrl(null);
-    } else {
-      // No avatar option — clear both so the backend receives null
-      setPendingAvatarColor(null);
-      setPendingAvatarUrl(null);
-    }
+    setPendingAvatarColor(color);
+    setPendingAvatarUrl(url);
   }, []);
 
   const handleSave = useCallback(async () => {

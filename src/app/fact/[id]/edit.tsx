@@ -13,6 +13,7 @@ import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
 import { Radii, Spacing, MaxContentWidth, Shadows } from '@/constants/theme';
 import { useFactsStore } from '@/data/stores/factsStore';
+import { useUIStore } from '@/data/stores/uiStore';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
@@ -299,13 +300,14 @@ export default function EditFactScreen() {
         title: title.trim() || undefined,
         content: content.trim(),
       });
+      useUIStore.getState().showToast(t('common:factUpdated', { defaultValue: 'Dato actualizado exitosamente' }), 'success');
       router.replace(`/fact/${fact.id}`);
     } catch {
       // Error is handled by uiStore → ErrorBanner
     } finally {
       setIsSubmitting(false);
     }
-  }, [isValid, isSubmitting, fact, hasChanges, title, content, updateFact, router]);
+  }, [isValid, isSubmitting, fact, hasChanges, title, content, updateFact, router, t]);
 
   const handleCancel = useCallback(() => {
     // With unsaved changes, block the in-screen back button and ask first.

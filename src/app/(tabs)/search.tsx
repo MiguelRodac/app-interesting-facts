@@ -33,10 +33,15 @@ export default function SearchScreen() {
     postsResults,
     hashtagsResults,
     isLoading,
+    isLoadingMore,
+    hasMore,
     setQuery,
     setActiveTab,
     search,
+    loadMore,
     clearResults,
+    togglePostLike,
+    togglePostRepostLike,
   } = useSearch();
 
   const theme = useTheme();
@@ -53,6 +58,16 @@ export default function SearchScreen() {
   const [likesRepostId, setLikesRepostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const toggleLike = useFactsStore((s) => s.toggleLike);
+  const handleLike = useCallback(
+    async (factId: string) => {
+      if (!isAuthenticated) return;
+      togglePostLike(factId);
+      await toggleLike(factId);
+    },
+    [isAuthenticated, togglePostLike, toggleLike],
+  );
+
   const toggleRepost = useFactsStore((s) => s.toggleRepost);
   const handleRepost = useCallback(
     async (factId: string) => {
@@ -65,12 +80,12 @@ export default function SearchScreen() {
 
   const toggleRepostLike = useRepostsStore((s) => s.toggleRepostLike);
   const handleRepostLike = useCallback(
-    (repostEntryId: string) => {
-      if (isAuthenticated) {
-        toggleRepostLike(repostEntryId);
-      }
+    async (repostEntryId: string) => {
+      if (!isAuthenticated) return;
+      togglePostRepostLike(repostEntryId);
+      await toggleRepostLike(repostEntryId);
     },
-    [isAuthenticated, toggleRepostLike],
+    [isAuthenticated, togglePostRepostLike, toggleRepostLike],
   );
 
   const handleRefresh = useCallback(async () => {
@@ -126,7 +141,8 @@ export default function SearchScreen() {
       setInputValue(decodedQuery);
       latestTextRef.current = decodedQuery;
       setQuery(decodedQuery);
-      search(decodedQuery);
+      const preferred = decodedQuery.trim().startsWith('#') ? 'posts' : undefined;
+      search(decodedQuery, preferred);
     }
   }, [params.q, setQuery, search]);
 
@@ -175,9 +191,13 @@ export default function SearchScreen() {
 
   const handleHashtagPress = useCallback(
     (tag: string) => {
-      router.push({ pathname: '/(tabs)/search', params: { q: `#${tag}` } });
+      const hashtagQuery = `#${tag}`;
+      setInputValue(hashtagQuery);
+      latestTextRef.current = hashtagQuery;
+      setQuery(hashtagQuery);
+      search(hashtagQuery, 'posts');
     },
-    [router],
+    [setQuery, search],
   );
 
   const handleTabChange = useCallback(
@@ -187,12 +207,12 @@ export default function SearchScreen() {
     [setActiveTab],
   );
 
-  // Build tabs with counts
+  // Build tabs with counts (Facts/Posts first, then People, then Hashtags)
   const tabsWithCounts: SegmentedTab[] = useMemo(() => [
-    { key: 'people', label: t('search:tabPeople'), count: peopleResults.length },
     { key: 'posts', label: t('search:tabPosts'), count: postsResults.length },
+    { key: 'people', label: t('search:tabPeople'), count: peopleResults.length },
     { key: 'hashtags', label: t('search:tabHashtags'), count: hashtagsResults.length },
-  ], [t, peopleResults.length, postsResults.length, hashtagsResults.length]);
+  ], [t, postsResults.length, peopleResults.length, hashtagsResults.length]);
 
   // --- People tab ---
   const renderPeopleItem = useCallback(
@@ -222,14 +242,14 @@ export default function SearchScreen() {
         variant="preview"
         isSignedIn={isAuthenticated}
         onPress={() => handleFactPress(item)}
-        onLike={isAuthenticated && !item.isRepost ? () => {} : undefined}
+        onLike={isAuthenticated && !item.isRepost ? () => handleLike(item.id) : undefined}
         onRepost={isAuthenticated ? () => handleRepost(item.originalFactId ?? item.id) : undefined}
         onRepostLike={isAuthenticated && item.isRepost ? () => handleRepostLike(item.id) : undefined}
         onOpenLikes={!item.isRepost ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
         onOpenRepostLikes={item.isRepost ? () => setLikesRepostId(item.id) : undefined}
       />
     ),
-    [isAuthenticated, handleFactPress, handleRepost, handleRepostLike],
+    [isAuthenticated, handleFactPress, handleLike, handleRepost, handleRepostLike],
   );
 
   // --- Hashtags tab ---
@@ -302,6 +322,21 @@ export default function SearchScreen() {
         ? (renderPostItem as ({ item }: { item: Author | Fact | Hashtag }) => React.ReactElement)
         : (renderHashtagItem as ({ item }: { item: Author | Fact | Hashtag }) => React.ReactElement);
 
+  const handleEndReached = useCallback(() => {
+    if (activeTab === 'posts' && hasMore && !isLoading && !isLoadingMore) {
+      loadMore();
+    }
+  }, [activeTab, hasMore, isLoading, isLoadingMore, loadMore]);
+
+  const renderFooter = useCallback(() => {
+    if (!isLoadingMore || activeTab !== 'posts') return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={theme.primary} />
+      </View>
+    );
+  }, [isLoadingMore, activeTab, theme.primary]);
+
   // Show loading while checking auth — early return AFTER all hooks
   if (authLoading) {
     return (
@@ -359,6 +394,9 @@ export default function SearchScreen() {
           keyExtractor={activeKeyExtractor}
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
+          ListFooterComponent={renderFooter}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -441,5 +479,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  footerLoader: {
+    paddingVertical: Spacing.four,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

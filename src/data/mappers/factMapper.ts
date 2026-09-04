@@ -4,12 +4,20 @@ import { mapCommentPreviewDto, mapLikePreviewDto } from './commentMapper';
 import { mapAuthorDto } from './userMapper';
 
 /**
- * Maps an API Hashtag to a domain Hashtag.
+ * Maps an API Hashtag (object or string) to a domain Hashtag.
  */
-function mapHashtagDto(dto: ApiHashtag): Hashtag {
+function mapHashtagDto(dto: ApiHashtag | string): Hashtag {
+  if (typeof dto === 'string') {
+    const clean = dto.startsWith('#') ? dto.slice(1) : dto;
+    return {
+      id: clean,
+      tag: clean,
+    };
+  }
+  const clean = dto.tag?.startsWith('#') ? dto.tag.slice(1) : (dto.tag ?? '');
   return {
-    id: dto.id,
-    tag: dto.tag,
+    id: dto.id || clean,
+    tag: clean,
   };
 }
 
@@ -58,24 +66,26 @@ export function mapRepostDto(repost: ApiRepostResponse): Fact {
     liked: false,
     likeBy: (repost.likeBy ?? []).map(mapLikePreviewDto),
     repostCount: repost.repostCount ?? 0,
-    repostedByMe: repost.repostedBy.isMe,
+    repostedByMe: repost.repostedBy?.isMe ?? false,
     repostBy: [],
     repostLikeCount: repost.repostLikeCount ?? 0,
-    repostLiked: repost.liked,
+    repostLiked: repost.liked ?? false,
     repostCommentCount: repost.repostCommentCount ?? 0,
     commentsCount: 0,
     commentPreview: null,
     hashtags: repost.hashtags?.map(mapHashtagDto) ?? [],
     createdAt: repost.createdAt,
     isRepost: true,
-    reposterUsername: repost.repostedBy.username,
-    reposter: {
-      username: repost.repostedBy.username,
-      displayName: repost.repostedBy.displayName,
-      avatarUrl: repost.repostedBy.avatarUrl,
-      avatarColor: repost.repostedBy.avatarColor,
-      isMe: repost.repostedBy.isMe,
-    },
+    reposterUsername: repost.repostedBy?.username ?? '',
+    reposter: repost.repostedBy
+      ? {
+          username: repost.repostedBy.username,
+          displayName: repost.repostedBy.displayName,
+          avatarUrl: repost.repostedBy.avatarUrl,
+          avatarColor: repost.repostedBy.avatarColor,
+          isMe: repost.repostedBy.isMe ?? false,
+        }
+      : undefined,
     originalFactId: repost.factId,
   };
 }
@@ -88,10 +98,12 @@ export function mapRepostDto(repost: ApiRepostResponse): Fact {
  * - type: 'fact' → the inner `fact` is a FactResponse
  * - type: 'repost' → the inner `repost` is a RepostResponse with its own ID
  */
-export function mapFactsDtos(dtos: (ApiFact | ApiFactFeedItem)[]): Fact[] {
+export function mapFactsDtos(dtos?: (ApiFact | ApiFactFeedItem)[] | null): Fact[] {
+  if (!Array.isArray(dtos)) return [];
   const seen = new Set<string>();
   const facts: Fact[] = [];
   for (const item of dtos) {
+    if (!item) continue;
     const entry = item as ApiFactFeedItem;
 
     if (entry.type === 'repost' && 'repost' in entry) {

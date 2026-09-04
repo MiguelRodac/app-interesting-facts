@@ -192,6 +192,8 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
   // is empty, so fetch the fact by ID instead of showing "not found".
   useEffect(() => {
     if (!id || isDeletingRef.current) return;
+    if (fact && fact.id === id) return;
+
     const found = facts.find((f) => f.id === id);
     if (found) {
       setFact(found);
@@ -215,10 +217,10 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
     return () => {
       active = false;
     };
-  }, [id, facts, fetchFactById]);
+  }, [id, facts, fetchFactById, fact]);
 
   const handleRefresh = useCallback(async () => {
-    if (!id) return;
+    if (!id || isDeletingRef.current) return;
     setRefreshing(true);
     try {
       await fetchFactById(id);
@@ -702,7 +704,11 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   overflowBtn: {
-    padding: Spacing.one,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radii.full,
   },
   tooltipBackdrop: {
     position: 'absolute',
@@ -716,10 +722,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '100%',
     right: 0,
-    marginTop: 6,
-    borderRadius: Radii.sm,
+    marginTop: 2,
+    paddingVertical: Spacing.half,
+    borderRadius: Radii.md,
     borderWidth: 1,
-    minWidth: 120,
+    minWidth: 130,
     ...Shadows.lg,
     zIndex: 400,
     elevation: 30,
@@ -737,8 +744,8 @@ const styles = StyleSheet.create({
   },
   tooltipArrow: {
     position: 'absolute',
-    top: -7,
-    right: 10,
+    top: -6,
+    right: 12,
     width: 0,
     height: 0,
     borderLeftWidth: 6,
@@ -749,8 +756,8 @@ const styles = StyleSheet.create({
   },
   tooltipArrowInner: {
     position: 'absolute',
-    top: -5,
-    right: 11,
+    top: -4.5,
+    right: 13,
     width: 0,
     height: 0,
     borderLeftWidth: 5,
