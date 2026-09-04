@@ -33,7 +33,7 @@ export default function LandingScreen() {
   const isNarrow = width < BREAKPOINT;
   const [deviceType, setDeviceType] = useState<'ios' | 'android' | 'desktop'>('desktop');
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [activeAccordion, setActiveAccordion] = useState<'apk' | 'pwa' | null>(null);
+  const [activeAccordion, setActiveAccordion] = useState<'apk' | 'pwa' | null>('apk');
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [pwaGuideModalVisible, setPwaGuideModalVisible] = useState(false);
   const [guideY, setGuideY] = useState(0);
@@ -108,8 +108,7 @@ export default function LandingScreen() {
       try {
         const a = document.createElement('a');
         a.href = downloadHref;
-        a.download = 'app-interesting-facts.apk';
-        a.target = '_blank';
+        a.setAttribute('download', 'app-interesting-facts.apk');
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -124,9 +123,10 @@ export default function LandingScreen() {
   useEffect(() => {
     if (Platform.OS === 'web' && download === 'apk' && !hasAutoDownloadedRef.current) {
       hasAutoDownloadedRef.current = true;
+      setActiveAccordion('apk');
       const timer = setTimeout(() => {
         handleConfirmDownload();
-      }, 350);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [download, handleConfirmDownload]);
@@ -301,7 +301,7 @@ export default function LandingScreen() {
                       isNarrow && styles.ctaNarrow,
                       { backgroundColor: theme.primary, alignSelf: 'center', marginTop: Spacing.three },
                     ]}
-                    onPress={() => setConfirmModalVisible(true)}>
+                    onPress={handleConfirmDownload}>
                     <Ionicons name="download-outline" size={20} color="#FFFFFF" />
                     <ThemedText type="default" style={styles.ctaPrimaryText}>
                       {t('landing:downloadApk')}

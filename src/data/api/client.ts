@@ -5,7 +5,7 @@ import { createNetworkError, mapApiError } from "./errors";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 const APP_VERSION =
-  process.env.EXPO_PUBLIC_APP_VERSION ?? Constants.expoConfig?.version ?? '0.0.8';
+  process.env.EXPO_PUBLIC_APP_VERSION ?? Constants.expoConfig?.version ?? '1.0.0';
 
 type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -120,7 +120,9 @@ async function request<T>(options: RequestOptions): Promise<T> {
         errorCode === "APP_VERSION_OUTDATED" ||
         errorCode === "APP_VERSION_MISSING"
       ) {
-        appUpdateHandler?.();
+        if (Platform.OS !== "web") {
+          appUpdateHandler?.();
+        }
       }
       throw mapApiError(response.status, responseBody);
     }

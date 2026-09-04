@@ -12,7 +12,7 @@ import { useUpdateStore } from '@/data/stores/updateStore';
 import { useTheme } from '@/hooks/use-theme';
 import { Radii, Spacing, Shadows } from '@/constants/theme';
 
-const APP_VERSION = process.env.EXPO_PUBLIC_APP_VERSION ?? '0.0.8';
+const APP_VERSION = process.env.EXPO_PUBLIC_APP_VERSION ?? '1.0.0';
 const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? 'https://app-interesting-facts.vercel.app/landing';
 const APK_URL = process.env.EXPO_PUBLIC_APK_URL ?? 'https://app-interesting-facts.vercel.app/app-interesting-facts.apk';
 
@@ -23,6 +23,8 @@ const APK_URL = process.env.EXPO_PUBLIC_APK_URL ?? 'https://app-interesting-fact
  * and direct actions (direct APK download and in-app web landing).
  */
 export function AppUpdateGate() {
+  if (Platform.OS === 'web') return null;
+
   const { t } = useTranslation(['common']);
   const theme = useTheme();
   const updateRequired = useUpdateStore((s) => s.updateRequired);
