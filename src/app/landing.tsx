@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Linking, Platform, StyleSheet, ScrollView, View, useWindowDimensions } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { AppModal } from '@/components/ui/app-modal';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
@@ -38,6 +38,8 @@ export default function LandingScreen() {
   const [pwaGuideModalVisible, setPwaGuideModalVisible] = useState(false);
   const [guideY, setGuideY] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+  const { download } = useLocalSearchParams<{ download?: string }>();
+  const hasAutoDownloadedRef = useRef(false);
 
   const features = useMemo(
     () => [
@@ -100,23 +102,34 @@ export default function LandingScreen() {
 
   const handleConfirmDownload = useCallback(() => {
     setConfirmModalVisible(false);
-    if (!APK_URL) return;
+    const downloadHref = APK_URL || '/app-interesting-facts.apk';
+    if (!downloadHref) return;
     if (Platform.OS === 'web') {
       try {
         const a = document.createElement('a');
-        a.href = APK_URL;
+        a.href = downloadHref;
         a.download = 'app-interesting-facts.apk';
         a.target = '_blank';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
       } catch {
-        window.location.href = APK_URL;
+        window.location.href = downloadHref;
       }
     } else {
-      Linking.openURL(APK_URL).catch(() => {});
+      Linking.openURL(downloadHref).catch(() => {});
     }
   }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && download === 'apk' && !hasAutoDownloadedRef.current) {
+      hasAutoDownloadedRef.current = true;
+      const timer = setTimeout(() => {
+        handleConfirmDownload();
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [download, handleConfirmDownload]);
 
   const handleInstall = async () => {
     if (installPrompt) {
@@ -520,9 +533,11 @@ export default function LandingScreen() {
             </View>
 
             <AppPressable
-              style={[styles.modalButton, { backgroundColor: theme.primary, width: '100%', marginTop: Spacing.one }]}
-              onPress={() => setPwaGuideModalVisible(false)}>
-              <ThemedText type="smallBold" style={styles.primaryButtonText}>
+              style={[styles.guideCloseButton, { backgroundColor: theme.primary }]}
+              onPress={() => setPwaGuideModalVisible(false)}
+              accessibilityRole="button"
+              accessibilityLabel={t('common:understand', { defaultValue: 'Entendido' })}>
+              <ThemedText type="smallBold" style={{ color: '#FFFFFF', textAlign: 'center' }}>
                 {t('common:understand', { defaultValue: 'Entendido' })}
               </ThemedText>
             </AppPressable>
@@ -801,5 +816,14 @@ const styles = StyleSheet.create({
   stepDesc: {
     lineHeight: 18,
     fontSize: 13,
+  },
+  guideCloseButton: {
+    width: '100%',
+    paddingVertical: Spacing.three,
+    borderRadius: Radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+    marginTop: Spacing.one,
   },
 });

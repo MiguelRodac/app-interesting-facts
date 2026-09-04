@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Linking, Platform, StyleSheet, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -29,6 +28,7 @@ export function AppUpdateGate() {
   const updateRequired = useUpdateStore((s) => s.updateRequired);
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [guideModalVisible, setGuideModalVisible] = useState(false);
+  const [isStartingDownload, setIsStartingDownload] = useState(false);
 
   useEffect(() => {
     setAppUpdateHandler(() => useUpdateStore.getState().flagUpdateRequired());
@@ -40,29 +40,65 @@ export function AppUpdateGate() {
       if (Platform.OS === 'web') {
         window.open(WEB_URL, '_blank');
       } else {
-        await WebBrowser.openBrowserAsync(WEB_URL, {
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-          controlsColor: theme.primary,
-        });
+        await Linking.openURL(WEB_URL);
       }
     } catch {
-      Linking.openURL(WEB_URL).catch(() => {});
+      Alert.alert(
+        t('common:error', { defaultValue: 'Error' }),
+        t('common:openWebError', { defaultValue: 'No se pudo abrir el navegador. Por favor ingresa manualmente a: ' }) + WEB_URL,
+      );
     }
-  }, [theme.primary]);
+  }, [t]);
 
   const handleConfirmDownload = useCallback(async () => {
     setConfirmModalVisible(false);
-    if (!APK_URL) return;
-    try {
-      if (Platform.OS === 'web') {
+    if (Platform.OS === 'web') {
+      if (!APK_URL) return;
+      try {
+        const a = document.createElement('a');
+        a.href = APK_URL;
+        a.download = 'app-interesting-facts.apk';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch {
         window.open(APK_URL, '_blank');
-      } else {
-        await Linking.openURL(APK_URL);
       }
-    } catch {
-      // ignore
+      return;
     }
-  }, []);
+
+    setIsStartingDownload(true);
+    const targetUrl = WEB_URL
+      ? (WEB_URL.includes('?') ? `${WEB_URL}&download=apk` : `${WEB_URL}?download=apk`)
+      : APK_URL;
+
+    if (!targetUrl) {
+      setIsStartingDownload(false);
+      return;
+    }
+
+    try {
+      await Linking.openURL(targetUrl);
+    } catch {
+      try {
+        if (APK_URL) {
+          await Linking.openURL(APK_URL);
+        } else {
+          throw new Error('No APK URL');
+        }
+      } catch {
+        Alert.alert(
+          t('common:error', { defaultValue: 'Error' }),
+          t('common:downloadError', { defaultValue: 'No se pudo iniciar la descarga. Por favor visita nuestra página web.' }),
+        );
+      }
+    } finally {
+      setTimeout(() => {
+        setIsStartingDownload(false);
+      }, 3000);
+    }
+  }, [t]);
 
   if (!updateRequired) return null;
 
@@ -93,22 +129,39 @@ export function AppUpdateGate() {
         </View>
 
         <View style={styles.buttonsContainer}>
+          {isStartingDownload ? (
+            <View style={[styles.downloadFeedbackBox, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <ActivityIndicator size="small" color={theme.primary} />
+              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.downloadFeedbackText}>
+                {t('common:openingBrowserDownload', { defaultValue: 'Iniciando descarga en el navegador...' })}
+              </ThemedText>
+            </View>
+          ) : null}
+
           {APK_URL ? (
             <AppPressable
-              style={[styles.primaryButton, { backgroundColor: theme.primary }]}
+              style={[styles.primaryButton, { backgroundColor: theme.primary, opacity: isStartingDownload ? 0.7 : 1 }]}
               onPress={() => setConfirmModalVisible(true)}
+              disabled={isStartingDownload}
               hitSlop={6}>
-              <Ionicons name="download-outline" size={18} color="#FFFFFF" />
+              {isStartingDownload ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="download-outline" size={18} color="#FFFFFF" />
+              )}
               <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                {t('common:updateDownloadDirect', { defaultValue: 'Descargar actualización (APK)' })}
+                {isStartingDownload
+                  ? t('common:openingBrowser', { defaultValue: 'Abriendo navegador...' })
+                  : t('common:updateDownloadDirect', { defaultValue: 'Descargar actualización (APK)' })}
               </ThemedText>
             </AppPressable>
           ) : null}
 
           {WEB_URL ? (
             <AppPressable
-              style={[styles.secondaryButton, { borderColor: theme.border }]}
+              style={[styles.secondaryButton, { borderColor: theme.border, opacity: isStartingDownload ? 0.7 : 1 }]}
               onPress={handleGoToWeb}
+              disabled={isStartingDownload}
               hitSlop={6}>
               <Ionicons name="globe-outline" size={16} color={theme.text} />
               <ThemedText type="small" themeColor="text">
@@ -207,9 +260,11 @@ export function AppUpdateGate() {
             </View>
 
             <AppPressable
-              style={[styles.modalButton, { backgroundColor: theme.primary, width: '100%', marginTop: Spacing.one }]}
-              onPress={() => setGuideModalVisible(false)}>
-              <ThemedText type="smallBold" style={styles.primaryButtonText}>
+              style={[styles.guideCloseButton, { backgroundColor: theme.primary }]}
+              onPress={() => setGuideModalVisible(false)}
+              accessibilityRole="button"
+              accessibilityLabel={t('common:understand', { defaultValue: 'Entendido' })}>
+              <ThemedText type="smallBold" style={{ color: '#FFFFFF', textAlign: 'center' }}>
                 {t('common:understand', { defaultValue: 'Entendido' })}
               </ThemedText>
             </AppPressable>
@@ -355,6 +410,29 @@ const styles = StyleSheet.create({
   },
   stepDesc: {
     lineHeight: 18,
+    fontSize: 13,
+  },
+  guideCloseButton: {
+    width: '100%',
+    paddingVertical: Spacing.three,
+    borderRadius: Radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+    marginTop: Spacing.one,
+  },
+  downloadFeedbackBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    width: '100%',
+  },
+  downloadFeedbackText: {
     fontSize: 13,
   },
 });

@@ -83,5 +83,9 @@
   "installStep2Desc": "If prompted by Android, enable \"Allow from this source\" in your browser.",
   "installStep3Title": "3. Open and install",
   "installStep3Desc": "Tap the download complete notification or find the file in Downloads and tap Install.",
-  "understand": "Got it"
+  "understand": "Got it",
+  "openingBrowserDownload": "Starting download in browser...",
+  "openingBrowser": "Opening browser...",
+  "openWebError": "Could not open browser. Please visit manually: ",
+  "downloadError": "Could not start download. Please visit our website."
 }
