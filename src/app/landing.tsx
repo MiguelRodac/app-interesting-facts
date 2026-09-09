@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Linking, Platform, StyleSheet, ScrollView, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Linking, Platform, StyleSheet, ScrollView, View, useWindowDimensions } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { AppModal } from '@/components/ui/app-modal';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -36,10 +36,21 @@ export default function LandingScreen() {
   const [activeAccordion, setActiveAccordion] = useState<'apk' | 'pwa' | null>('apk');
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [pwaGuideModalVisible, setPwaGuideModalVisible] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const isDownloadingRef = useRef(false);
+  const downloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [guideY, setGuideY] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const { download } = useLocalSearchParams<{ download?: string }>();
   const hasAutoDownloadedRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (downloadTimerRef.current) {
+        clearTimeout(downloadTimerRef.current);
+      }
+    };
+  }, []);
 
   const features = useMemo(
     () => [
@@ -101,22 +112,42 @@ export default function LandingScreen() {
   }, [guideY]);
 
   const handleConfirmDownload = useCallback(() => {
+    if (isDownloadingRef.current) return;
+    isDownloadingRef.current = true;
+    setIsDownloading(true);
     setConfirmModalVisible(false);
+
+    if (downloadTimerRef.current) {
+      clearTimeout(downloadTimerRef.current);
+    }
+
     const downloadHref = APK_URL || '/app-interesting-facts.apk';
-    if (!downloadHref) return;
-    if (Platform.OS === 'web') {
-      try {
+    if (!downloadHref) {
+      isDownloadingRef.current = false;
+      setIsDownloading(false);
+      return;
+    }
+
+    try {
+      if (Platform.OS === 'web') {
         const a = document.createElement('a');
         a.href = downloadHref;
         a.setAttribute('download', 'app-interesting-facts.apk');
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-      } catch {
+      } else {
+        Linking.openURL(downloadHref).catch(() => {});
+      }
+    } catch {
+      if (Platform.OS === 'web') {
         window.location.href = downloadHref;
       }
-    } else {
-      Linking.openURL(downloadHref).catch(() => {});
+    } finally {
+      downloadTimerRef.current = setTimeout(() => {
+        isDownloadingRef.current = false;
+        setIsDownloading(false);
+      }, 5000);
     }
   }, []);
 
@@ -299,12 +330,22 @@ export default function LandingScreen() {
                     style={[
                       styles.ctaPrimary,
                       isNarrow && styles.ctaNarrow,
-                      { backgroundColor: theme.primary, alignSelf: 'center', marginTop: Spacing.three },
+                      {
+                        backgroundColor: theme.primary,
+                        alignSelf: 'center',
+                        marginTop: Spacing.three,
+                        opacity: isDownloading ? 0.7 : 1,
+                      },
                     ]}
+                    disabled={isDownloading}
                     onPress={handleConfirmDownload}>
-                    <Ionicons name="download-outline" size={20} color="#FFFFFF" />
+                    {isDownloading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Ionicons name="download-outline" size={20} color="#FFFFFF" />
+                    )}
                     <ThemedText type="default" style={styles.ctaPrimaryText}>
-                      {t('landing:downloadApk')}
+                      {isDownloading ? t('landing:downloading') : t('landing:downloadApk')}
                     </ThemedText>
                   </AppPressable>
                 </View>
@@ -443,10 +484,14 @@ export default function LandingScreen() {
                 </ThemedText>
               </AppPressable>
               <AppPressable
-                style={[styles.modalButton, { backgroundColor: theme.primary }]}
+                style={[styles.modalButton, { backgroundColor: theme.primary, opacity: isDownloading ? 0.7 : 1 }]}
+                disabled={isDownloading}
                 onPress={handleConfirmDownload}>
+                {isDownloading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 6 }} />
+                ) : null}
                 <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                  {t('common:download', { defaultValue: 'Descargar' })}
+                  {isDownloading ? t('landing:downloading') : t('common:download', { defaultValue: 'Descargar' })}
                 </ThemedText>
               </AppPressable>
             </View>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +32,7 @@ export function AppUpdateGate() {
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [guideModalVisible, setGuideModalVisible] = useState(false);
   const [isStartingDownload, setIsStartingDownload] = useState(false);
+  const isStartingDownloadRef = useRef(false);
 
   useEffect(() => {
     setAppUpdateHandler(() => useUpdateStore.getState().flagUpdateRequired());
@@ -61,9 +62,17 @@ export function AppUpdateGate() {
   }, [t, theme.primary]);
 
   const handleConfirmDownload = useCallback(async () => {
+    if (isStartingDownloadRef.current) return;
+    isStartingDownloadRef.current = true;
+    setIsStartingDownload(true);
     setConfirmModalVisible(false);
+
     if (Platform.OS === 'web') {
-      if (!APK_URL) return;
+      if (!APK_URL) {
+        isStartingDownloadRef.current = false;
+        setIsStartingDownload(false);
+        return;
+      }
       try {
         const a = document.createElement('a');
         a.href = APK_URL;
@@ -74,11 +83,18 @@ export function AppUpdateGate() {
         document.body.removeChild(a);
       } catch {
         window.open(APK_URL, '_blank');
+      } finally {
+        setTimeout(() => {
+          isStartingDownloadRef.current = false;
+          setIsStartingDownload(false);
+        }, 3000);
       }
       return;
     }
 
     if (!APK_URL) {
+      isStartingDownloadRef.current = false;
+      setIsStartingDownload(false);
       Alert.alert(
         t('common:error', { defaultValue: 'Error' }),
         t('common:downloadError', { defaultValue: 'No se pudo iniciar la descarga. Por favor visita nuestra página web.' }),
@@ -86,7 +102,6 @@ export function AppUpdateGate() {
       return;
     }
 
-    setIsStartingDownload(true);
     try {
       await Linking.openURL(APK_URL);
     } catch {
@@ -96,6 +111,7 @@ export function AppUpdateGate() {
       );
     } finally {
       setTimeout(() => {
+        isStartingDownloadRef.current = false;
         setIsStartingDownload(false);
       }, 3000);
     }
@@ -207,10 +223,16 @@ export function AppUpdateGate() {
                 </ThemedText>
               </AppPressable>
               <AppPressable
-                style={[styles.modalButton, { backgroundColor: theme.primary }]}
+                style={[styles.modalButton, { backgroundColor: theme.primary, opacity: isStartingDownload ? 0.7 : 1 }]}
+                disabled={isStartingDownload}
                 onPress={handleConfirmDownload}>
+                {isStartingDownload ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 6 }} />
+                ) : null}
                 <ThemedText type="smallBold" style={styles.primaryButtonText}>
-                  {t('common:download', { defaultValue: 'Descargar' })}
+                  {isStartingDownload
+                    ? t('common:openingBrowser', { defaultValue: 'Abriendo navegador...' })
+                    : t('common:download', { defaultValue: 'Descargar' })}
                 </ThemedText>
               </AppPressable>
             </View>
