@@ -19,7 +19,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
 import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
-import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
+import { COLLAPSE_LINES_DETAIL, COLLAPSE_THRESHOLD_DETAIL, checkIsCollapsible } from '@/constants/facts';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useRepostComments, notifyRepostCommentsChanged } from '@/data/hooks/useRepostComments';
 import { useAuth } from '@/data/hooks/useAuth';
@@ -47,7 +47,7 @@ export default function RepostDetailScreen() {
   const [fact, setFact] = useState<Fact | null>(null);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const isCollapsible = fact ? fact.content.length > COLLAPSE_THRESHOLD : false;
+  const isCollapsible = checkIsCollapsible(fact?.content, COLLAPSE_LINES_DETAIL, COLLAPSE_THRESHOLD_DETAIL);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -365,7 +365,7 @@ export default function RepostDetailScreen() {
           {/* Content */}
           <StyledContent
             content={fact.content}
-            numberOfLines={isCollapsible && !expanded ? COLLAPSE_LINES : undefined}
+            numberOfLines={isCollapsible && !expanded ? COLLAPSE_LINES_DETAIL : undefined}
             style={styles.content}
           />
 

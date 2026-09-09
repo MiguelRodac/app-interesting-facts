@@ -19,6 +19,9 @@ interface SearchState {
   page: number;
   limit: number;
   hasMore: boolean;
+  hasMorePosts: boolean;
+  hasMorePeople: boolean;
+  hasMoreHashtags: boolean;
   isLoading: boolean;
   isLoadingMore: boolean;
   setQuery: (q: string) => void;
@@ -37,8 +40,11 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   postsResults: [],
   hashtagsResults: [],
   page: 1,
-  limit: 10,
+  limit: 20,
   hasMore: false,
+  hasMorePosts: false,
+  hasMorePeople: false,
+  hasMoreHashtags: false,
   isLoading: false,
   isLoadingMore: false,
 
@@ -55,6 +61,9 @@ export const useSearchStore = create<SearchState>((set, get) => ({
         hashtagsResults: [],
         page: 1,
         hasMore: false,
+        hasMorePosts: false,
+        hasMorePeople: false,
+        hasMoreHashtags: false,
         isLoading: false,
         isLoadingMore: false,
         activeTab: 'posts',
@@ -68,7 +77,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       const response = await client.get<ApiSearchResponse>('/facts/search', {
         q: trimmed,
         page: '1',
-        limit: '10',
+        limit: '20',
       });
 
       const rawPosts = response.results ?? response.facts ?? [];
@@ -103,13 +112,19 @@ export const useSearchStore = create<SearchState>((set, get) => ({
         }
       }
 
+      const limitVal = response.limit ?? 20;
+      const globalHasMore = response.hasMore ?? false;
+
       set({
         peopleResults: mappedUsers,
         postsResults: mappedPosts,
         hashtagsResults: mappedHashtags,
         page: response.page ?? 1,
-        limit: response.limit ?? 10,
-        hasMore: response.hasMore ?? false,
+        limit: limitVal,
+        hasMore: globalHasMore,
+        hasMorePosts: globalHasMore && mappedPosts.length >= limitVal,
+        hasMorePeople: globalHasMore && mappedUsers.length >= limitVal,
+        hasMoreHashtags: globalHasMore && mappedHashtags.length >= limitVal,
         activeTab: nextTab,
         isLoading: false,
         isLoadingMore: false,
@@ -123,8 +138,30 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   },
 
   loadMore: async () => {
-    const { query, page, limit, hasMore, isLoading, isLoadingMore, activeTab, postsResults } = get();
-    if (!query.trim() || !hasMore || isLoading || isLoadingMore || activeTab !== 'posts') {
+    const {
+      query,
+      page,
+      limit,
+      hasMore,
+      isLoading,
+      isLoadingMore,
+      activeTab,
+      hasMorePosts,
+      hasMorePeople,
+      hasMoreHashtags,
+      postsResults,
+      peopleResults,
+      hashtagsResults,
+    } = get();
+
+    const canActiveTabLoadMore =
+      activeTab === 'posts'
+        ? hasMorePosts
+        : activeTab === 'people'
+          ? hasMorePeople
+          : hasMoreHashtags;
+
+    if (!query.trim() || !hasMore || !canActiveTabLoadMore || isLoading || isLoadingMore) {
       return;
     }
 
@@ -140,19 +177,53 @@ export const useSearchStore = create<SearchState>((set, get) => ({
 
       const rawPosts = response.results ?? response.facts ?? [];
       const newPosts = mapFactsDtos(rawPosts);
+      const rawUsers = response.users ?? [];
+      const newUsers = rawUsers.map(mapAuthorDto);
+      const rawHashtags = response.hashtags ?? [];
+      const newHashtags = rawHashtags.map((h) => ({
+        id: h.id || h.tag,
+        tag: h.tag.startsWith('#') ? h.tag.slice(1) : h.tag,
+      }));
 
-      const byId = new Map(postsResults.map((p) => [p.id, p]));
-      for (const item of newPosts) {
-        byId.set(item.id, item);
+      // If the response returned 0 total items across all groups, force hasMore to false to prevent loops
+      if (newPosts.length === 0 && newUsers.length === 0 && newHashtags.length === 0) {
+        set({
+          hasMore: false,
+          hasMorePosts: false,
+          hasMorePeople: false,
+          hasMoreHashtags: false,
+          isLoadingMore: false,
+        });
+        return;
       }
 
+      const byIdPosts = new Map(postsResults.map((p) => [p.id, p]));
+      for (const item of newPosts) byIdPosts.set(item.id, item);
+
+      const byIdUsers = new Map(peopleResults.map((u) => [u.username, u]));
+      for (const item of newUsers) byIdUsers.set(item.username, item);
+
+      const byIdHashtags = new Map(hashtagsResults.map((h) => [h.tag, h]));
+      for (const item of newHashtags) byIdHashtags.set(item.tag, item);
+
+      const currentLimit = response.limit ?? limit;
+      const globalHasMore = response.hasMore ?? false;
+      const nextHasMorePosts = globalHasMore && newPosts.length >= currentLimit;
+      const nextHasMorePeople = globalHasMore && newUsers.length >= currentLimit;
+      const nextHasMoreHashtags = globalHasMore && newHashtags.length >= currentLimit;
+
       set({
-        postsResults: Array.from(byId.values()),
+        postsResults: Array.from(byIdPosts.values()),
+        peopleResults: Array.from(byIdUsers.values()),
+        hashtagsResults: Array.from(byIdHashtags.values()),
         page: response.page ?? nextPage,
-        hasMore: response.hasMore ?? false,
+        hasMore: globalHasMore && (nextHasMorePosts || nextHasMorePeople || nextHasMoreHashtags),
+        hasMorePosts: nextHasMorePosts,
+        hasMorePeople: nextHasMorePeople,
+        hasMoreHashtags: nextHasMoreHashtags,
         isLoadingMore: false,
       });
-    } catch (error) {
+    } catch {
       set({ isLoadingMore: false });
     }
   },
@@ -164,6 +235,9 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       hashtagsResults: [],
       page: 1,
       hasMore: false,
+      hasMorePosts: false,
+      hasMorePeople: false,
+      hasMoreHashtags: false,
       isLoading: false,
       isLoadingMore: false,
       query: '',

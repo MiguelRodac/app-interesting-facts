@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, View } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -42,15 +43,22 @@ export function AppUpdateGate() {
       if (Platform.OS === 'web') {
         window.open(WEB_URL, '_blank');
       } else {
-        await Linking.openURL(WEB_URL);
+        await WebBrowser.openBrowserAsync(WEB_URL, {
+          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+          controlsColor: theme.primary,
+        });
       }
     } catch {
-      Alert.alert(
-        t('common:error', { defaultValue: 'Error' }),
-        t('common:openWebError', { defaultValue: 'No se pudo abrir el navegador. Por favor ingresa manualmente a: ' }) + WEB_URL,
-      );
+      try {
+        await Linking.openURL(WEB_URL);
+      } catch {
+        Alert.alert(
+          t('common:error', { defaultValue: 'Error' }),
+          t('common:openWebError', { defaultValue: 'No se pudo abrir el navegador. Por favor ingresa manualmente a: ' }) + WEB_URL,
+        );
+      }
     }
-  }, [t]);
+  }, [t, theme.primary]);
 
   const handleConfirmDownload = useCallback(async () => {
     setConfirmModalVisible(false);
@@ -70,31 +78,22 @@ export function AppUpdateGate() {
       return;
     }
 
-    setIsStartingDownload(true);
-    const targetUrl = WEB_URL
-      ? (WEB_URL.includes('?') ? `${WEB_URL}&download=apk` : `${WEB_URL}?download=apk`)
-      : APK_URL;
-
-    if (!targetUrl) {
-      setIsStartingDownload(false);
+    if (!APK_URL) {
+      Alert.alert(
+        t('common:error', { defaultValue: 'Error' }),
+        t('common:downloadError', { defaultValue: 'No se pudo iniciar la descarga. Por favor visita nuestra página web.' }),
+      );
       return;
     }
 
+    setIsStartingDownload(true);
     try {
-      await Linking.openURL(targetUrl);
+      await Linking.openURL(APK_URL);
     } catch {
-      try {
-        if (APK_URL) {
-          await Linking.openURL(APK_URL);
-        } else {
-          throw new Error('No APK URL');
-        }
-      } catch {
-        Alert.alert(
-          t('common:error', { defaultValue: 'Error' }),
-          t('common:downloadError', { defaultValue: 'No se pudo iniciar la descarga. Por favor visita nuestra página web.' }),
-        );
-      }
+      Alert.alert(
+        t('common:error', { defaultValue: 'Error' }),
+        t('common:downloadError', { defaultValue: 'No se pudo iniciar la descarga. Por favor visita nuestra página web.' }),
+      );
     } finally {
       setTimeout(() => {
         setIsStartingDownload(false);

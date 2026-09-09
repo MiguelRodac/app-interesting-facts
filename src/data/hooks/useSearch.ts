@@ -13,6 +13,9 @@ export function useSearch() {
   const isLoading = useSearchStore((s) => s.isLoading);
   const isLoadingMore = useSearchStore((s) => s.isLoadingMore);
   const hasMore = useSearchStore((s) => s.hasMore);
+  const hasMorePosts = useSearchStore((s) => s.hasMorePosts);
+  const hasMorePeople = useSearchStore((s) => s.hasMorePeople);
+  const hasMoreHashtags = useSearchStore((s) => s.hasMoreHashtags);
   const setQuery = useSearchStore((s) => s.setQuery);
   const setActiveTab = useSearchStore((s) => s.setActiveTab);
   const search = useSearchStore((s) => s.search);
@@ -30,6 +33,9 @@ export function useSearch() {
     isLoading,
     isLoadingMore,
     hasMore,
+    hasMorePosts,
+    hasMorePeople,
+    hasMoreHashtags,
     setQuery,
     setActiveTab,
     search,

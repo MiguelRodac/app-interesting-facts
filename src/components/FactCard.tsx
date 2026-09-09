@@ -12,7 +12,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { LikeButton } from '@/components/LikeButton';
 import { LikedByLine } from '@/components/LikedByLine';
 import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
-import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
+import { COLLAPSE_LINES, COLLAPSE_THRESHOLD, checkIsCollapsible } from '@/constants/facts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import type { Fact } from '@/types';
@@ -83,11 +83,10 @@ export function FactCard({
   // Determine if content exceeds the collapse threshold
   const isCollapsible =
     variant !== 'full' &&
-    fact.content &&
-    fact.content.length > COLLAPSE_THRESHOLD;
+    checkIsCollapsible(fact.content, COLLAPSE_LINES, COLLAPSE_THRESHOLD);
 
   const contentNumberOfLines =
-    variant === 'full' || expanded ? undefined : COLLAPSE_LINES;
+    variant === 'full' || expanded || !isCollapsible ? undefined : COLLAPSE_LINES;
 
   const titleEl = fact.title ? (
     <ThemedText type="subtitle" numberOfLines={variant === 'full' ? undefined : 2} style={styles.title}>

@@ -9,5 +9,6 @@
   "noPostsSubtitle": "Try searching with different keywords",
   "noHashtagsTitle": "No hashtags found",
   "noHashtagsSubtitle": "Try searching with a different #tag",
-  "searchHint": "Search by keyword, @username, or #hashtag"
+  "searchHint": "Search by keyword, @username, or #hashtag",
+  "loadMore": "Load more"
 }

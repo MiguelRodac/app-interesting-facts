@@ -35,6 +35,9 @@ export default function SearchScreen() {
     isLoading,
     isLoadingMore,
     hasMore,
+    hasMorePosts,
+    hasMorePeople,
+    hasMoreHashtags,
     setQuery,
     setActiveTab,
     search,
@@ -57,6 +60,8 @@ export default function SearchScreen() {
   const [likesFactId, setLikesFactId] = useState<string | null>(null);
   const [likesRepostId, setLikesRepostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
+  const scrollYRef = useRef(0);
 
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const handleLike = useCallback(
@@ -207,12 +212,12 @@ export default function SearchScreen() {
     [setActiveTab],
   );
 
-  // Build tabs with counts (Facts/Posts first, then People, then Hashtags)
-  const tabsWithCounts: SegmentedTab[] = useMemo(() => [
-    { key: 'posts', label: t('search:tabPosts'), count: postsResults.length },
-    { key: 'people', label: t('search:tabPeople'), count: peopleResults.length },
-    { key: 'hashtags', label: t('search:tabHashtags'), count: hashtagsResults.length },
-  ], [t, postsResults.length, peopleResults.length, hashtagsResults.length]);
+  // Build tabs without counts (clean standard)
+  const tabs: SegmentedTab[] = useMemo(() => [
+    { key: 'posts', label: t('search:tabPosts') },
+    { key: 'people', label: t('search:tabPeople') },
+    { key: 'hashtags', label: t('search:tabHashtags') },
+  ], [t]);
 
   // --- People tab ---
   const renderPeopleItem = useCallback(
@@ -322,20 +327,63 @@ export default function SearchScreen() {
         ? (renderPostItem as ({ item }: { item: Author | Fact | Hashtag }) => React.ReactElement)
         : (renderHashtagItem as ({ item }: { item: Author | Fact | Hashtag }) => React.ReactElement);
 
-  const handleEndReached = useCallback(() => {
-    if (activeTab === 'posts' && hasMore && !isLoading && !isLoadingMore) {
-      loadMore();
-    }
-  }, [activeTab, hasMore, isLoading, isLoadingMore, loadMore]);
+  const canLoadMore =
+    activeTab === 'posts'
+      ? hasMorePosts
+      : activeTab === 'people'
+        ? hasMorePeople
+        : hasMoreHashtags;
+
+  const handleLoadMore = useCallback(async () => {
+    const savedOffset = scrollYRef.current;
+    await loadMore();
+    // Maintain exact scroll position so user isn't thrown to the end of the new batch
+    requestAnimationFrame(() => {
+      flatListRef.current?.scrollToOffset({
+        offset: savedOffset,
+        animated: false,
+      });
+    });
+    setTimeout(() => {
+      flatListRef.current?.scrollToOffset({
+        offset: savedOffset,
+        animated: false,
+      });
+    }, 50);
+  }, [loadMore]);
 
   const renderFooter = useCallback(() => {
-    if (!isLoadingMore || activeTab !== 'posts') return null;
-    return (
-      <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color={theme.primary} />
-      </View>
-    );
-  }, [isLoadingMore, activeTab, theme.primary]);
+    if (isLoadingMore) {
+      return (
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color={theme.primary} />
+        </View>
+      );
+    }
+    if (canLoadMore && !isLoading && activeData.length > 0) {
+      return (
+        <View style={styles.footerActionContainer}>
+          <AppPressable
+            style={[
+              styles.loadMoreButton,
+              { borderColor: theme.border, backgroundColor: theme.backgroundElement },
+              isLoadingMore && { opacity: 0.6 },
+            ]}
+            onPress={handleLoadMore}
+            disabled={isLoadingMore}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('search:loadMore', { defaultValue: 'Ver más' })}>
+            <Ionicons name="chevron-down-outline" size={16} color={theme.primary} />
+            <ThemedText type="smallBold" style={{ color: theme.primary }}>
+              {t('search:loadMore', { defaultValue: 'Ver más' })}
+            </ThemedText>
+          </AppPressable>
+        </View>
+      );
+    }
+    return null;
+  }, [isLoadingMore, canLoadMore, isLoading, activeData.length, theme.primary, theme.border, theme.backgroundElement, handleLoadMore, t]);
 
   // Show loading while checking auth — early return AFTER all hooks
   if (authLoading) {
@@ -377,7 +425,7 @@ export default function SearchScreen() {
       {/* Segmented tabs — only visible after a search */}
       {query.trim().length > 0 && !isLoading && (
         <SegmentedTabs
-          tabs={tabsWithCounts}
+          tabs={tabs}
           activeKey={activeTab}
           onChange={handleTabChange}
         />
@@ -389,15 +437,18 @@ export default function SearchScreen() {
         <LoadingSkeleton count={3} />
       ) : (
         <FlatList
+          ref={flatListRef}
           data={activeData as (Author | Fact | Hashtag)[]}
           renderItem={activeRenderItem}
           keyExtractor={activeKeyExtractor}
           contentContainerStyle={styles.list}
           ListEmptyComponent={renderEmpty}
           ListFooterComponent={renderFooter}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.5}
           showsVerticalScrollIndicator={false}
+          onScroll={(e) => {
+            scrollYRef.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -484,5 +535,20 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  footerActionContainer: {
+    paddingVertical: Spacing.four,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two + 2,
+    borderRadius: Radii.full,
+    borderWidth: 1,
   },
 });

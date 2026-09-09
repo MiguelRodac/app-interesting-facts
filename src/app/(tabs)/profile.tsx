@@ -181,7 +181,7 @@ export default function ProfileScreen() {
             <ThemedText
               type="smallBold"
               style={{ color: activeTab === 'mine' ? theme.primary : theme.muted }}>
-              {t('profile:tabMyFacts')} ({userFactsLoading && userFacts.length === 0 ? '...' : userFacts.length})
+              {t('profile:tabMyFacts')}
             </ThemedText>
           </AppPressable>
           <AppPressable
@@ -190,7 +190,7 @@ export default function ProfileScreen() {
             <ThemedText
               type="smallBold"
               style={{ color: activeTab === 'liked' ? theme.primary : theme.muted }}>
-              {t('profile:tabLiked')} ({likesLoading && likedEntries.length === 0 ? '...' : likedEntries.length})
+              {t('profile:tabLiked')}
             </ThemedText>
           </AppPressable>
           <AppPressable
@@ -199,14 +199,14 @@ export default function ProfileScreen() {
             <ThemedText
               type="smallBold"
               style={{ color: activeTab === 'mentions' ? theme.primary : theme.muted }}>
-              {t('profile:tabMentions')} ({mentionsLoading && mentionedFacts.length === 0 ? '...' : mentionsCount})
+              {t('profile:tabMentions')}
             </ThemedText>
           </AppPressable>
         </View>
       </View>
       );
     },
-    [user, theme, activeTab, handleEditProfile, handleSettings, handleTabChange, userFacts.length, likedEntries.length, mentionsCount, userFactsLoading, likesLoading, mentionsLoading, t],
+    [user, theme, activeTab, handleEditProfile, handleSettings, handleTabChange, t],
   );
 
   if (!isAuthenticated || !user) {

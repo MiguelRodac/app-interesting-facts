@@ -7,7 +7,7 @@ import { AppPressable } from '@/components/ui/app-pressable';
 import { StyledContent } from '@/components/StyledContent';
 import { ThemedText } from '@/components/themed-text';
 import { UserAvatar } from '@/components/UserAvatar';
-import { COLLAPSE_LINES, COLLAPSE_THRESHOLD } from '@/constants/facts';
+import { COLLAPSE_LINES, COLLAPSE_THRESHOLD, checkIsCollapsible } from '@/constants/facts';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { canEditComment, formatRelativeTime } from '@/utils/commentTime';
@@ -71,9 +71,7 @@ export function CommentItem({
   const [expanded, setExpanded] = useState(false);
   const [canEdit, setCanEdit] = useState(() => canEditComment(comment.createdAt));
 
-  // Long comments collapse behind a "See more" toggle (mirrors the facts
-  // card). Snapped off per comment line length; short comments render fully.
-  const isCollapsible = comment.content.length > COLLAPSE_THRESHOLD;
+  const isCollapsible = checkIsCollapsible(comment.content, COLLAPSE_LINES, COLLAPSE_THRESHOLD);
 
   // Re-evaluate the edit window on an interval so `canEdit` flips to false
   // ~60s after the 1-hour mark. Edit controls render from this value.
