@@ -44,20 +44,22 @@ export function AppUpdateGate() {
       if (Platform.OS === 'web') {
         window.open(WEB_URL, '_blank');
       } else {
-        await WebBrowser.openBrowserAsync(WEB_URL, {
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-          controlsColor: theme.primary,
-        });
+        // Open the device's default external browser so APK downloads and navigation are not blocked by in-app browser sandboxes
+        const supported = await Linking.canOpenURL(WEB_URL).catch(() => false);
+        if (supported) {
+          await Linking.openURL(WEB_URL);
+        } else {
+          await WebBrowser.openBrowserAsync(WEB_URL, {
+            presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+            controlsColor: theme.primary,
+          });
+        }
       }
     } catch {
-      try {
-        await Linking.openURL(WEB_URL);
-      } catch {
-        Alert.alert(
-          t('common:error', { defaultValue: 'Error' }),
-          t('common:openWebError', { defaultValue: 'No se pudo abrir el navegador. Por favor ingresa manualmente a: ' }) + WEB_URL,
-        );
-      }
+      Alert.alert(
+        t('common:error', { defaultValue: 'Error' }),
+        t('common:openWebError', { defaultValue: 'No se pudo abrir el navegador. Por favor ingresa manualmente a: ' }) + WEB_URL,
+      );
     }
   }, [t, theme.primary]);
 
