@@ -32,6 +32,14 @@ export interface ApiPaginatedResponse<T> {
   prevPage?: number | null;
 }
 
+/** Envelope for cursor-paginated feeds (GET /facts and GET /facts/author/:authorId) */
+export interface ApiCursorPaginatedResponse<T> {
+  results: T[];
+  limit: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 /** Feed timeline item — the backend wraps every feed entry (a fact or a
  *  repost) in an envelope: { type, fact| repost, createdAt }. */
 export type ApiFactFeedItem =

@@ -12,8 +12,11 @@ const client = createApiClient(getIdToken);
 export interface MentionedFactsState {
   mentionedFacts: Fact[];
   mentionsLoading: boolean;
+  mentionsLoadingMore: boolean;
+  hasMore: boolean;
   mentionsCount: number;
   refetch: (silent?: boolean) => void;
+  loadMore: () => Promise<void>;
 }
 
 /**
@@ -24,22 +27,33 @@ export interface MentionedFactsState {
 export function useMentionedFacts(username?: string): MentionedFactsState {
   const [mentionedFacts, setMentionedFacts] = useState<Fact[]>([]);
   const [mentionsLoading, setMentionedLoading] = useState(() => !!username);
+  const [mentionsLoadingMore, setMentionsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [mentionsCount, setMentionsCount] = useState(0);
   const activeRef = useRef(true);
+  const inFlightRef = useRef(false);
+  const mentionedFactsRef = useRef<Fact[]>(mentionedFacts);
+  useEffect(() => {
+    mentionedFactsRef.current = mentionedFacts;
+  }, [mentionedFacts]);
 
   const fetchMentions = useCallback((silent?: boolean) => {
-    if (!username) return;
-    if (!silent || mentionedFacts.length === 0) setMentionedLoading(true);
+    if (!username || inFlightRef.current) return;
+    inFlightRef.current = true;
+    if (!silent || mentionedFactsRef.current.length === 0) setMentionedLoading(true);
     client
       .get<ApiPaginatedResponse<ApiFactFeedItem>>(`/users/${username}/mentions`, {
         page: '1',
-        limit: '20',
+        limit: '50',
       })
       .then((data) => {
         const facts = mapFactsDtos(data.results ?? []);
         if (activeRef.current) {
           setMentionedFacts(facts);
           setMentionsCount(data.total ?? facts.length);
+          setPage(1);
+          setHasMore(data.nextPage !== null);
         }
       })
       .catch(() => {
@@ -49,9 +63,40 @@ export function useMentionedFacts(username?: string): MentionedFactsState {
         }
       })
       .finally(() => {
+        inFlightRef.current = false;
         if (activeRef.current) setMentionedLoading(false);
       });
-  }, [username, mentionedFacts.length]);
+  }, [username]);
+
+  const loadMore = useCallback(async () => {
+    if (!username || mentionsLoading || mentionsLoadingMore || !hasMore || mentionedFactsRef.current.length === 0) return;
+    setMentionsLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const data = await client.get<ApiPaginatedResponse<ApiFactFeedItem>>(`/users/${username}/mentions`, {
+        page: String(nextPage),
+        limit: '50',
+      });
+      if (activeRef.current) {
+        const incoming = mapFactsDtos(data.results ?? []);
+        setMentionedFacts((prev) => {
+          const byId = new Map(prev.map((item) => [item.id, item]));
+          for (const item of incoming) {
+            byId.set(item.id, item);
+          }
+          return Array.from(byId.values());
+        });
+        setPage(nextPage);
+        setHasMore(data.nextPage !== null);
+      }
+    } catch {
+      // Keep existing entries on error
+    } finally {
+      if (activeRef.current) {
+        setMentionsLoadingMore(false);
+      }
+    }
+  }, [username, mentionsLoading, mentionsLoadingMore, hasMore, page]);
 
   useEffect(() => {
     activeRef.current = true;
@@ -74,7 +119,10 @@ export function useMentionedFacts(username?: string): MentionedFactsState {
   return {
     mentionedFacts,
     mentionsLoading,
+    mentionsLoadingMore,
+    hasMore,
     mentionsCount,
     refetch: fetchMentions,
+    loadMore,
   };
 }

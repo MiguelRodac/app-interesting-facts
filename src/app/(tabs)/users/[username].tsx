@@ -41,18 +41,91 @@ export default function UserProfileScreen() {
     facts,
     isLoading,
     factsLoading,
+    factsLoadingMore,
+    factsHasMore,
     fetchProfile,
     fetchUserFacts,
+    loadMoreUserFacts,
     toggleLike,
     toggleRepost,
     clearProfile,
   } = useUserProfile();
-  const { likedEntries, likesLoading, refetch: refetchUserLikes } = useUserLikes(profile?.id ?? null);
+  const {
+    likedEntries,
+    likesLoading,
+    likesLoadingMore,
+    hasMore: hasMoreLikes,
+    refetch: refetchUserLikes,
+    loadMore: loadMoreUserLikes,
+  } = useUserLikes(profile?.id ?? null);
   const { isAuthenticated } = useAuth();
   const [likesFactId, setLikesFactId] = useState<string | null>(null);
   const [likesRepostId, setLikesRepostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('facts');
+
+  const handleEndReached = useCallback(() => {
+    if (!profile?.id) return;
+    if (activeTab === 'facts') {
+      if (factsHasMore && !factsLoading && !factsLoadingMore && facts.length > 0) {
+        loadMoreUserFacts(profile.id);
+      }
+    } else if (activeTab === 'likes') {
+      if (hasMoreLikes && !likesLoading && !likesLoadingMore && likedEntries.length > 0) {
+        loadMoreUserLikes();
+      }
+    }
+  }, [
+    profile?.id,
+    activeTab,
+    factsHasMore,
+    factsLoading,
+    factsLoadingMore,
+    facts.length,
+    loadMoreUserFacts,
+    hasMoreLikes,
+    likesLoading,
+    likesLoadingMore,
+    likedEntries.length,
+    loadMoreUserLikes,
+  ]);
+
+  const renderFooter = useCallback(() => {
+    const isLoadingMore = activeTab === 'facts' ? factsLoadingMore : likesLoadingMore;
+    const hasMore = activeTab === 'facts' ? factsHasMore : hasMoreLikes;
+    const count = activeTab === 'facts' ? facts.length : likedEntries.length;
+
+    if (isLoadingMore) {
+      return (
+        <View style={styles.footerLoading}>
+          <LoadingSkeleton count={1} />
+        </View>
+      );
+    }
+
+    if (!hasMore && count > 5) {
+      return (
+        <View style={styles.endOfList}>
+          <Ionicons name="checkmark-circle-outline" size={24} color={theme.muted} />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.endOfListText}>
+            {t('common:endOfList', { defaultValue: 'Has llegado al final' })}
+          </ThemedText>
+        </View>
+      );
+    }
+
+    return null;
+  }, [
+    activeTab,
+    factsLoadingMore,
+    likesLoadingMore,
+    factsHasMore,
+    hasMoreLikes,
+    facts.length,
+    likedEntries.length,
+    theme.muted,
+    t,
+  ]);
 
   const handleRefresh = useCallback(async () => {
     if (!username) return;
@@ -265,6 +338,9 @@ export default function UserProfileScreen() {
           />
         )}
         contentContainerStyle={[styles.list, { paddingTop: topInset }]}
+        ListFooterComponent={renderFooter}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -348,5 +424,16 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.two,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
+  },
+  footerLoading: {
+    paddingVertical: Spacing.two,
+  },
+  endOfList: {
+    alignItems: 'center',
+    paddingVertical: Spacing.five,
+    gap: Spacing.one,
+  },
+  endOfListText: {
+    fontWeight: '600',
   },
 });

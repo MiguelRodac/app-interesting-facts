@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Author, Fact, FactLike } from '@/types';
 import { createApiClient } from '../api/client';
-import type { ApiFact, ApiFactFeedItem, ApiPaginatedResponse, ApiRepostResponse } from '../api/types';
+import type { ApiFact, ApiFactFeedItem, ApiCursorPaginatedResponse, ApiRepostResponse } from '../api/types';
 import { mapFactsDtos, mapFactDto, mapRepostDto } from '../mappers/factMapper';
 import { getIdToken } from '../auth/firebaseAuth';
 import { notifyFactLikesChanged } from '../hooks/useFactLikes';
@@ -10,6 +10,7 @@ import { useAuthStore } from './authStore';
 import { useUIStore } from './uiStore';
 
 const PAGE_SIZE = 20;
+const PROFILE_PAGE_SIZE = 50;
 
 const client = createApiClient(getIdToken);
 
@@ -81,13 +82,19 @@ interface FactsState {
   userFacts: Fact[];
   isLoading: boolean;
   userFactsLoading: boolean;
+  userFactsLoadingMore: boolean;
   page: number;
   hasMore: boolean;
+  nextCursor: string | null;
+  userFactsPage: number;
+  userFactsHasMore: boolean;
+  userFactsNextCursor: string | null;
   fetchFacts: (silent?: boolean) => Promise<void>;
   loadMore: () => Promise<void>;
   fetchFactById: (factId: string) => Promise<Fact>;
   fetchRepostById: (repostId: string) => Promise<Fact>;
   fetchUserFacts: (userId: string, silent?: boolean) => Promise<void>;
+  loadMoreUserFacts: (userId: string) => Promise<void>;
   toggleLike: (factId: string, fallbackFact?: Fact) => Promise<void>;
   toggleRepost: (factId: string, fallbackFact?: Fact) => Promise<ToggleRepostResult>;
   addFact: (fact: { title?: string; content: string }) => Promise<Fact>;
@@ -104,8 +111,13 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   userFacts: [],
   isLoading: false,
   userFactsLoading: false,
+  userFactsLoadingMore: false,
   page: 1,
   hasMore: true,
+  nextCursor: null,
+  userFactsPage: 1,
+  userFactsHasMore: false,
+  userFactsNextCursor: null,
 
   fetchFacts: async (silent?: boolean) => {
     // Anonymous "view mode": cap the feed at 5 and never paginate. Signed-in
@@ -113,26 +125,31 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     const isAnon = !useAuthStore.getState().user;
     if (!silent) set({ isLoading: true });
     try {
-      const { results, nextPage } = await client.get<ApiPaginatedResponse<ApiFactFeedItem>>(
+      const response = await client.get<ApiCursorPaginatedResponse<ApiFactFeedItem>>(
         '/facts',
         {
-          page: '1',
           limit: String(isAnon ? 5 : PAGE_SIZE),
-          order_by: 'createdAt',
-          order_dir: 'desc',
         },
       );
+      const results = response?.results ?? [];
+      const nextCursor = response?.nextCursor ?? null;
+      const hasMore = Boolean(response?.hasMore && nextCursor !== null);
       const fetched = mapFactsDtos(results);
       // Always sort descending (newest first) regardless of backend order.
       const sorted = [...fetched].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       if (isAnon) {
-        set({ facts: sorted.slice(0, 5), page: 1, hasMore: false, isLoading: false });
+        set({ facts: sorted.slice(0, 5), page: 1, nextCursor: null, hasMore: false, isLoading: false });
       } else if (silent) {
         // Background refresh: merge so new facts appear on top, existing
         // ones get fresh data, and the scroll position is preserved.
-        set({ facts: mergeFacts(get().facts, fetched), hasMore: nextPage !== null });
+        set((state) => ({
+          facts: mergeFacts(state.facts, fetched),
+          page: 1,
+          nextCursor: state.nextCursor ?? nextCursor,
+          hasMore: state.nextCursor ? state.hasMore : hasMore,
+        }));
       } else {
-        set({ facts: sorted, page: 1, hasMore: nextPage !== null, isLoading: false });
+        set({ facts: sorted, page: 1, nextCursor, hasMore, isLoading: false });
       }
     } catch (error) {
       if (!silent) set({ isLoading: false });
@@ -146,22 +163,24 @@ export const useFactsStore = create<FactsState>((set, get) => ({
   loadMore: async () => {
     // Anonymous viewers never paginate — the feed is capped at 5.
     if (!useAuthStore.getState().user) return;
-    const { isLoading, hasMore, page, facts } = get();
-    if (isLoading || !hasMore) return;
+    const { isLoading, hasMore, nextCursor, facts } = get();
+    if (isLoading || !hasMore || !nextCursor) return;
 
     set({ isLoading: true });
     try {
-      const nextPage = page + 1;
-      const { results, nextPage: newNextPage } = await client.get<ApiPaginatedResponse<ApiFactFeedItem>>(
+      const response = await client.get<ApiCursorPaginatedResponse<ApiFactFeedItem>>(
         '/facts',
-        { page: String(nextPage), limit: String(PAGE_SIZE), order_by: 'createdAt', order_dir: 'desc' },
+        { cursor: nextCursor, limit: String(PAGE_SIZE) },
       );
+      const results = response?.results ?? [];
+      const newNextCursor = response?.nextCursor ?? null;
+      const newHasMore = Boolean(response?.hasMore && newNextCursor !== null);
       const newFacts = mapFactsDtos(results);
       const merged = mergeFacts(facts, newFacts);
       set({
         facts: merged,
-        page: nextPage,
-        hasMore: newNextPage !== null,
+        nextCursor: newNextCursor,
+        hasMore: newHasMore,
         isLoading: false,
       });
     } catch (error) {
@@ -209,19 +228,77 @@ export const useFactsStore = create<FactsState>((set, get) => ({
 
   fetchUserFacts: async (userId: string, silent?: boolean) => {
     // Silent refresh skips the loading state and error banner (background refresh),
-    // but on cold start / empty list we always show the loading skeleton.
+    if (get().userFactsLoading) return;
     if (!silent || get().userFacts.length === 0) set({ userFactsLoading: true });
     try {
-      const { results } = await client.get<ApiPaginatedResponse<ApiFactFeedItem>>(
+      const response = await client.get<ApiCursorPaginatedResponse<ApiFactFeedItem>>(
         `/facts/author/${userId}`,
-        { page: '1', limit: String(PAGE_SIZE) },
+        {
+          limit: String(PROFILE_PAGE_SIZE),
+        },
       );
+      const results = response?.results ?? [];
+      const nextCursor = response?.nextCursor ?? null;
+      const hasMore = Boolean(response?.hasMore && nextCursor !== null);
       const userFacts = mapFactsDtos(results);
       const sorted = [...userFacts].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      set({ userFacts: sorted, userFactsLoading: false });
+      if (silent) {
+        set((state) => ({
+          userFacts: mergeFacts(state.userFacts, userFacts),
+          userFactsPage: 1,
+          userFactsNextCursor: state.userFactsNextCursor ?? nextCursor,
+          userFactsHasMore: state.userFactsNextCursor ? state.userFactsHasMore : hasMore,
+          userFactsLoading: false,
+        }));
+      } else {
+        set({
+          userFacts: sorted,
+          userFactsPage: 1,
+          userFactsNextCursor: nextCursor,
+          userFactsHasMore: hasMore,
+          userFactsLoading: false,
+        });
+      }
     } catch (error) {
       set({ userFactsLoading: false });
       if (silent) return;
+      if (error && typeof error === 'object' && 'code' in error) {
+        useUIStore.getState().setError(error as import('@/types').AppError);
+      }
+    }
+  },
+
+  loadMoreUserFacts: async (userId: string) => {
+    const { userFactsLoading, userFactsLoadingMore, userFactsHasMore, userFactsNextCursor, userFacts } = get();
+    if (userFactsLoading || userFactsLoadingMore || !userFactsHasMore || !userFactsNextCursor || userFacts.length === 0) return;
+    set({ userFactsLoadingMore: true });
+    try {
+      const response = await client.get<ApiCursorPaginatedResponse<ApiFactFeedItem>>(
+        `/facts/author/${userId}`,
+        {
+          cursor: userFactsNextCursor,
+          limit: String(PROFILE_PAGE_SIZE),
+        },
+      );
+      const results = response?.results ?? [];
+      const newNextCursor = response?.nextCursor ?? null;
+      const newHasMore = Boolean(response?.hasMore && newNextCursor !== null);
+      const incoming = mapFactsDtos(results);
+      const byId = new Map(userFacts.map((f) => [f.id, f]));
+      for (const item of incoming) {
+        if (!deletedFactIds.has(item.id)) {
+          byId.set(item.id, item);
+        }
+      }
+      const merged = Array.from(byId.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      set({
+        userFacts: merged,
+        userFactsNextCursor: newNextCursor,
+        userFactsHasMore: newHasMore,
+        userFactsLoadingMore: false,
+      });
+    } catch (error) {
+      set({ userFactsLoadingMore: false });
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
@@ -430,8 +507,13 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       userFacts: [],
       page: 1,
       hasMore: true,
+      nextCursor: null,
+      userFactsPage: 1,
+      userFactsHasMore: false,
+      userFactsNextCursor: null,
       isLoading: false,
       userFactsLoading: false,
+      userFactsLoadingMore: false,
     });
   },
 }));

@@ -10,6 +10,8 @@ export function useFacts() {
   const userFacts = useFactsStore((s) => s.userFacts);
   const isLoading = useFactsStore((s) => s.isLoading);
   const userFactsLoading = useFactsStore((s) => s.userFactsLoading);
+  const userFactsLoadingMore = useFactsStore((s) => s.userFactsLoadingMore);
+  const userFactsHasMore = useFactsStore((s) => s.userFactsHasMore);
   const hasMore = useFactsStore((s) => s.hasMore);
   const fetchFacts = useFactsStore((s) => s.fetchFacts);
   const loadMore = useFactsStore((s) => s.loadMore);
@@ -20,6 +22,7 @@ export function useFacts() {
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const toggleRepost = useFactsStore((s) => s.toggleRepost);
   const fetchUserFacts = useFactsStore((s) => s.fetchUserFacts);
+  const loadMoreUserFacts = useFactsStore((s) => s.loadMoreUserFacts);
   const toggleRepostLike = useRepostsStore((s) => s.toggleRepostLike);
   const addRepostComment = useRepostsStore((s) => s.addRepostComment);
   const updateRepostComment = useRepostsStore((s) => s.updateRepostComment);
@@ -31,6 +34,8 @@ export function useFacts() {
     userFacts,
     isLoading,
     userFactsLoading,
+    userFactsLoadingMore,
+    userFactsHasMore,
     hasMore,
     fetchFacts,
     loadMore,
@@ -41,6 +46,7 @@ export function useFacts() {
     toggleLike,
     toggleRepost,
     fetchUserFacts,
+    loadMoreUserFacts,
     toggleRepostLike,
     addRepostComment,
     updateRepostComment,

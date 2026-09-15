@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
@@ -32,13 +32,30 @@ export default function ProfileScreen() {
   const { user, isAuthenticated } = useAuth();
   const userFacts = useFactsStore((s) => s.userFacts);
   const userFactsLoading = useFactsStore((s) => s.userFactsLoading);
+  const userFactsLoadingMore = useFactsStore((s) => s.userFactsLoadingMore);
+  const userFactsHasMore = useFactsStore((s) => s.userFactsHasMore);
   const fetchUserFacts = useFactsStore((s) => s.fetchUserFacts);
+  const loadMoreUserFacts = useFactsStore((s) => s.loadMoreUserFacts);
   const fetchFacts = useFactsStore((s) => s.fetchFacts);
   const toggleLike = useFactsStore((s) => s.toggleLike);
   const toggleRepost = useFactsStore((s) => s.toggleRepost);
   const toggleRepostLike = useRepostsStore((s) => s.toggleRepostLike);
-  const { likedEntries, likesLoading, refetch: refetchLikes } = useUserLikes(user?.id);
-  const { mentionedFacts, mentionsLoading, mentionsCount, refetch: refetchMentions } = useMentionedFacts(user?.username);
+  const {
+    likedEntries,
+    likesLoading,
+    likesLoadingMore,
+    hasMore: hasMoreLikes,
+    refetch: refetchLikes,
+    loadMore: loadMoreLikes,
+  } = useUserLikes(user?.id);
+  const {
+    mentionedFacts,
+    mentionsLoading,
+    mentionsLoadingMore,
+    hasMore: hasMoreMentions,
+    refetch: refetchMentions,
+    loadMore: loadMoreMentions,
+  } = useMentionedFacts(user?.username);
   const [activeTab, setActiveTab] = useState<ProfileTab>('mine');
   const [avatarModalVisible, setAvatarModalVisible] = useState(false);
   const [likesFactId, setLikesFactId] = useState<string | null>(null);
@@ -47,6 +64,43 @@ export default function ProfileScreen() {
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
+
+  const firstFocusRef = useRef(true);
+
+  const handleEndReached = useCallback(() => {
+    if (!user?.id) return;
+    if (activeTab === 'mine') {
+      if (userFactsHasMore && !userFactsLoading && !userFactsLoadingMore && userFacts.length > 0) {
+        loadMoreUserFacts(user.id);
+      }
+    } else if (activeTab === 'liked') {
+      if (hasMoreLikes && !likesLoading && !likesLoadingMore && likedEntries.length > 0) {
+        loadMoreLikes();
+      }
+    } else if (activeTab === 'mentions') {
+      if (hasMoreMentions && !mentionsLoading && !mentionsLoadingMore && mentionedFacts.length > 0) {
+        loadMoreMentions();
+      }
+    }
+  }, [
+    user?.id,
+    activeTab,
+    userFactsHasMore,
+    userFactsLoading,
+    userFactsLoadingMore,
+    userFacts.length,
+    loadMoreUserFacts,
+    hasMoreLikes,
+    likesLoading,
+    likesLoadingMore,
+    likedEntries.length,
+    loadMoreLikes,
+    hasMoreMentions,
+    mentionsLoading,
+    mentionsLoadingMore,
+    mentionedFacts.length,
+    loadMoreMentions,
+  ]);
 
   const handleRefresh = useCallback(async () => {
     if (!user?.id) return;
@@ -60,15 +114,13 @@ export default function ProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (user?.id) {
-        const hasFacts = userFacts.length > 0;
-        const hasLikes = likedEntries.length > 0;
-        const hasMentions = mentionedFacts.length > 0;
-        fetchUserFacts(user.id, hasFacts);
-        refetchLikes(hasLikes);
-        refetchMentions(hasMentions);
-      }
-    }, [user?.id, userFacts.length, likedEntries.length, mentionedFacts.length, fetchUserFacts, refetchLikes, refetchMentions]),
+      if (!user?.id) return;
+      const isFirst = firstFocusRef.current;
+      firstFocusRef.current = false;
+      fetchUserFacts(user.id, !isFirst);
+      refetchLikes(!isFirst);
+      refetchMentions(!isFirst);
+    }, [user?.id, fetchUserFacts, refetchLikes, refetchMentions]),
   );
 
   const handleFactPress = useCallback(
@@ -145,6 +197,56 @@ export default function ProfileScreen() {
     if (mentionsLoading) return <LoadingSkeleton count={2} />;
     return <EmptyState title={t('profile:noMentionsTitle')} subtitle={t('profile:noMentionsSubtitle')} icon="at-outline" />;
   }, [activeTab, userFactsLoading, likesLoading, mentionsLoading, t]);
+
+  const renderFooter = useCallback(() => {
+    const isLoadingMore =
+      activeTab === 'mine'
+        ? userFactsLoadingMore
+        : activeTab === 'liked'
+          ? likesLoadingMore
+          : mentionsLoadingMore;
+
+    const hasMore =
+      activeTab === 'mine'
+        ? userFactsHasMore
+        : activeTab === 'liked'
+          ? hasMoreLikes
+          : hasMoreMentions;
+
+    const count = displayedFacts.length;
+
+    if (isLoadingMore) {
+      return (
+        <View style={styles.footerLoading}>
+          <LoadingSkeleton count={1} />
+        </View>
+      );
+    }
+
+    if (!hasMore && count > 5) {
+      return (
+        <View style={styles.endOfList}>
+          <Ionicons name="checkmark-circle-outline" size={24} color={theme.muted} />
+          <ThemedText type="small" themeColor="textSecondary" style={styles.endOfListText}>
+            {t('common:endOfList', { defaultValue: 'Has llegado al final' })}
+          </ThemedText>
+        </View>
+      );
+    }
+
+    return null;
+  }, [
+    activeTab,
+    userFactsLoadingMore,
+    likesLoadingMore,
+    mentionsLoadingMore,
+    userFactsHasMore,
+    hasMoreLikes,
+    hasMoreMentions,
+    displayedFacts.length,
+    theme.muted,
+    t,
+  ]);
 
   const renderHeader = useCallback(
     () => {
@@ -257,6 +359,9 @@ export default function ProfileScreen() {
         ListHeaderComponent={renderHeader}
         contentContainerStyle={[styles.list, { paddingTop: topInset }]}
         ListEmptyComponent={renderEmpty}
+        ListFooterComponent={renderFooter}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -393,5 +498,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     minWidth: 150,
     alignItems: 'center',
+  },
+  footerLoading: {
+    paddingVertical: Spacing.two,
+  },
+  endOfList: {
+    alignItems: 'center',
+    paddingVertical: Spacing.five,
+    gap: Spacing.one,
+  },
+  endOfListText: {
+    fontWeight: '600',
   },
 });
