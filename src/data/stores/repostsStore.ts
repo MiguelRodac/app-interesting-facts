@@ -156,10 +156,20 @@ interface RepostsState {
  * Reads the repost Fact from factsStore to get the current counts, applies
  * optimistic updates, fires API calls, and rolls back on error.
  */
+const repostLikesInFlight = new Set<string>();
+
 export const useRepostsStore = create<RepostsState>(() => ({
   toggleRepostLike: async (repostEntryId: string, fallbackFact?: Fact) => {
+    if (repostLikesInFlight.has(repostEntryId)) {
+      return;
+    }
+    repostLikesInFlight.add(repostEntryId);
+
     const fact = findRepostEntry(repostEntryId) ?? fallbackFact;
-    if (!fact) return;
+    if (!fact) {
+      repostLikesInFlight.delete(repostEntryId);
+      return;
+    }
 
     const wasLiked = fact.repostLiked;
     const currentUser = useAuthStore.getState().user;
@@ -191,6 +201,8 @@ export const useRepostsStore = create<RepostsState>(() => ({
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as AppError);
       }
+    } finally {
+      repostLikesInFlight.delete(repostEntryId);
     }
   },
 

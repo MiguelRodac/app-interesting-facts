@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/EmptyState';
+import { LikeButton } from '@/components/LikeButton';
 import { LikedByLine } from '@/components/LikedByLine';
 import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -20,6 +21,7 @@ import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES_DETAIL, COLLAPSE_THRESHOLD_DETAIL, checkIsCollapsible } from '@/constants/facts';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useRepostComments, notifyRepostCommentsChanged } from '@/data/hooks/useRepostComments';
+import { subscribeEntryUpdates } from '@/data/hooks/entryUpdateBus';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
@@ -177,6 +179,19 @@ export default function RepostDetailScreen() {
     };
   }, [id, fact, fetchRepostById]);
 
+  // Synchronize optimistic repost patches broadcast across views
+  useEffect(() => {
+    if (!repostEntryId && !id) return;
+    return subscribeEntryUpdates((scope, anchor, patch) => {
+      if (
+        (scope === 'repost-entry' && anchor.id === repostEntryId) ||
+        (scope === 'repost-tree' && (anchor.id === id || anchor.originalFactId === id))
+      ) {
+        setFact((prev) => (prev ? { ...prev, ...patch } : prev));
+      }
+    });
+  }, [repostEntryId, id]);
+
   const handleRefresh = useCallback(async () => {
     if (!id || !repostEntryId) return;
     setRefreshing(true);
@@ -212,13 +227,17 @@ export default function RepostDetailScreen() {
     setCommentLikesId(commentId);
   }, []);
 
+  const lastRepostLikePressRef = useRef(0);
   const handleRepostLike = useCallback(() => {
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
     }
     if (fact && repostEntryId) {
-      toggleRepostLike(repostEntryId);
+      const now = Date.now();
+      if (now - lastRepostLikePressRef.current < 400) return;
+      lastRepostLikePressRef.current = now;
+      toggleRepostLike(repostEntryId, fact);
     }
   }, [fact, repostEntryId, toggleRepostLike, isAuthenticated, router]);
 
@@ -386,16 +405,17 @@ export default function RepostDetailScreen() {
           {/* Actions */}
           <View style={[styles.actions, { borderTopColor: theme.border }]}>
             {/* Repost like */}
-            <AppPressable onPress={handleRepostLike} style={styles.actionBtn} hitSlop={8}>
-              <Ionicons
-                name={fact.repostLiked ? 'heart' : 'heart-outline'}
+            <View style={styles.actionBtn}>
+              <LikeButton
+                liked={!!fact.repostLiked}
+                likesCount={fact.repostLikeCount ?? 0}
+                onPress={handleRepostLike}
                 size={28}
-                color={fact.repostLiked ? theme.destructive : theme.muted}
               />
               <ThemedText type="small" themeColor="textSecondary">
                 {fact.repostLikeCount ?? 0}
               </ThemedText>
-            </AppPressable>
+            </View>
 
             {/* Comment — scroll to the comment thread below */}
             <AppPressable onPress={handleScrollToComments} style={styles.actionBtn} hitSlop={8}>

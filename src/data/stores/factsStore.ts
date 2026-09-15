@@ -106,6 +106,8 @@ interface FactsState {
 // Runtime cache of deleted fact IDs to prevent zombie refetches across the app
 const deletedFactIds = new Set<string>();
 
+const likesInFlight = new Set<string>();
+
 export const useFactsStore = create<FactsState>((set, get) => ({
   facts: [],
   userFacts: [],
@@ -318,6 +320,11 @@ export const useFactsStore = create<FactsState>((set, get) => ({
 
     // Reposts have composite IDs — use the original fact ID for API calls.
     const apiFactId = fact.originalFactId ?? factId;
+    if (likesInFlight.has(apiFactId)) {
+      return;
+    }
+    likesInFlight.add(apiFactId);
+
     const wasLiked = fact.liked;
     const currentUser = useAuthStore.getState().user;
     const anchor = { id: fact.id, originalFactId: fact.originalFactId };
@@ -372,6 +379,8 @@ export const useFactsStore = create<FactsState>((set, get) => ({
       if (error && typeof error === 'object' && 'code' in error) {
         useUIStore.getState().setError(error as import('@/types').AppError);
       }
+    } finally {
+      likesInFlight.delete(apiFactId);
     }
   },
 

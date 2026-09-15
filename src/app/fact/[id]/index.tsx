@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
+import { LikeButton } from '@/components/LikeButton';
 import { LikedByLine } from '@/components/LikedByLine';
 import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -31,6 +32,7 @@ import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES_DETAIL, COLLAPSE_THRESHOLD_DETAIL, checkIsCollapsible } from '@/constants/facts';
 import { useFacts } from '@/data/hooks/useFacts';
 import { notifyFactCommentsChanged, useFactComments } from '@/data/hooks/useFactComments';
+import { subscribeEntryUpdates } from '@/data/hooks/entryUpdateBus';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
@@ -220,6 +222,19 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
     };
   }, [id, fetchFactById, fact]);
 
+  // Synchronize optimistic like/repost patches broadcast by factsStore across views
+  useEffect(() => {
+    if (!id) return;
+    return subscribeEntryUpdates((scope, anchor, patch) => {
+      if (
+        (scope === 'fact' || scope === 'repost-tree') &&
+        (anchor.id === id || anchor.originalFactId === id)
+      ) {
+        setFact((prev) => (prev ? { ...prev, ...patch } : prev));
+      }
+    });
+  }, [id]);
+
   const handleRefresh = useCallback(async () => {
     if (!id || isDeletingRef.current) return;
     setRefreshing(true);
@@ -263,14 +278,17 @@ const isOwner = fact && user?.id === fact.author.id;
     setCommentLikesId(commentId);
   }, []);
 
+  const lastLikePressRef = useRef(0);
   const handleLike = useCallback(() => {
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
     }
-    if (fact) {
-      toggleLike(fact.id);
-    }
+    if (!fact) return;
+    const now = Date.now();
+    if (now - lastLikePressRef.current < 400) return;
+    lastLikePressRef.current = now;
+    toggleLike(fact.id, fact);
   }, [fact, toggleLike, isAuthenticated, router]);
 
   const handleRepost = useCallback(async () => {
@@ -483,16 +501,17 @@ const isOwner = fact && user?.id === fact.author.id;
 
           {/* Actions */}
           <View style={[styles.actions, { borderTopColor: theme.border }]}>
-            <AppPressable onPress={handleLike} style={styles.actionBtn} hitSlop={8}>
-              <Ionicons
-                name={fact.liked ? 'heart' : 'heart-outline'}
+            <View style={styles.actionBtn}>
+              <LikeButton
+                liked={fact.liked}
+                likesCount={fact.likesCount}
+                onPress={handleLike}
                 size={28}
-                color={fact.liked ? theme.destructive : theme.muted}
               />
               <ThemedText type="small" themeColor="textSecondary">
                 {fact.likesCount}
               </ThemedText>
-            </AppPressable>
+            </View>
 
             {/* Comment — scroll to the comment thread below */}
             <AppPressable onPress={handleScrollToComments} style={styles.actionBtn} hitSlop={8}>

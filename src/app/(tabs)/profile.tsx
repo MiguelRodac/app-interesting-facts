@@ -131,11 +131,25 @@ export default function ProfileScreen() {
     [router],
   );
 
+  const lastProfileLikeRef = useRef<Record<string, number>>({});
   const handleLike = useCallback(
-    (factId: string) => {
-      toggleLike(factId);
+    (factId: string, fallbackFact?: Fact) => {
+      const now = Date.now();
+      if (now - (lastProfileLikeRef.current[factId] ?? 0) < 400) return;
+      lastProfileLikeRef.current[factId] = now;
+      toggleLike(factId, fallbackFact);
     },
     [toggleLike],
+  );
+
+  const handleRepostLike = useCallback(
+    (repostEntryId: string, fallbackFact?: Fact) => {
+      const now = Date.now();
+      if (now - (lastProfileLikeRef.current[repostEntryId] ?? 0) < 400) return;
+      lastProfileLikeRef.current[repostEntryId] = now;
+      toggleRepostLike(repostEntryId, fallbackFact);
+    },
+    [toggleRepostLike],
   );
 
   const handleRepost = useCallback(
@@ -176,14 +190,14 @@ export default function ProfileScreen() {
         fact={item}
         variant="preview"
         onPress={() => handleFactPress(item)}
-        onLike={() => handleLike(item.id)}
+        onLike={() => handleLike(item.id, item)}
         onRepost={() => handleRepost(item.originalFactId ?? item.id)}
-        onRepostLike={item.isRepost ? () => toggleRepostLike(item.id) : undefined}
+        onRepostLike={item.isRepost ? () => handleRepostLike(item.id, item) : undefined}
         onOpenLikes={() => setLikesFactId(item.originalFactId ?? item.id)}
         onOpenRepostLikes={() => setLikesRepostId(item.id)}
       />
     ),
-    [handleFactPress, handleLike, handleRepost, toggleRepostLike],
+    [handleFactPress, handleLike, handleRepost, handleRepostLike],
   );
 
   const renderEmpty = useCallback(() => {

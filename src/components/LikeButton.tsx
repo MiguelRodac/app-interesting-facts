@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { StyleSheet, type GestureResponderEvent } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import Animated, {
@@ -17,12 +18,14 @@ interface LikeButtonProps {
   likesCount: number;
   onPress?: () => void;
   disabled?: boolean;
+  size?: number;
 }
 
 const SPRING_CONFIG = { damping: 10, stiffness: 200 };
 
-export function LikeButton({ liked, likesCount, onPress, disabled = false }: LikeButtonProps) {
+export function LikeButton({ liked, likesCount, onPress, disabled = false, size = 22 }: LikeButtonProps) {
   const theme = useTheme();
+  const lastPressRef = useRef(0);
   const scale = useSharedValue(liked ? 1 : 0.8);
   const fillProgress = useSharedValue(liked ? 1 : 0);
 
@@ -32,6 +35,11 @@ export function LikeButton({ liked, likesCount, onPress, disabled = false }: Lik
 
   const handlePress = (e: GestureResponderEvent) => {
     if (disabled) return;
+    // Guard against rapid duplicate taps (400ms throttle)
+    const now = Date.now();
+    if (now - lastPressRef.current < 400) return;
+    lastPressRef.current = now;
+
     // The button can be embedded in a tappable card — stop the event from
     // bubbling to the card's onPress (matters on web where events bubble).
     e.stopPropagation();
@@ -55,7 +63,7 @@ export function LikeButton({ liked, likesCount, onPress, disabled = false }: Lik
       hitSlop={Spacing.two}
       style={styles.container}>
       <Animated.View style={animatedStyle}>
-        <Ionicons name={iconName} size={22} color={iconColor} />
+        <Ionicons name={iconName} size={size} color={iconColor} />
       </Animated.View>
     </AppPressable>
   );

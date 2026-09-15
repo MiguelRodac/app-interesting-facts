@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -168,12 +168,16 @@ export default function UserProfileScreen() {
     [router],
   );
 
+  const lastUserLikeRef = useRef<Record<string, number>>({});
   const handleLike = useCallback(
     (factId: string, fallbackFact?: Fact) => {
       if (!isAuthenticated) {
         router.push('/auth/login');
         return;
       }
+      const now = Date.now();
+      if (now - (lastUserLikeRef.current[factId] ?? 0) < 400) return;
+      lastUserLikeRef.current[factId] = now;
       toggleLike(factId, fallbackFact);
     },
     [isAuthenticated, toggleLike, router],
@@ -203,6 +207,9 @@ export default function UserProfileScreen() {
         router.push('/auth/login');
         return;
       }
+      const now = Date.now();
+      if (now - (lastUserLikeRef.current[repostId] ?? 0) < 400) return;
+      lastUserLikeRef.current[repostId] = now;
       useRepostsStore.getState().toggleRepostLike(repostId, fallbackFact).catch(() => {});
     },
     [isAuthenticated, router],
