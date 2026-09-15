@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Animated, View, Platform } from 'react-native';
 
 import { Radii, Spacing } from '@/constants/theme';
@@ -10,7 +10,7 @@ interface LoadingSkeletonProps {
 
 function SkeletonCard() {
   const theme = useTheme();
-  const pulse = useRef(new Animated.Value(0.3)).current;
+  const [pulse] = useState(() => new Animated.Value(0.3));
 
   useEffect(() => {
     const loop = Animated.loop(

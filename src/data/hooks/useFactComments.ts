@@ -101,29 +101,37 @@ export function useFactComments(
   );
   const [loading, setLoading] = useState(() => !!factId && enabled);
 
+  const loadComments = useCallback(
+    (isActive?: () => boolean) => {
+      if (!factId) return Promise.resolve();
+      return client
+        .get<ApiCommentsResponse>(`/facts/${factId}/comments`)
+        .then((data) => {
+          if (isActive && !isActive()) return;
+          const list = normalize(data);
+          commentsCache.set(factId, list);
+          setComments(list);
+        })
+        .catch(() => {
+          if (isActive && !isActive()) return;
+          setComments(commentsCache.get(factId) ?? []);
+        })
+        .finally(() => {
+          if (isActive && !isActive()) return;
+          setLoading(false);
+        });
+    },
+    [factId]
+  );
+
   const fetchFresh = useCallback(() => {
     if (!factId) return;
     setLoading(true);
-    client
-      .get<ApiCommentsResponse>(`/facts/${factId}/comments`)
-      .then((data) => {
-        const list = normalize(data);
-        commentsCache.set(factId, list);
-        setComments(list);
-      })
-      .catch(() => {
-        setComments(commentsCache.get(factId) ?? []);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [factId]);
+    void loadComments();
+  }, [factId, loadComments]);
 
   useEffect(() => {
     if (!factId || !enabled) {
-      // Fact no longer qualifies — drop any stale thread from the previous
-      // state so no ghost comments remain.
-      setComments([]);
       return;
     }
     let active = true;
@@ -138,13 +146,16 @@ export function useFactComments(
         if (cached) setComments(cached);
       }
     };
-    fetchFresh();
+    void loadComments(() => active);
     const unsubscribe = subscribe(factId, onChanged);
     return () => {
       active = false;
       unsubscribe();
     };
-  }, [factId, enabled, fetchFresh]);
+  }, [factId, enabled, fetchFresh, loadComments]);
 
-  return { comments, loading, refetch: fetchFresh };
+  const activeComments = !factId || !enabled ? [] : comments;
+  const activeLoading = !factId || !enabled ? false : loading;
+
+  return { comments: activeComments, loading: activeLoading, refetch: fetchFresh };
 }

@@ -11,7 +11,7 @@ import { PasswordField } from '@/components/PasswordField';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserAvatar } from '@/components/UserAvatar';
-import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
+import { Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/data/hooks/useAuth';
 import { changeEmail } from '@/data/auth/firebaseAuth';
 import { isFirebaseAuthError, mapFirebaseError } from '@/data/auth/firebaseErrors';
@@ -53,15 +53,17 @@ export default function EditProfileScreen() {
   // Subtle focus indicator — only a bottom underline lights up, not the whole box.
   const [editingFocused, setEditingFocused] = useState(false);
 
-  // Sync with user changes (only on initial load or user refresh)
-  useEffect(() => {
+  // Sync with user changes when user updates
+  const [prevUser, setPrevUser] = useState(user);
+  if (user !== prevUser) {
+    setPrevUser(user);
     if (user) {
       setPendingDisplayName(user.displayName);
       setPendingEmail(user.email ?? '');
       setPendingAvatarColor(user.avatarColor ?? null);
       setPendingAvatarUrl(user.avatarUrl ?? null);
     }
-  }, [user]);
+  }
 
   // Resolves whether the user has made any real edits relative to the saved profile.
   const hasChanges = useMemo(() => {

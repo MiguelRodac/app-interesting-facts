@@ -36,6 +36,7 @@ export function LikeButton({ liked, likesCount, onPress, disabled = false }: Lik
     // bubbling to the card's onPress (matters on web where events bubble).
     e.stopPropagation();
     // Bounce animation: scale down then up using sequence
+    // eslint-disable-next-line react-hooks/immutability
     scale.value = withSequence(
       withSpring(0.8, SPRING_CONFIG),
       withSpring(1, SPRING_CONFIG),

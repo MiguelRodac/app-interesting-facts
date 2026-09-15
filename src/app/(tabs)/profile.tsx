@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -66,12 +66,13 @@ export default function ProfileScreen() {
   const topInset = useTopInset();
 
   const firstFocusRef = useRef(true);
+  const userId = user?.id;
 
   const handleEndReached = useCallback(() => {
-    if (!user?.id) return;
+    if (!userId) return;
     if (activeTab === 'mine') {
       if (userFactsHasMore && !userFactsLoading && !userFactsLoadingMore && userFacts.length > 0) {
-        loadMoreUserFacts(user.id);
+        loadMoreUserFacts(userId);
       }
     } else if (activeTab === 'liked') {
       if (hasMoreLikes && !likesLoading && !likesLoadingMore && likedEntries.length > 0) {
@@ -83,7 +84,7 @@ export default function ProfileScreen() {
       }
     }
   }, [
-    user?.id,
+    userId,
     activeTab,
     userFactsHasMore,
     userFactsLoading,
@@ -103,24 +104,24 @@ export default function ProfileScreen() {
   ]);
 
   const handleRefresh = useCallback(async () => {
-    if (!user?.id) return;
+    if (!userId) return;
     setRefreshing(true);
     try {
-      await Promise.all([fetchUserFacts(user.id, true), fetchFacts(true), refetchLikes(true), refetchMentions(true)]);
+      await Promise.all([fetchUserFacts(userId, true), fetchFacts(true), refetchLikes(true), refetchMentions(true)]);
     } finally {
       setRefreshing(false);
     }
-  }, [user?.id, fetchUserFacts, fetchFacts, refetchLikes, refetchMentions]);
+  }, [userId, fetchUserFacts, fetchFacts, refetchLikes, refetchMentions]);
 
   useFocusEffect(
     useCallback(() => {
-      if (!user?.id) return;
+      if (!userId) return;
       const isFirst = firstFocusRef.current;
       firstFocusRef.current = false;
-      fetchUserFacts(user.id, !isFirst);
+      fetchUserFacts(userId, !isFirst);
       refetchLikes(!isFirst);
       refetchMentions(!isFirst);
-    }, [user?.id, fetchUserFacts, refetchLikes, refetchMentions]),
+    }, [userId, fetchUserFacts, refetchLikes, refetchMentions]),
   );
 
   const handleFactPress = useCallback(

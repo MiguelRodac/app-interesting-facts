@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Animated, Platform } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,8 +24,8 @@ export function Toast() {
   const insets = useSafeAreaInsets();
   // Below the status bar/notch on native, with breathing room on web
   const baseTop = Math.max(Spacing.four, insets.top + Spacing.three);
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(-24)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(() => new Animated.Value(-24));
 
   useEffect(() => {
     if (!toast) return;

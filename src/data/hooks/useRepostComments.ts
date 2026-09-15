@@ -76,27 +76,37 @@ export function useRepostComments(
   );
   const [loading, setLoading] = useState(() => !!repostId && enabled);
 
+  const loadComments = useCallback(
+    (isActive?: () => boolean) => {
+      if (!repostId) return Promise.resolve();
+      return client
+        .get<ApiCommentsResponse>(`/reposts/${repostId}/comments`)
+        .then((data) => {
+          if (isActive && !isActive()) return;
+          const list = normalize(data);
+          commentsCache.set(repostId, list);
+          setComments(list);
+        })
+        .catch(() => {
+          if (isActive && !isActive()) return;
+          setComments(commentsCache.get(repostId) ?? []);
+        })
+        .finally(() => {
+          if (isActive && !isActive()) return;
+          setLoading(false);
+        });
+    },
+    [repostId]
+  );
+
   const fetchFresh = useCallback(() => {
     if (!repostId) return;
     setLoading(true);
-    client
-      .get<ApiCommentsResponse>(`/reposts/${repostId}/comments`)
-      .then((data) => {
-        const list = normalize(data);
-        commentsCache.set(repostId, list);
-        setComments(list);
-      })
-      .catch(() => {
-        setComments(commentsCache.get(repostId) ?? []);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [repostId]);
+    void loadComments();
+  }, [repostId, loadComments]);
 
   useEffect(() => {
     if (!repostId || !enabled) {
-      setComments([]);
       return;
     }
     let active = true;
@@ -109,13 +119,16 @@ export function useRepostComments(
         if (cached) setComments(cached);
       }
     };
-    fetchFresh();
+    void loadComments(() => active);
     const unsubscribe = subscribe(repostId, onChanged);
     return () => {
       active = false;
       unsubscribe();
     };
-  }, [repostId, enabled, fetchFresh]);
+  }, [repostId, enabled, fetchFresh, loadComments]);
 
-  return { comments, loading, refetch: fetchFresh };
+  const activeComments = !repostId || !enabled ? [] : comments;
+  const activeLoading = !repostId || !enabled ? false : loading;
+
+  return { comments: activeComments, loading: activeLoading, refetch: fetchFresh };
 }

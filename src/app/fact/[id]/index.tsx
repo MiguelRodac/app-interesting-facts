@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, View, Share, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, BackHandler } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  ScrollView,
+  RefreshControl,
+  Share,
+  KeyboardAvoidingView,
+  Platform,
+  BackHandler,
+} from 'react-native';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -46,7 +55,8 @@ export default function FactDetailScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const theme = useTheme();
   const topInset = useTopInset();
-  const [fact, setFact] = useState<Fact | null>(null);
+  const cachedFact = (id ? facts.find((f) => f.id === id) : null) ?? null;
+  const [fact, setFact] = useState<Fact | null>(cachedFact);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [overflowVisible, setOverflowVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -65,7 +75,7 @@ export default function FactDetailScreen() {
     }
   }, [fact, deleteFact, router, showToast, t]);
 
-const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedFact);
   const [refreshing, setRefreshing] = useState(false);
 const [likesModalVisible, setLikesModalVisible] = useState(false);
   // Comment whose likers are shown in the LikesModal (null = closed).
@@ -194,16 +204,7 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
     if (!id || isDeletingRef.current) return;
     if (fact && fact.id === id) return;
 
-    const found = facts.find((f) => f.id === id);
-    if (found) {
-      setFact(found);
-      setLoading(false);
-      return;
-    }
-    if (isDeletingRef.current) return;
-
     let active = true;
-    setLoading(true);
     fetchFactById(id)
       .then((fetched) => {
         if (active && !isDeletingRef.current) setFact(fetched);
@@ -217,7 +218,7 @@ const [likesModalVisible, setLikesModalVisible] = useState(false);
     return () => {
       active = false;
     };
-  }, [id, facts, fetchFactById, fact]);
+  }, [id, fetchFactById, fact]);
 
   const handleRefresh = useCallback(async () => {
     if (!id || isDeletingRef.current) return;

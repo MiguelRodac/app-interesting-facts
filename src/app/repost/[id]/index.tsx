@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, View, Share, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, BackHandler } from 'react-native';
+import { StyleSheet, View, Share, ScrollView, RefreshControl, KeyboardAvoidingView, Platform, BackHandler } from 'react-native';
 import { AppModal } from '@/components/ui/app-modal';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/EmptyState';
 import { LikedByLine } from '@/components/LikedByLine';
 import { LikesModal } from '@/components/LikesModal';
@@ -37,19 +35,20 @@ interface CommentReplyTarget {
 export default function RepostDetailScreen() {
   const { t, i18n } = useTranslation(['feed', 'common']);
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
-  const { facts, fetchFactById, fetchRepostById, toggleRepostLike, toggleRepost } = useFacts();
+  const { facts, fetchRepostById, toggleRepostLike, toggleRepost } = useFacts();
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const theme = useTheme();
   const topInset = useTopInset();
-  const [fact, setFact] = useState<Fact | null>(null);
-  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const cachedFact =
+    (id ? (facts.find((f) => f.id === id) ?? facts.find((f) => f.originalFactId === id)) : null) ?? null;
+  const [fact, setFact] = useState<Fact | null>(cachedFact);
   const [expanded, setExpanded] = useState(false);
   const isCollapsible = checkIsCollapsible(fact?.content, COLLAPSE_LINES_DETAIL, COLLAPSE_THRESHOLD_DETAIL);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedFact);
   const [refreshing, setRefreshing] = useState(false);
   const [likesModalVisible, setLikesModalVisible] = useState(false);
   const [commentLikesId, setCommentLikesId] = useState<string | null>(null);
@@ -161,22 +160,8 @@ export default function RepostDetailScreen() {
 
   // Load the repost from store or fetch it
   useEffect(() => {
-    if (!id) return;
-    const found = facts.find((f) => f.id === id);
-    if (found) {
-      setFact(found);
-      setLoading(false);
-      return;
-    }
-    // Try finding by originalFactId (for reposts that may be stored by their original ID)
-    const byOriginal = facts.find((f) => f.originalFactId === id);
-    if (byOriginal) {
-      setFact(byOriginal);
-      setLoading(false);
-      return;
-    }
+    if (!id || fact) return;
     let active = true;
-    setLoading(true);
     fetchRepostById(id)
       .then((fetched) => {
         if (active) setFact(fetched);
@@ -190,7 +175,7 @@ export default function RepostDetailScreen() {
     return () => {
       active = false;
     };
-  }, [id, facts, fetchRepostById]);
+  }, [id, fact, fetchRepostById]);
 
   const handleRefresh = useCallback(async () => {
     if (!id || !repostEntryId) return;

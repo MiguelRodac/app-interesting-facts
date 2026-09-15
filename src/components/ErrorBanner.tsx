@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Animated, Platform } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,8 +20,8 @@ export function ErrorBanner() {
   const insets = useSafeAreaInsets();
   // Below the status bar/notch on native, with breathing room on web
   const topOffset = Math.max(Spacing.four, insets.top + Spacing.three);
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(-24)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(() => new Animated.Value(-24));
 
   useEffect(() => {
     if (!error) return;
@@ -38,10 +38,11 @@ export function ErrorBanner() {
   if (!error) return null;
 
   const colors = AlertColors.error;
-  const localizedMessage =
-    error.code && i18n.exists(`errors:${error.code}`)
+  const displayMessage =
+    error.userMessage ||
+    (error.code && i18n.exists(`errors:${error.code}`)
       ? t(`errors:${error.code}`)
-      : error.userMessage;
+      : error.message);
 
   return (
     <Animated.View
@@ -51,8 +52,8 @@ export function ErrorBanner() {
       ]}>
       <ThemedView style={[styles.card, { backgroundColor: colors.background, borderColor: colors.border }, Shadows.lg]}>
         <Ionicons name="alert-circle" size={22} color={colors.icon} />
-        <ThemedText type="small" style={[styles.message, { color: colors.text }]} numberOfLines={3}>
-          {localizedMessage}
+        <ThemedText type="small" style={[styles.message, { color: colors.text }]} numberOfLines={4}>
+          {displayMessage}
         </ThemedText>
         <AppPressable onPress={clearError} hitSlop={8} style={styles.dismiss}>
           <Ionicons name="close" size={18} color={colors.text} />

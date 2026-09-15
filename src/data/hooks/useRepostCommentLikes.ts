@@ -67,7 +67,6 @@ export function useRepostCommentLikes(
 
   useEffect(() => {
     if (!repostId || !commentId || !enabled) {
-      setLikes([]);
       return;
     }
     let active = true;
@@ -82,5 +81,7 @@ export function useRepostCommentLikes(
     };
   }, [repostId, commentId, enabled, fetchFresh]);
 
-  return { likes, refetch: fetchFresh };
+  const activeLikes = !repostId || !commentId || !enabled ? [] : likes;
+
+  return { likes: activeLikes, refetch: fetchFresh };
 }

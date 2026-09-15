@@ -68,9 +68,6 @@ export function useFactLikes(factId: string | null | undefined, enabled = true) 
 
   useEffect(() => {
     if (!factId || !enabled) {
-      // Fact no longer qualifies (e.g. 0 likes after a dislike) — drop any
-      // stale line from the previous state so no ghost likes remain.
-      setLikes([]);
       return;
     }
     let active = true;
@@ -85,5 +82,7 @@ export function useFactLikes(factId: string | null | undefined, enabled = true) 
     };
   }, [factId, enabled, fetchFresh]);
 
-  return { likes, refetch: fetchFresh };
+  const activeLikes = !factId || !enabled ? [] : likes;
+
+  return { likes: activeLikes, refetch: fetchFresh };
 }

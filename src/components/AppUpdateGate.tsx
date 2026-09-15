@@ -24,8 +24,6 @@ const APK_URL = process.env.EXPO_PUBLIC_APK_URL ?? 'https://app-interesting-fact
  * and direct actions (direct APK download and in-app web landing).
  */
 export function AppUpdateGate() {
-  if (Platform.OS === 'web') return null;
-
   const { t } = useTranslation(['common']);
   const theme = useTheme();
   const updateRequired = useUpdateStore((s) => s.updateRequired);
@@ -119,7 +117,7 @@ export function AppUpdateGate() {
     }
   }, [t]);
 
-  if (!updateRequired) return null;
+  if (Platform.OS === 'web' || !updateRequired) return null;
 
   return (
     <ThemedView style={styles.backdrop}>

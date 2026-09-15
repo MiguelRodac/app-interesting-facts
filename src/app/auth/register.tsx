@@ -21,7 +21,6 @@ import {
   isValidUsername,
   MAX_DISPLAY_NAME_LENGTH,
   MIN_PASSWORD_LENGTH,
-  USERNAME_ERROR_MESSAGE,
 } from '@/utils/validation';
 import type { ApiUsernameCheck } from '@/data/api/types';
 
@@ -75,34 +74,39 @@ export default function RegisterScreen() {
     }
   }, [t]);
 
-  useEffect(() => {
+  const handleUsernameChange = useCallback((value: string) => {
+    setUsername(value);
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
 
-    if (username.trim().length < 3) {
+    if (value.trim().length < 3) {
       setUsernameStatus('idle');
       setUsernameError(null);
       return;
     }
 
     // Invalid pattern — skip the API call and show the error immediately
-    if (!isValidUsername(username)) {
+    if (!isValidUsername(value)) {
       setUsernameStatus('invalid');
       setUsernameError(t('auth:invalidUsername'));
       return;
     }
 
+    setUsernameStatus('checking');
+    setUsernameError(null);
     debounceRef.current = setTimeout(() => {
-      checkUsername(username);
+      checkUsername(value);
     }, 500);
+  }, [checkUsername, t]);
 
+  useEffect(() => {
     return () => {
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
     };
-  }, [username, checkUsername, t]);
+  }, []);
 
 const isValid =
     isValidEmail(email) &&
@@ -241,7 +245,7 @@ const isValid =
                   placeholder={t('auth:usernamePlaceholder')}
                   placeholderTextColor={theme.muted}
                   value={username}
-                  onChangeText={setUsername}
+                  onChangeText={handleUsernameChange}
                   maxLength={30}
                   autoCapitalize="none"
                   autoCorrect={false}

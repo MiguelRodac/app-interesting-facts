@@ -18,8 +18,6 @@ const STORAGE_KEY = 'theme-preference';
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemScheme = useSystemColorScheme();
   const [preference, setPreferenceState] = useState<ThemePreference>('system');
-  const [hydrated, setHydrated] = useState(false);
-
   // Restore the saved preference once on mount (before that, default to system)
   useEffect(() => {
     let mounted = true;
@@ -28,7 +26,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       if (saved === 'light' || saved === 'dark' || saved === 'system') {
         setPreferenceState(saved);
       }
-      setHydrated(true);
     });
     return () => {
       mounted = false;

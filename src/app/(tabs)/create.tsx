@@ -1,83 +1,112 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, FlatList, BackHandler, ScrollView } from 'react-native';
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
+import {
+  StyleSheet,
+  TextInput,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  BackHandler,
+  ScrollView,
+} from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { CharCounter } from '@/components/CharCounter';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { UserAvatar } from '@/components/UserAvatar';
 import { EmojiPicker, EmojiButton } from '@/components/EmojiPicker';
-import { BottomTabInset, Radii, Spacing, MaxContentWidth, Shadows } from '@/constants/theme';
+import { MentionDropdown } from '@/components/MentionDropdown';
+import { HashtagDropdown } from '@/components/HashtagDropdown';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { AppPressable } from '@/components/ui/app-pressable';
+import { BottomTabInset, Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
-import { createApiClient } from '@/data/api/client';
-import { getIdToken } from '@/data/auth/firebaseAuth';
 import { useCreateScreenGuard } from '@/data/stores/createScreenGuard';
 import { useUIStore } from '@/data/stores/uiStore';
-import type { ApiUserSearchResult, ApiHashtag, ApiSearchResponse, ApiUser } from '@/data/api/types';
-import { safeInsertText, safeTruncate, cleanSurrogates } from '@/utils/text';
-
-const client = createApiClient(getIdToken);
+import { useMentionSearch } from '@/hooks/useMentionSearch';
+import { useHashtagSearch } from '@/hooks/useHashtagSearch';
+import type { ApiUserSearchResult, ApiHashtag } from '@/data/api/types';
+import { safeInsertText, cleanSurrogates } from '@/utils/text';
 
 const MIN_LENGTH = 10;
 const MAX_LENGTH = 1000;
-const TITLE_MAX_LENGTH = 50;
 
 export default function CreateFactScreen() {
   const { t } = useTranslation(['create', 'common']);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionResults, setMentionResults] = useState<ApiUserSearchResult[]>([]);
-  const [isSearchingMentions, setIsSearchingMentions] = useState(false);
-  const [showMentions, setShowMentions] = useState(false);
-  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
-  const [hashtagQuery, setHashtagQuery] = useState<string | null>(null);
-  const [hashtagResults, setHashtagResults] = useState<ApiHashtag[]>([]);
-  const [isSearchingHashtags, setIsSearchingHashtags] = useState(false);
-  const [showHashtags, setShowHashtags] = useState(false);
-  const [selectedHashtagIndex, setSelectedHashtagIndex] = useState(0);
-  const cursorPositionRef = useRef(0);
-  const previousTextLengthRef = useRef(0);
-  const mentionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hashtagTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestMentionQueryRef = useRef('');
-  const latestHashtagQueryRef = useRef('');
   const [confirmLeaveVisible, setConfirmLeaveVisible] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  const cursorPositionRef = useRef(0);
+  const previousTextLengthRef = useRef(0);
+  const hasCheckedAuth = useRef(false);
+  const contentInputRef = useRef<TextInput>(null);
+
   const { addFact } = useFacts();
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const theme = useTheme();
   const segments = useSegments();
-  const hasCheckedAuth = useRef(false);
-  const contentInputRef = useRef<TextInput>(null);
-  const { setHasUnsavedChanges, clearGuard, formResetCount, hasUnsavedChanges, triggerFormReset } = useCreateScreenGuard();
   const showToast = useUIStore((s) => s.showToast);
   const topInset = useTopInset();
+  const {
+    setHasUnsavedChanges,
+    clearGuard,
+    formResetCount,
+    hasUnsavedChanges,
+    triggerFormReset,
+  } = useCreateScreenGuard();
+
+  const {
+    showMentions,
+    setShowMentions,
+    mentionResults,
+    isSearchingMentions,
+    selectedMentionIndex,
+    setSelectedMentionIndex,
+    searchMentions,
+    closeMentions,
+    applyMention,
+  } = useMentionSearch();
+
+  const {
+    showHashtags,
+    setShowHashtags,
+    hashtagResults,
+    isSearchingHashtags,
+    selectedHashtagIndex,
+    setSelectedHashtagIndex,
+    searchHashtags,
+    closeHashtags,
+    applyHashtag,
+  } = useHashtagSearch();
 
   // Clear the form when the user confirms leaving via the tab guard modal
+  const [prevFormResetCount, setPrevFormResetCount] = useState(formResetCount);
+  if (formResetCount !== prevFormResetCount) {
+    setPrevFormResetCount(formResetCount);
+    if (formResetCount > 0) {
+      setTitle('');
+      setContent('');
+    }
+  }
+
   useEffect(() => {
     if (formResetCount === 0) return;
-    setTitle('');
-    setContent('');
-    setShowMentions(false);
-    setMentionResults([]);
-    setShowHashtags(false);
-    setHashtagResults([]);
+    closeMentions();
+    closeHashtags();
     clearGuard();
-  }, [formResetCount, clearGuard]);
+  }, [formResetCount, clearGuard, closeMentions, closeHashtags]);
 
   // Redirect to login on initial visit when unauthenticated
   useEffect(() => {
     const isOnAuthScreen = (segments as string[]).includes('auth');
-
     if (!isAuthenticated && !isOnAuthScreen) {
       if (!hasCheckedAuth.current) {
         hasCheckedAuth.current = true;
@@ -88,25 +117,14 @@ export default function CreateFactScreen() {
     }
   }, [isAuthenticated, segments, router]);
 
-  // Cleanup debounce timeouts and reset autocomplete state on unmount
+  // Cleanup autocomplete state on unmount
   useEffect(() => {
     return () => {
-      if (mentionTimeoutRef.current) {
-        clearTimeout(mentionTimeoutRef.current);
-      }
-      if (hashtagTimeoutRef.current) {
-        clearTimeout(hashtagTimeoutRef.current);
-      }
-      if (blurTimeoutRef.current) {
-        clearTimeout(blurTimeoutRef.current);
-      }
-      setShowMentions(false);
-      setMentionResults([]);
-      setShowHashtags(false);
-      setHashtagResults([]);
+      closeMentions();
+      closeHashtags();
       clearGuard();
     };
-  }, [clearGuard]);
+  }, [clearGuard, closeMentions, closeHashtags]);
 
   // Track unsaved changes for tab navigation guard
   useEffect(() => {
@@ -114,7 +132,7 @@ export default function CreateFactScreen() {
     setHasUnsavedChanges(hasChanges);
   }, [title, content, showMentions, showHashtags, setHasUnsavedChanges]);
 
-  // Intercept Android hardware back button — confirm before leaving with unsaved changes
+  // Intercept Android hardware back button
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (hasUnsavedChanges) {
@@ -126,231 +144,94 @@ export default function CreateFactScreen() {
     return () => subscription.remove();
   }, [hasUnsavedChanges]);
 
-  const searchMentions = useCallback((query: string) => {
-    latestMentionQueryRef.current = query;
+  const handleContentChange = useCallback(
+    (text: string) => {
+      setContent(text);
 
-    // Clear previous timeout
-    if (mentionTimeoutRef.current) {
-      clearTimeout(mentionTimeoutRef.current);
-    }
+      const rawCursorPos = cursorPositionRef.current;
+      const cursorPos =
+        rawCursorPos >= text.length ||
+        (rawCursorPos === 0 && text.length > 0) ||
+        rawCursorPos === previousTextLengthRef.current
+          ? text.length
+          : rawCursorPos;
+      previousTextLengthRef.current = text.length;
 
-    if (query.length < 1) {
-      setMentionResults([]);
-      setShowMentions(false);
-      return;
-    }
-
-    // Debounce: search after 500ms of inactivity
-    mentionTimeoutRef.current = setTimeout(async () => {
-      const currentQuery = latestMentionQueryRef.current;
-      if (currentQuery.length < 1) {
-        setMentionResults([]);
-        setShowMentions(false);
-        return;
-      }
-
-      setIsSearchingMentions(true);
-      try {
-        const response = await client.get<ApiUserSearchResult[] | { results: ApiUserSearchResult[] }>('/users/search', { q: currentQuery });
-        let results = Array.isArray(response) ? response : (response.results ?? []);
-
-        // Usernames may contain dots ("marta.ken"), but the backend search
-        // may only match the part before the dot — look up the exact username.
-        if (currentQuery.includes('.')) {
-          try {
-            const exact = await client.get<ApiUser>(`/users/${encodeURIComponent(currentQuery)}`);
-            if (exact && exact.username) {
-              const exactUser: ApiUserSearchResult = {
-                id: exact.id,
-                username: exact.username,
-                displayName: exact.displayName,
-                avatarUrl: exact.avatarUrl ?? null,
-                avatarColor: exact.avatarColor,
-              };
-              results = [exactUser, ...results.filter((r) => r.username !== exactUser.username)];
-            }
-          } catch {
-            // 404 — exact username does not exist; keep search results
-          }
+      // Detect @mention trigger
+      const lastAtIndex = text.lastIndexOf('@', cursorPos);
+      if (lastAtIndex !== -1) {
+        const textAfterAt = text.substring(lastAtIndex + 1, cursorPos);
+        if (!textAfterAt.includes(' ') && textAfterAt.length <= 20) {
+          setShowMentions(true);
+          closeHashtags();
+          searchMentions(textAfterAt);
+          return;
         }
-
-        // Keep only results that contain the full typed token
-        const normalizedQuery = currentQuery.toLowerCase();
-        results = results.filter((r) => r.username.toLowerCase().includes(normalizedQuery));
-        setMentionResults(results);
-        setSelectedMentionIndex(0);
-      } catch {
-        setMentionResults([]);
-      } finally {
-        setIsSearchingMentions(false);
-      }
-    }, 500);
-  }, []);
-
-  const searchHashtags = useCallback((query: string) => {
-    latestHashtagQueryRef.current = query;
-
-    // Clear previous timeout
-    if (hashtagTimeoutRef.current) {
-      clearTimeout(hashtagTimeoutRef.current);
-    }
-
-    if (query.length < 1) {
-      setHashtagResults([]);
-      setShowHashtags(false);
-      return;
-    }
-
-    // Debounce: search after 500ms of inactivity
-    hashtagTimeoutRef.current = setTimeout(async () => {
-      const currentQuery = latestHashtagQueryRef.current;
-      if (currentQuery.length < 1) {
-        setHashtagResults([]);
-        setShowHashtags(false);
-        return;
       }
 
-      setIsSearchingHashtags(true);
-      try {
-        const response = await client.get<{ results: ApiHashtag[] }>('/hashtags', { q: currentQuery, limit: '5' });
-        setHashtagResults(response.results ?? []);
-        setSelectedHashtagIndex(0);
-      } catch {
-        setHashtagResults([]);
-      } finally {
-        setIsSearchingHashtags(false);
+      // Detect #hashtag trigger
+      const lastHashIndex = text.lastIndexOf('#', cursorPos);
+      if (lastHashIndex !== -1) {
+        const textAfterHash = text.substring(lastHashIndex + 1, cursorPos);
+        if (!textAfterHash.includes(' ') && textAfterHash.length <= 30) {
+          setShowHashtags(true);
+          closeMentions();
+          searchHashtags(textAfterHash);
+          return;
+        }
       }
-    }, 500);
-  }, []);
 
-  const handleContentChange = useCallback((text: string) => {
-    setContent(text);
+      closeMentions();
+      closeHashtags();
+    },
+    [searchMentions, searchHashtags, closeMentions, closeHashtags, setShowMentions, setShowHashtags]
+  );
 
-    // cursorPositionRef is updated in onSelectionChange, which fires AFTER onChangeText.
-    // This means when processing a keystroke, the ref still has the OLD cursor position.
-    // We detect this by checking if selection.start === selection.end (no selection)
-    // and falling back to text.length since cursor is always at end after typing.
-    const rawCursorPos = cursorPositionRef.current;
-    const cursorPos = (rawCursorPos >= text.length || (rawCursorPos === 0 && text.length > 0) || rawCursorPos === previousTextLengthRef.current)
-      ? text.length
-      : rawCursorPos;
+  const handleSelectionChange = useCallback(
+    (event: { nativeEvent: { selection: { start: number; end: number } } }) => {
+      cursorPositionRef.current = event.nativeEvent.selection.start;
+    },
+    []
+  );
 
-    previousTextLengthRef.current = text.length;
-
-    // Detect @mention trigger
-    const lastAtIndex = text.lastIndexOf('@', cursorPos);
-    if (lastAtIndex !== -1) {
-      const textAfterAt = text.substring(lastAtIndex + 1, cursorPos);
-      // Check if there's a space between @ and cursor (means mention is complete)
-      if (!textAfterAt.includes(' ') && textAfterAt.length <= 20) {
-        setMentionQuery(textAfterAt);
-        setShowMentions(true);
-        setShowHashtags(false);
-
-        // Update ref immediately so debounce reads the latest query
-        latestMentionQueryRef.current = textAfterAt;
-        searchMentions(textAfterAt);
-        return;
-      }
-    }
-
-    // Detect #hashtag trigger
-    const lastHashIndex = text.lastIndexOf('#', cursorPos);
-    if (lastHashIndex !== -1) {
-      const textAfterHash = text.substring(lastHashIndex + 1, cursorPos);
-      // Check if there's a space between # and cursor (means hashtag is complete)
-      if (!textAfterHash.includes(' ') && textAfterHash.length <= 30) {
-        setHashtagQuery(textAfterHash);
-        setShowHashtags(true);
-        setShowMentions(false);
-
-        // Update ref immediately so debounce reads the latest query
-        latestHashtagQueryRef.current = textAfterHash;
-        searchHashtags(textAfterHash);
-        return;
-      }
-    }
-
-    setShowMentions(false);
-    setMentionQuery(null);
-    setMentionResults([]);
-    setShowHashtags(false);
-    setHashtagQuery(null);
-    setHashtagResults([]);
-  }, [searchMentions, searchHashtags]);
-
-  const handleSelectionChange = useCallback((event: { nativeEvent: { selection: { start: number; end: number } } }) => {
-    cursorPositionRef.current = event.nativeEvent.selection.start;
-  }, []);
-
-  // Close the autocomplete dropdowns when the input loses focus. The small
-  // delay lets a tap on a suggestion row register first (the rows use
-  // keyboardShouldPersistTaps="handled").
-  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleContentBlur = useCallback(() => {
-    if (blurTimeoutRef.current) {
-      clearTimeout(blurTimeoutRef.current);
-    }
-    blurTimeoutRef.current = setTimeout(() => {
-      setShowMentions(false);
-      setMentionResults([]);
-      setShowHashtags(false);
-      setHashtagResults([]);
+    setTimeout(() => {
+      closeMentions();
+      closeHashtags();
     }, 150);
-  }, []);
+  }, [closeMentions, closeHashtags]);
 
-  const handleSelectMention = useCallback((user: ApiUserSearchResult) => {
-    const lastAtIndex = content.lastIndexOf('@', cursorPositionRef.current);
-    if (lastAtIndex === -1) return;
+  const handleSelectMention = useCallback(
+    (user: ApiUserSearchResult) => {
+      const { newContent, newCursor } = applyMention(content, cursorPositionRef.current, user);
+      setContent(newContent);
+      cursorPositionRef.current = newCursor;
+      requestAnimationFrame(() => contentInputRef.current?.focus());
+    },
+    [content, applyMention]
+  );
 
-    const beforeAt = content.substring(0, lastAtIndex);
-    const afterCursor = content.substring(cursorPositionRef.current);
-    const newContent = `${beforeAt}@${user.username} ${afterCursor}`;
+  const handleSelectHashtag = useCallback(
+    (hashtag: ApiHashtag) => {
+      const { newContent, newCursor } = applyHashtag(content, cursorPositionRef.current, hashtag);
+      setContent(newContent);
+      cursorPositionRef.current = newCursor;
+      requestAnimationFrame(() => contentInputRef.current?.focus());
+    },
+    [content, applyHashtag]
+  );
 
-    setContent(newContent);
-    setShowMentions(false);
-    setMentionQuery(null);
-    setMentionResults([]);
-
-    // Focus back on input
-    contentInputRef.current?.focus();
-  }, [content]);
-
-  const handleSelectHashtag = useCallback((hashtag: ApiHashtag) => {
-    const lastHashIndex = content.lastIndexOf('#', cursorPositionRef.current);
-    if (lastHashIndex === -1) return;
-
-    const beforeHash = content.substring(0, lastHashIndex);
-    const afterCursor = content.substring(cursorPositionRef.current);
-    const newContent = `${beforeHash}#${hashtag.tag} ${afterCursor}`;
-
-    setContent(newContent);
-    setShowHashtags(false);
-    setHashtagQuery(null);
-    setHashtagResults([]);
-    contentInputRef.current?.focus();
-  }, [content]);
-
-  // Emoji picker.
   const handleEmojiSelected = useCallback((emoji: string) => {
+    const pos = cursorPositionRef.current;
     setContent((prev) => {
-      const { text, newCursor } = safeInsertText(prev, emoji, cursorPositionRef.current);
+      const { text, newCursor } = safeInsertText(prev, emoji, pos);
       cursorPositionRef.current = newCursor;
       previousTextLengthRef.current = text.length;
       return text;
     });
   }, []);
 
-  // Show loading while checking auth
-  if (isLoading) {
-    return (
-      <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.primary} />
-      </ThemedView>
-    );
-  }
-
-  const isValid = content.trim().length >= MIN_LENGTH && content.trim().length <= MAX_LENGTH;
+  const isValid = content.trim().length > 0;
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
@@ -360,21 +241,11 @@ export default function CreateFactScreen() {
       showToast(t('create:contentRequired'), 'warning');
       return;
     }
-    if (trimmedLength < MIN_LENGTH) {
-      showToast(t('create:contentTooShort', { min: MIN_LENGTH }), 'warning');
-      return;
-    }
-    if (trimmedLength > MAX_LENGTH) {
-      showToast(t('create:contentTooLong', { max: MAX_LENGTH }), 'warning');
-      return;
-    }
 
     setIsSubmitting(true);
     try {
-      const cleanTitle = title.trim()
-        ? safeTruncate(cleanSurrogates(title.trim()), TITLE_MAX_LENGTH)
-        : undefined;
-      const cleanContent = safeTruncate(cleanSurrogates(content.trim()), MAX_LENGTH);
+      const cleanTitle = title.trim() ? cleanSurrogates(title.trim()) : undefined;
+      const cleanContent = cleanSurrogates(content.trim());
       await addFact({
         title: cleanTitle,
         content: cleanContent,
@@ -385,7 +256,7 @@ export default function CreateFactScreen() {
       showToast(t('create:factSharedSuccess'), 'success');
       router.navigate('/(tabs)');
     } catch {
-      // Error is handled by uiStore → ErrorBanner
+      // Error handled by uiStore → ErrorBanner
     } finally {
       setIsSubmitting(false);
     }
@@ -405,250 +276,159 @@ export default function CreateFactScreen() {
     router.navigate('/(tabs)');
   };
 
-  const handleCancelLeave = () => {
-    setConfirmLeaveVisible(false);
-  };
+  if (isLoading) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </ThemedView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
-      <ThemedView style={styles.container}>
+      style={[styles.flex, { backgroundColor: theme.background }]}>
+      <ThemedView style={[styles.container, { paddingTop: topInset }]}>
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingTop: topInset }]}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          {/* Header */}
           <View style={styles.header}>
-            <ThemedText type="subtitle">{t('create:title')}</ThemedText>
+            <ThemedText type="title">{t('create:headerTitle')}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              {t('create:subtitle')}
+              {t('create:headerSubtitle')}
             </ThemedText>
           </View>
 
-          {/* Form */}
           <View style={styles.form}>
-          {/* Title field */}
-          <View style={styles.field}>
-            <View style={styles.fieldHeader}>
+            {/* Title field */}
+            <View style={styles.field}>
               <ThemedText type="smallBold" themeColor="textSecondary">
                 {t('create:fieldTitle')}
               </ThemedText>
-              <CharCounter current={title.length} min={0} max={TITLE_MAX_LENGTH} />
-            </View>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  color: theme.text,
-                  borderColor: theme.border,
-                },
-              ]}
-              placeholder={t('create:titlePlaceholder')}
-              placeholderTextColor={theme.muted}
-              value={title}
-              onChangeText={setTitle}
-              maxLength={TITLE_MAX_LENGTH}
-              editable={!isSubmitting}
-            />
-          </View>
-
-          {/* Content field */}
-          <View style={styles.field}>
-            <View style={styles.fieldHeader}>
-              <ThemedText type="smallBold" themeColor="textSecondary">
-                {t('create:fieldContent')}
-              </ThemedText>
-              <View style={styles.fieldHeaderRight}>
-                <EmojiButton onPress={() => setShowEmojiPicker((v) => !v)} active={showEmojiPicker} />
-                <CharCounter current={content.trim().length} min={MIN_LENGTH} max={MAX_LENGTH} />
-              </View>
-            </View>
-            <View style={styles.contentContainer}>
               <TextInput
-                ref={contentInputRef}
                 style={[
-                  styles.textarea,
+                  styles.input,
                   {
                     backgroundColor: theme.backgroundElement,
                     color: theme.text,
                     borderColor: theme.border,
                   },
                 ]}
-                placeholder={t('create:contentPlaceholder')}
+                placeholder={t('create:titlePlaceholder')}
                 placeholderTextColor={theme.muted}
-                value={content}
-                onChangeText={handleContentChange}
-                onSelectionChange={handleSelectionChange}
-                onBlur={handleContentBlur}
-                maxLength={MAX_LENGTH}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
+                value={title}
+                onChangeText={setTitle}
                 editable={!isSubmitting}
               />
+            </View>
 
-              {/* Mention autocomplete dropdown */}
-              {showMentions && (
-                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                  {isSearchingMentions ? (
-                    <View style={styles.autocompleteLoading}>
-                      <ActivityIndicator size="small" color={theme.muted} />
-                    </View>
-                  ) : mentionResults.length === 0 ? (
-                    <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" themeColor="muted">{t('create:noUsersFound')}</ThemedText>
-                    </View>
-                  ) : (
-                    <FlatList
-                      data={mentionResults}
-                      keyExtractor={(item) => item.username}
-                      keyboardShouldPersistTaps="handled"
-                      renderItem={({ item, index }) => (
-                        <AppPressable
-                          style={[
-                            styles.autocompleteItem,
-                            index === selectedMentionIndex && { backgroundColor: theme.backgroundSelected },
-                          ]}
-                          onPress={() => handleSelectMention(item)}
-                          onPressIn={() => setSelectedMentionIndex(index)}>
-                          <UserAvatar
-                            user={{ displayName: item.displayName, avatarColor: item.avatarColor ?? '#64B5F6', avatarUrl: item.avatarUrl }}
-                            size={30}
-                          />
-                          <View style={styles.autocompleteInfo}>
-                            <ThemedText type="smallBold" themeColor="text">
-                              {item.username}
-                            </ThemedText>
-                            <ThemedText type="small" themeColor="textSecondary">
-                              {item.displayName}
-                            </ThemedText>
-                          </View>
-                        </AppPressable>
-                      )}
-                    />
-                  )}
+            {/* Content field */}
+            <View style={styles.field}>
+              <View style={styles.fieldHeader}>
+                <ThemedText type="smallBold" themeColor="textSecondary">
+                  {t('create:fieldContent')}
+                </ThemedText>
+                <View style={styles.fieldHeaderRight}>
+                  <EmojiButton onPress={() => setShowEmojiPicker((v) => !v)} active={showEmojiPicker} />
+                  <CharCounter current={content.trim().length} min={MIN_LENGTH} max={MAX_LENGTH} />
                 </View>
-              )}
+              </View>
+              <View style={styles.contentContainer}>
+                <TextInput
+                  ref={contentInputRef}
+                  style={[
+                    styles.textarea,
+                    {
+                      backgroundColor: theme.backgroundElement,
+                      color: theme.text,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                  placeholder={t('create:contentPlaceholder')}
+                  placeholderTextColor={theme.muted}
+                  value={content}
+                  onChangeText={handleContentChange}
+                  onSelectionChange={handleSelectionChange}
+                  onBlur={handleContentBlur}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  editable={!isSubmitting}
+                />
 
-              {/* Hashtag autocomplete dropdown */}
-              {showHashtags && (
-                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                  {isSearchingHashtags ? (
-                    <View style={styles.autocompleteLoading}>
-                      <ActivityIndicator size="small" color={theme.muted} />
-                    </View>
-                  ) : hashtagResults.length === 0 ? (
-                    <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" themeColor="muted">{t('create:noHashtagsFound')}</ThemedText>
-                    </View>
-                  ) : (
-                    <FlatList
-                      data={hashtagResults}
-                      keyExtractor={(item) => item.id}
-                      keyboardShouldPersistTaps="handled"
-                      renderItem={({ item, index }) => (
-                        <AppPressable
-                          style={[
-                            styles.autocompleteItem,
-                            index === selectedHashtagIndex && { backgroundColor: theme.backgroundSelected },
-                          ]}
-                          onPress={() => handleSelectHashtag(item)}
-                          onPressIn={() => setSelectedHashtagIndex(index)}>
-                          <View style={[styles.hashtagIcon, { backgroundColor: theme.backgroundSelected }]}>
-                            <ThemedText type="smallBold" style={{ color: theme.primary }}>#</ThemedText>
-                          </View>
-                          <View style={styles.autocompleteInfo}>
-                            <ThemedText type="smallBold" themeColor="text">
-                              {item.tag}
-                            </ThemedText>
-                          </View>
-                        </AppPressable>
-                      )}
-                    />
-                  )}
-                </View>
-              )}
+                <MentionDropdown
+                  visible={showMentions}
+                  loading={isSearchingMentions}
+                  results={mentionResults}
+                  selectedIndex={selectedMentionIndex}
+                  onSelect={handleSelectMention}
+                  onSelectIndex={setSelectedMentionIndex}
+                />
+
+                <HashtagDropdown
+                  visible={showHashtags}
+                  loading={isSearchingHashtags}
+                  results={hashtagResults}
+                  selectedIndex={selectedHashtagIndex}
+                  onSelect={handleSelectHashtag}
+                  onSelectIndex={setSelectedHashtagIndex}
+                />
+              </View>
+            </View>
+
+            {/* Buttons */}
+            <View style={styles.buttons}>
+              <AppPressable
+                onPress={handleCancel}
+                disabled={isSubmitting}
+                hitSlop={6}
+                style={[styles.button, styles.cancelButton, { borderColor: theme.border }]}>
+                <ThemedText type="smallBold" style={styles.cancelText}>
+                  {t('common:cancel')}
+                </ThemedText>
+              </AppPressable>
+              <AppPressable
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+                hitSlop={6}
+                style={[
+                  styles.button,
+                  styles.submitButton,
+                  {
+                    backgroundColor: isValid ? theme.primary : theme.muted,
+                    opacity: isSubmitting ? 0.7 : 1,
+                  },
+                ]}>
+                <ThemedText type="smallBold" style={styles.submitText}>
+                  {isSubmitting ? t('create:submittingButton') : t('create:submitButton')}
+                </ThemedText>
+              </AppPressable>
             </View>
           </View>
+        </ScrollView>
+      </ThemedView>
 
-          {/* Buttons */}
-          <View style={styles.buttons}>
-            <AppPressable
-              onPress={handleCancel}
-              disabled={isSubmitting}
-              hitSlop={6}
-              style={[
-                styles.button,
-                styles.cancelButton,
-                { borderColor: theme.border },
-              ]}>
-              <ThemedText type="smallBold" style={styles.cancelText}>
-                {t('common:cancel')}
-              </ThemedText>
-            </AppPressable>
-            <AppPressable
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-              hitSlop={6}
-              style={[
-                styles.button,
-                styles.submitButton,
-                {
-                  backgroundColor: isValid ? theme.primary : theme.muted,
-                  opacity: isSubmitting ? 0.7 : 1,
-                },
-              ]}>
-              <ThemedText type="smallBold" style={styles.submitText}>
-                {isSubmitting ? t('create:submittingButton') : t('create:submitButton')}
-              </ThemedText>
-            </AppPressable>
-          </View>
-        </View>
-      </ScrollView>
-    </ThemedView>
+      <EmojiPicker
+        visible={showEmojiPicker}
+        onClose={() => {
+          setShowEmojiPicker(false);
+          requestAnimationFrame(() => contentInputRef.current?.focus());
+        }}
+        onSelect={handleEmojiSelected}
+      />
 
-    <EmojiPicker
-      visible={showEmojiPicker}
-      onClose={() => {
-        setShowEmojiPicker(false);
-        requestAnimationFrame(() => contentInputRef.current?.focus());
-      }}
-      onSelect={handleEmojiSelected}
-    />
-
-    {/* Unsaved changes confirmation modal (Android hardware back) */}
-    <AppModal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
-      <View style={styles.modalOverlay}>
-        <ThemedView type="backgroundElement" style={styles.modalContent}>
-          <ThemedText type="subtitle" style={styles.modalTitle}>
-            {t('create:leaveConfirmTitle')}
-          </ThemedText>
-          <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-            {t('create:leaveConfirmMessage')}
-          </ThemedText>
-          <View style={styles.modalButtons}>
-            <AppPressable
-              onPress={handleCancelLeave}
-              style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
-              <ThemedText type="smallBold" style={styles.cancelModalText}>
-                {t('create:leaveConfirmStay')}
-              </ThemedText>
-            </AppPressable>
-            <AppPressable
-              onPress={handleConfirmLeave}
-              style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
-              <ThemedText type="smallBold" style={styles.confirmModalText}>
-                {t('create:leaveConfirmExit')}
-              </ThemedText>
-            </AppPressable>
-          </View>
-        </ThemedView>
-      </View>
-    </AppModal>
-  </KeyboardAvoidingView>
+      <ConfirmDialog
+        visible={confirmLeaveVisible}
+        title={t('create:leaveConfirmTitle')}
+        message={t('create:leaveConfirmMessage')}
+        confirmLabel={t('create:leaveConfirmExit')}
+        cancelLabel={t('create:leaveConfirmStay')}
+        destructive
+        onConfirm={handleConfirmLeave}
+        onCancel={() => setConfirmLeaveVisible(false)}
+      />
+    </KeyboardAvoidingView>
   );
 }
 
@@ -709,42 +489,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 120,
   },
-  // Instagram-style autocomplete dropdown — dark, anchored ABOVE the textarea
-  autocompleteDropdown: {
-    position: 'absolute',
-    bottom: '100%',
-    left: 0,
-    right: 0,
-    maxHeight: 240,
-    marginBottom: Spacing.one,
-    borderRadius: Radii.lg,
-    borderWidth: 1,
-    zIndex: 1000,
-    overflow: 'hidden',
-    ...Shadows.lg,
-  },
-  autocompleteLoading: {
-    padding: Spacing.three,
-    alignItems: 'center',
-  },
-  autocompleteItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.three + 2,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.two + 4,
-  },
-  autocompleteInfo: {
-    flex: 1,
-    gap: 1,
-  },
-  hashtagIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: Radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   buttons: {
     flexDirection: 'row',
     gap: Spacing.three,
@@ -772,47 +516,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.four,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 340,
-    borderRadius: Radii.lg,
-    padding: Spacing.four,
-    gap: Spacing.three,
-  },
-  modalTitle: {
-    textAlign: 'center',
-  },
-  modalMessage: {
-    textAlign: 'center',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-    marginTop: Spacing.one,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: Spacing.three,
-    borderRadius: Radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelModalButton: {
-    borderWidth: 1,
-  },
-  cancelModalText: {
-    opacity: 0.7,
-  },
-  confirmModalButton: {},
-  confirmModalText: {
-    color: '#FFFFFF',
   },
 });

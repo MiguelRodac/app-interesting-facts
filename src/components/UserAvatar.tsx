@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
@@ -31,13 +31,9 @@ function getInitials(name: string | undefined | null): string {
 export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
   const { t } = useTranslation('common');
   const theme = useTheme();
-  const [imageError, setImageError] = useState(false);
-  const hasImage = user.avatarUrl != null && user.avatarUrl.length > 0 && !imageError;
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const hasImage = user.avatarUrl != null && user.avatarUrl.length > 0 && failedUrl !== user.avatarUrl;
   const hasColor = !!user.avatarColor;
-
-  useEffect(() => {
-    setImageError(false);
-  }, [user.avatarUrl]);
 
   const initials = getInitials(user?.displayName ?? '?');
   const fontSize = Math.round(size * 0.38);
@@ -65,7 +61,7 @@ export function UserAvatar({ user, size = 36 }: UserAvatarProps) {
           ]}
           contentFit="cover"
           transition={200}
-          onError={() => setImageError(true)}
+          onError={() => setFailedUrl(user.avatarUrl ?? null)}
           accessibilityLabel={t('common:userAvatar', { name: user.displayName })}
         />
       ) : (

@@ -22,6 +22,16 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 
+function getInitialDeviceType(): 'ios' | 'android' | 'desktop' {
+  if (Platform.OS !== 'web' || typeof navigator === 'undefined') return 'desktop';
+  const ua = navigator.userAgent;
+  const isIpad =
+    /ipad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (/iphone|ipod|ipad/i.test(ua) || isIpad) return 'ios';
+  if (/android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
 export default function LandingScreen() {
   const { t } = useTranslation(['landing', 'common']);
   const theme = useTheme();
@@ -31,7 +41,7 @@ export default function LandingScreen() {
   const { width } = useWindowDimensions();
 
   const isNarrow = width < BREAKPOINT;
-  const [deviceType, setDeviceType] = useState<'ios' | 'android' | 'desktop'>('desktop');
+  const [deviceType] = useState<'ios' | 'android' | 'desktop'>(getInitialDeviceType);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [activeAccordion, setActiveAccordion] = useState<'apk' | 'pwa' | null>('apk');
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
@@ -75,16 +85,6 @@ export default function LandingScreen() {
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-    const ua = navigator.userAgent;
-    const isIpad =
-      /ipad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (/iphone|ipod|ipad/i.test(ua) || isIpad) {
-      setDeviceType('ios');
-    } else if (/android/i.test(ua)) {
-      setDeviceType('android');
-    } else {
-      setDeviceType('desktop');
-    }
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);

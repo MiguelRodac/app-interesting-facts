@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -64,11 +64,12 @@ export default function UserProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('facts');
 
+  const profileId = profile?.id;
   const handleEndReached = useCallback(() => {
-    if (!profile?.id) return;
+    if (!profileId) return;
     if (activeTab === 'facts') {
       if (factsHasMore && !factsLoading && !factsLoadingMore && facts.length > 0) {
-        loadMoreUserFacts(profile.id);
+        loadMoreUserFacts(profileId);
       }
     } else if (activeTab === 'likes') {
       if (hasMoreLikes && !likesLoading && !likesLoadingMore && likedEntries.length > 0) {
@@ -76,7 +77,7 @@ export default function UserProfileScreen() {
       }
     }
   }, [
-    profile?.id,
+    profileId,
     activeTab,
     factsHasMore,
     factsLoading,
@@ -204,7 +205,7 @@ export default function UserProfileScreen() {
       }
       useRepostsStore.getState().toggleRepostLike(repostId, fallbackFact).catch(() => {});
     },
-    [isAuthenticated],
+    [isAuthenticated, router],
   );
 
   const handleBack = useCallback(() => {

@@ -54,9 +54,16 @@ export function LikesModal({ factId, commentId, repostId, repostCommentId, visib
         : factLikes;
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const [prevVisible, setPrevVisible] = useState(visible);
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
     if (visible && (factId || repostId)) {
       setLoading(true);
+    }
+  }
+
+  useEffect(() => {
+    if (visible && (factId || repostId)) {
       refetch().finally(() => setLoading(false));
     }
   }, [visible, factId, repostId, refetch]);

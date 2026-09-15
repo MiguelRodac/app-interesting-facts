@@ -905,7 +905,7 @@ export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
                       🔍 Término buscado:
                     </ThemedText>
                     <ThemedText type="smallBold" numberOfLines={1} style={{ maxWidth: 150 }}>
-                      "{searchQuery.trim()}"
+                      {`"${searchQuery.trim()}"`}
                     </ThemedText>
                   </View>
                 ) : null}

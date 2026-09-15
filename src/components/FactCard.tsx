@@ -11,7 +11,7 @@ import { StyledContent } from '@/components/StyledContent';
 import { UserAvatar } from '@/components/UserAvatar';
 import { LikeButton } from '@/components/LikeButton';
 import { LikedByLine } from '@/components/LikedByLine';
-import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
+import { Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD, checkIsCollapsible } from '@/constants/facts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
@@ -71,8 +71,6 @@ export function FactCard({
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
 
-  // Anon variant: viewer is logged out, show non-interactive preview
-  const anonView = variant === 'anon';
 
   // Helper to wrap actions with auth check
   const gate = (action?: () => void) => {

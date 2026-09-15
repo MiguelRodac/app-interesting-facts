@@ -122,9 +122,15 @@ export interface PaginatedResult<T> {
   nextPage: number | null;
 }
 
+export interface AppErrorDetail {
+  field?: string;
+  message: string;
+}
+
 export interface AppError {
   code: string;
   message: string;
   userMessage: string;
   status: number;
+  details?: AppErrorDetail[];
 }

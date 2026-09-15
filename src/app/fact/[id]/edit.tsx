@@ -1,34 +1,40 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, FlatList, BackHandler } from 'react-native';
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
+import {
+  StyleSheet,
+  TextInput,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  BackHandler,
+} from 'react-native';
 import { useLocalSearchParams, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { CharCounter } from '@/components/CharCounter';
 import { EmojiPicker, EmojiButton } from '@/components/EmojiPicker';
+import { MentionDropdown } from '@/components/MentionDropdown';
+import { HashtagDropdown } from '@/components/HashtagDropdown';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { UserAvatar } from '@/components/UserAvatar';
-import { Radii, Spacing, MaxContentWidth, Shadows } from '@/constants/theme';
+import { AppPressable } from '@/components/ui/app-pressable';
+import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { useFactsStore } from '@/data/stores/factsStore';
 import { useUIStore } from '@/data/stores/uiStore';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import { useBottomInset } from '@/hooks/use-bottom-inset';
-import { createApiClient } from '@/data/api/client';
-import { getIdToken } from '@/data/auth/firebaseAuth';
+import { useMentionSearch } from '@/hooks/useMentionSearch';
+import { useHashtagSearch } from '@/hooks/useHashtagSearch';
 import type { ApiUserSearchResult, ApiHashtag } from '@/data/api/types';
 import type { Fact } from '@/types';
-import { safeInsertText, safeTruncate, cleanSurrogates } from '@/utils/text';
-
-const client = createApiClient(getIdToken);
+import { safeInsertText, cleanSurrogates } from '@/utils/text';
 
 const MIN_LENGTH = 10;
 const MAX_LENGTH = 1000;
-const TITLE_MAX_LENGTH = 50;
 
 export default function EditFactScreen() {
   const { t } = useTranslation(['create', 'common']);
@@ -46,47 +52,47 @@ export default function EditFactScreen() {
   const fetchFactById = useFactsStore((s) => s.fetchFactById);
   const updateFact = useFactsStore((s) => s.updateFact);
 
-  const [fact, setFact] = useState<Fact | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const initialFact = (id ? (facts.find((f) => f.id === id) ?? userFacts.find((f) => f.id === id)) : null) ?? null;
+
+  const [fact, setFact] = useState<Fact | null>(initialFact);
+  const [loading, setLoading] = useState(!initialFact);
+  const [title, setTitle] = useState(initialFact?.title ?? '');
+  const [content, setContent] = useState(initialFact?.content ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmLeaveVisible, setConfirmLeaveVisible] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // Mention/hashtag autocomplete state
-  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const [mentionResults, setMentionResults] = useState<ApiUserSearchResult[]>([]);
-  const [isSearchingMentions, setIsSearchingMentions] = useState(false);
-  const [showMentions, setShowMentions] = useState(false);
-  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
-  const [hashtagQuery, setHashtagQuery] = useState<string | null>(null);
-  const [hashtagResults, setHashtagResults] = useState<ApiHashtag[]>([]);
-  const [isSearchingHashtags, setIsSearchingHashtags] = useState(false);
-  const [showHashtags, setShowHashtags] = useState(false);
-  const [selectedHashtagIndex, setSelectedHashtagIndex] = useState(0);
   const cursorPositionRef = useRef(0);
   const previousTextLengthRef = useRef(0);
-  const mentionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hashtagTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestMentionQueryRef = useRef('');
-  const latestHashtagQueryRef = useRef('');
   const contentInputRef = useRef<TextInput>(null);
 
-// Find fact from store; on cold start / F5 the store is empty, so fetch
-  // the fact by ID instead of showing "Fact not found".
+  const {
+    showMentions,
+    setShowMentions,
+    mentionResults,
+    isSearchingMentions,
+    selectedMentionIndex,
+    setSelectedMentionIndex,
+    searchMentions,
+    closeMentions,
+    applyMention,
+  } = useMentionSearch();
+
+  const {
+    showHashtags,
+    setShowHashtags,
+    hashtagResults,
+    isSearchingHashtags,
+    selectedHashtagIndex,
+    setSelectedHashtagIndex,
+    searchHashtags,
+    closeHashtags,
+    applyHashtag,
+  } = useHashtagSearch();
+
   useEffect(() => {
-    if (!id) return;
-    const found = facts.find((f) => f.id === id) ?? userFacts.find((f) => f.id === id);
-    if (found) {
-      setFact(found);
-      setTitle(found.title ?? '');
-      setContent(found.content);
-      setLoading(false);
-      return;
-    }
+    if (!id || fact) return;
     let active = true;
-    setLoading(true);
     fetchFactById(id)
       .then((fetched) => {
         if (active) {
@@ -104,18 +110,15 @@ export default function EditFactScreen() {
     return () => {
       active = false;
     };
-  }, [id, facts, userFacts, fetchFactById]);
+  }, [id, fact, fetchFactById]);
 
-  // Cleanup debounce timeouts on unmount
   useEffect(() => {
     return () => {
-      if (mentionTimeoutRef.current) clearTimeout(mentionTimeoutRef.current);
-      if (hashtagTimeoutRef.current) clearTimeout(hashtagTimeoutRef.current);
-      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+      closeMentions();
+      closeHashtags();
     };
-  }, []);
+  }, [closeMentions, closeHashtags]);
 
-  // Redirect to login when the session is gone (e.g. expired token)
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
       if (!hasCheckedAuth.current) {
@@ -127,178 +130,115 @@ export default function EditFactScreen() {
     }
   }, [isAuthenticated, isLoading, router, segments]);
 
-  const searchMentions = useCallback((query: string) => {
-    latestMentionQueryRef.current = query;
-    if (mentionTimeoutRef.current) clearTimeout(mentionTimeoutRef.current);
+  const hasChanges =
+    fact !== null &&
+    (title.trim() !== (fact.title ?? '') || content.trim() !== fact.content);
 
-    if (query.length < 1) {
-      setMentionResults([]);
-      setShowMentions(false);
-      return;
-    }
-
-    mentionTimeoutRef.current = setTimeout(async () => {
-      const currentQuery = latestMentionQueryRef.current;
-      if (currentQuery.length < 1) {
-        setMentionResults([]);
-        setShowMentions(false);
-        return;
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (hasChanges) {
+        setConfirmLeaveVisible(true);
+        return true;
       }
-      setIsSearchingMentions(true);
-      try {
-        const response = await client.get<ApiUserSearchResult[] | { results: ApiUserSearchResult[] }>('/users/search', { q: currentQuery });
-        setMentionResults(Array.isArray(response) ? response : (response.results ?? []));
-        setSelectedMentionIndex(0);
-      } catch {
-        setMentionResults([]);
-      } finally {
-        setIsSearchingMentions(false);
+      return false;
+    });
+    return () => subscription.remove();
+  }, [hasChanges]);
+
+  const handleContentChange = useCallback(
+    (text: string) => {
+      setContent(text);
+
+      const rawCursorPos = cursorPositionRef.current;
+      const cursorPos =
+        rawCursorPos >= text.length ||
+        (rawCursorPos === 0 && text.length > 0) ||
+        rawCursorPos === previousTextLengthRef.current
+          ? text.length
+          : rawCursorPos;
+      previousTextLengthRef.current = text.length;
+
+      const lastAtIndex = text.lastIndexOf('@', cursorPos);
+      if (lastAtIndex !== -1) {
+        const textAfterAt = text.substring(lastAtIndex + 1, cursorPos);
+        if (!textAfterAt.includes(' ') && textAfterAt.length <= 20) {
+          setShowMentions(true);
+          closeHashtags();
+          searchMentions(textAfterAt);
+          return;
+        }
       }
-    }, 500);
-  }, []);
 
-  const searchHashtags = useCallback((query: string) => {
-    latestHashtagQueryRef.current = query;
-    if (hashtagTimeoutRef.current) clearTimeout(hashtagTimeoutRef.current);
-
-    if (query.length < 1) {
-      setHashtagResults([]);
-      setShowHashtags(false);
-      return;
-    }
-
-    hashtagTimeoutRef.current = setTimeout(async () => {
-      const currentQuery = latestHashtagQueryRef.current;
-      if (currentQuery.length < 1) {
-        setHashtagResults([]);
-        setShowHashtags(false);
-        return;
+      const lastHashIndex = text.lastIndexOf('#', cursorPos);
+      if (lastHashIndex !== -1) {
+        const textAfterHash = text.substring(lastHashIndex + 1, cursorPos);
+        if (!textAfterHash.includes(' ') && textAfterHash.length <= 30) {
+          setShowHashtags(true);
+          closeMentions();
+          searchHashtags(textAfterHash);
+          return;
+        }
       }
-      setIsSearchingHashtags(true);
-      try {
-        const response = await client.get<{ results: ApiHashtag[] }>('/hashtags', { q: currentQuery, limit: '5' });
-        setHashtagResults(response.results ?? []);
-        setSelectedHashtagIndex(0);
-      } catch {
-        setHashtagResults([]);
-      } finally {
-        setIsSearchingHashtags(false);
-      }
-    }, 500);
-  }, []);
 
-  const handleContentChange = useCallback((text: string) => {
-    setContent(text);
+      closeMentions();
+      closeHashtags();
+    },
+    [searchMentions, searchHashtags, closeMentions, closeHashtags, setShowMentions, setShowHashtags]
+  );
 
-    const rawCursorPos = cursorPositionRef.current;
-    const cursorPos = (rawCursorPos >= text.length || (rawCursorPos === 0 && text.length > 0) || rawCursorPos === previousTextLengthRef.current)
-      ? text.length
-      : rawCursorPos;
-    previousTextLengthRef.current = text.length;
+  const handleSelectionChange = useCallback(
+    (event: { nativeEvent: { selection: { start: number; end: number } } }) => {
+      cursorPositionRef.current = event.nativeEvent.selection.start;
+    },
+    []
+  );
 
-    // Detect @mention trigger
-    const lastAtIndex = text.lastIndexOf('@', cursorPos);
-    if (lastAtIndex !== -1) {
-      const textAfterAt = text.substring(lastAtIndex + 1, cursorPos);
-      if (!textAfterAt.includes(' ') && textAfterAt.length <= 20) {
-        setMentionQuery(textAfterAt);
-        setShowMentions(true);
-        setShowHashtags(false);
-        latestMentionQueryRef.current = textAfterAt;
-        searchMentions(textAfterAt);
-        return;
-      }
-    }
-
-    // Detect #hashtag trigger
-    const lastHashIndex = text.lastIndexOf('#', cursorPos);
-    if (lastHashIndex !== -1) {
-      const textAfterHash = text.substring(lastHashIndex + 1, cursorPos);
-      if (!textAfterHash.includes(' ') && textAfterHash.length <= 30) {
-        setHashtagQuery(textAfterHash);
-        setShowHashtags(true);
-        setShowMentions(false);
-        latestHashtagQueryRef.current = textAfterHash;
-        searchHashtags(textAfterHash);
-        return;
-      }
-    }
-
-    setShowMentions(false);
-    setMentionQuery(null);
-    setMentionResults([]);
-    setShowHashtags(false);
-    setHashtagQuery(null);
-    setHashtagResults([]);
-  }, [searchMentions, searchHashtags]);
-
-  const handleSelectionChange = useCallback((event: { nativeEvent: { selection: { start: number; end: number } } }) => {
-    cursorPositionRef.current = event.nativeEvent.selection.start;
-  }, []);
-
-  // Close the autocomplete dropdowns when the input loses focus. The small
-  // delay lets a tap on a suggestion row register first (the rows use
-  // keyboardShouldPersistTaps="handled").
-  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleContentBlur = useCallback(() => {
-    if (blurTimeoutRef.current) {
-      clearTimeout(blurTimeoutRef.current);
-    }
-    blurTimeoutRef.current = setTimeout(() => {
-      setShowMentions(false);
-      setMentionResults([]);
-      setShowHashtags(false);
-      setHashtagResults([]);
+    setTimeout(() => {
+      closeMentions();
+      closeHashtags();
     }, 150);
-  }, []);
+  }, [closeMentions, closeHashtags]);
 
-  const handleSelectMention = useCallback((user: ApiUserSearchResult) => {
-    const lastAtIndex = content.lastIndexOf('@', cursorPositionRef.current);
-    if (lastAtIndex === -1) return;
-    const beforeAt = content.substring(0, lastAtIndex);
-    const afterCursor = content.substring(cursorPositionRef.current);
-    setContent(`${beforeAt}@${user.username} ${afterCursor}`);
-    setShowMentions(false);
-    setMentionQuery(null);
-    setMentionResults([]);
-    contentInputRef.current?.focus();
-  }, [content]);
+  const handleSelectMention = useCallback(
+    (user: ApiUserSearchResult) => {
+      const { newContent, newCursor } = applyMention(content, cursorPositionRef.current, user);
+      setContent(newContent);
+      cursorPositionRef.current = newCursor;
+      requestAnimationFrame(() => contentInputRef.current?.focus());
+    },
+    [content, applyMention]
+  );
 
-  const handleSelectHashtag = useCallback((hashtag: ApiHashtag) => {
-    const lastHashIndex = content.lastIndexOf('#', cursorPositionRef.current);
-    if (lastHashIndex === -1) return;
-    const beforeHash = content.substring(0, lastHashIndex);
-    const afterCursor = content.substring(cursorPositionRef.current);
-    setContent(`${beforeHash}#${hashtag.tag} ${afterCursor}`);
-    setShowHashtags(false);
-    setHashtagQuery(null);
-    setHashtagResults([]);
-    contentInputRef.current?.focus();
-  }, [content]);
+  const handleSelectHashtag = useCallback(
+    (hashtag: ApiHashtag) => {
+      const { newContent, newCursor } = applyHashtag(content, cursorPositionRef.current, hashtag);
+      setContent(newContent);
+      cursorPositionRef.current = newCursor;
+      requestAnimationFrame(() => contentInputRef.current?.focus());
+    },
+    [content, applyHashtag]
+  );
 
   const handleEmojiSelected = useCallback((emoji: string) => {
+    const pos = cursorPositionRef.current;
     setContent((prev) => {
-      const { text, newCursor } = safeInsertText(prev, emoji, cursorPositionRef.current);
+      const { text, newCursor } = safeInsertText(prev, emoji, pos);
       cursorPositionRef.current = newCursor;
       previousTextLengthRef.current = text.length;
       return text;
     });
   }, []);
 
-  const isValid = content.trim().length >= MIN_LENGTH && content.trim().length <= MAX_LENGTH;
-  const hasChanges =
-    fact !== null &&
-    (title.trim() !== (fact.title ?? '') || content.trim() !== fact.content);
+  const isValid = content.trim().length > 0;
 
   const handleSubmit = useCallback(async () => {
     if (!isValid || isSubmitting || !fact || !hasChanges) return;
 
     setIsSubmitting(true);
     try {
-      const cleanTitle = title.trim()
-        ? safeTruncate(cleanSurrogates(title.trim()), TITLE_MAX_LENGTH)
-        : undefined;
-      const cleanContent = safeTruncate(cleanSurrogates(content.trim()), MAX_LENGTH);
+      const cleanTitle = title.trim() ? cleanSurrogates(title.trim()) : undefined;
+      const cleanContent = cleanSurrogates(content.trim());
       await updateFact(fact.id, {
         title: cleanTitle,
         content: cleanContent,
@@ -306,14 +246,13 @@ export default function EditFactScreen() {
       useUIStore.getState().showToast(t('common:factUpdated', { defaultValue: 'Dato actualizado exitosamente' }), 'success');
       router.replace(`/fact/${fact.id}`);
     } catch {
-      // Error is handled by uiStore → ErrorBanner
+      // Error handled by uiStore → ErrorBanner
     } finally {
       setIsSubmitting(false);
     }
   }, [isValid, isSubmitting, fact, hasChanges, title, content, updateFact, router, t]);
 
   const handleCancel = useCallback(() => {
-    // With unsaved changes, block the in-screen back button and ask first.
     if (hasChanges) {
       setConfirmLeaveVisible(true);
       return;
@@ -330,25 +269,9 @@ export default function EditFactScreen() {
     }
   }, [router, fact]);
 
-  const handleCancelLeave = useCallback(() => {
-    setConfirmLeaveVisible(false);
-  }, []);
-
-  // Intercept Android hardware back — confirm before leaving with unsaved changes.
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (hasChanges) {
-        setConfirmLeaveVisible(true);
-        return true;
-      }
-      return false;
-    });
-    return () => subscription.remove();
-  }, [hasChanges]);
-
-  if (loading || isLoading) {
+  if (loading) {
     return (
-      <ThemedView style={styles.centered}>
+      <ThemedView style={[styles.centered, { paddingTop: topInset }]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </ThemedView>
     );
@@ -356,9 +279,9 @@ export default function EditFactScreen() {
 
   if (!fact) {
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText type="default" themeColor="textSecondary">
-          {t('common:factNotFound')}
+      <ThemedView style={[styles.centered, { paddingTop: topInset }]}>
+        <ThemedText type="default">
+          {t('common:factNotFound', { defaultValue: 'Dato no encontrado' })}
         </ThemedText>
       </ThemedView>
     );
@@ -366,20 +289,20 @@ export default function EditFactScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
-      <ThemedView style={[styles.container, { paddingBottom: Math.max(Spacing.four, bottomInset) }]}>
+      style={[styles.flex, { backgroundColor: theme.background }]}>
+      <ThemedView style={[styles.container, { paddingTop: topInset, paddingBottom: bottomInset + Spacing.two }]}>
         {/* Header */}
-        <View style={[styles.header, { paddingTop: topInset }]}>
-          <AppPressable onPress={handleCancel} hitSlop={8} style={styles.backButton}>
+        <View style={styles.header}>
+          <AppPressable
+            onPress={handleCancel}
+            disabled={isSubmitting}
+            hitSlop={8}
+            style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </AppPressable>
           <View style={styles.headerContent}>
-            <ThemedText type="subtitle">{t('create:editFactTitle')}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              {t('create:editFactSubtitle')}
-            </ThemedText>
+            <ThemedText type="subtitle">{t('create:editTitle')}</ThemedText>
           </View>
         </View>
 
@@ -387,12 +310,9 @@ export default function EditFactScreen() {
         <View style={styles.form}>
           {/* Title field */}
           <View style={styles.field}>
-            <View style={styles.fieldHeader}>
-              <ThemedText type="smallBold" themeColor="textSecondary">
-                {t('create:fieldTitle')}
-              </ThemedText>
-              <CharCounter current={title.length} min={0} max={TITLE_MAX_LENGTH} />
-            </View>
+            <ThemedText type="smallBold" themeColor="textSecondary">
+              {t('create:fieldTitle')}
+            </ThemedText>
             <TextInput
               style={[
                 styles.input,
@@ -406,7 +326,6 @@ export default function EditFactScreen() {
               placeholderTextColor={theme.muted}
               value={title}
               onChangeText={setTitle}
-              maxLength={TITLE_MAX_LENGTH}
               editable={!isSubmitting}
             />
           </View>
@@ -439,94 +358,29 @@ export default function EditFactScreen() {
                 onChangeText={handleContentChange}
                 onSelectionChange={handleSelectionChange}
                 onBlur={handleContentBlur}
-                maxLength={MAX_LENGTH}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
                 editable={!isSubmitting}
               />
 
-              {/* Mention autocomplete dropdown */}
-              {showMentions && (
-                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                  {isSearchingMentions ? (
-                    <View style={styles.autocompleteLoading}>
-                      <ActivityIndicator size="small" color={theme.muted} />
-                    </View>
-                  ) : mentionResults.length === 0 ? (
-                    <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" themeColor="muted">{t('create:noUsersFound')}</ThemedText>
-                    </View>
-                  ) : (
-                    <FlatList
-                      data={mentionResults}
-                      keyExtractor={(item) => item.username}
-                      keyboardShouldPersistTaps="handled"
-                      renderItem={({ item, index }) => (
-                        <AppPressable
-                          style={[
-                            styles.autocompleteItem,
-                            index === selectedMentionIndex && { backgroundColor: theme.backgroundSelected },
-                          ]}
-                          onPress={() => handleSelectMention(item)}
-                          onPressIn={() => setSelectedMentionIndex(index)}>
-                          <UserAvatar
-                            user={{ displayName: item.displayName, avatarColor: item.avatarColor ?? '#64B5F6', avatarUrl: item.avatarUrl }}
-                            size={30}
-                          />
-                          <View style={styles.autocompleteInfo}>
-                            <ThemedText type="smallBold" themeColor="text">
-                              {item.username}
-                            </ThemedText>
-                            <ThemedText type="small" themeColor="textSecondary">
-                              {item.displayName}
-                            </ThemedText>
-                          </View>
-                        </AppPressable>
-                      )}
-                    />
-                  )}
-                </View>
-              )}
+              <MentionDropdown
+                visible={showMentions}
+                loading={isSearchingMentions}
+                results={mentionResults}
+                selectedIndex={selectedMentionIndex}
+                onSelect={handleSelectMention}
+                onSelectIndex={setSelectedMentionIndex}
+              />
 
-              {/* Hashtag autocomplete dropdown */}
-              {showHashtags && (
-                <View style={[styles.autocompleteDropdown, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                  {isSearchingHashtags ? (
-                    <View style={styles.autocompleteLoading}>
-                      <ActivityIndicator size="small" color={theme.muted} />
-                    </View>
-                  ) : hashtagResults.length === 0 ? (
-                    <View style={styles.autocompleteLoading}>
-                      <ThemedText type="small" themeColor="muted">{t('create:noHashtagsFound')}</ThemedText>
-                    </View>
-                  ) : (
-                    <FlatList
-                      data={hashtagResults}
-                      keyExtractor={(item) => item.id}
-                      keyboardShouldPersistTaps="handled"
-                      renderItem={({ item, index }) => (
-                        <AppPressable
-                          style={[
-                            styles.autocompleteItem,
-                            index === selectedHashtagIndex && { backgroundColor: theme.backgroundSelected },
-                          ]}
-                          onPress={() => handleSelectHashtag(item)}
-                          onPressIn={() => setSelectedHashtagIndex(index)}>
-                          <View style={[styles.hashtagIcon, { backgroundColor: theme.backgroundSelected }]}>
-                            <ThemedText type="smallBold" style={{ color: theme.text, fontSize: 13 }}>#</ThemedText>
-                          </View>
-                          <View style={styles.autocompleteInfo}>
-                            <ThemedText type="smallBold" style={[styles.autocompleteName, { color: theme.text }]}>
-                              {item.tag}
-                            </ThemedText>
-                          </View>
-                        </AppPressable>
-                      )}
-                    />
-                  )}
-                </View>
-              )}
+              <HashtagDropdown
+                visible={showHashtags}
+                loading={isSearchingHashtags}
+                results={hashtagResults}
+                selectedIndex={selectedHashtagIndex}
+                onSelect={handleSelectHashtag}
+                onSelectIndex={setSelectedHashtagIndex}
+              />
             </View>
           </View>
 
@@ -563,36 +417,17 @@ export default function EditFactScreen() {
         </View>
       </ThemedView>
 
-      {/* Unsaved changes confirmation — full-screen, no scroll */}
-      <AppModal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
-        <View style={styles.modalOverlay}>
-          <ThemedView type="backgroundElement" style={styles.modalContent}>
-            <ThemedText type="subtitle" style={styles.modalTitle}>
-              {t('create:leaveConfirmTitle')}
-            </ThemedText>
-            <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-              {t('create:leaveConfirmMessage')}
-            </ThemedText>
-            <View style={styles.modalButtons}>
-              <AppPressable
-                onPress={handleCancelLeave}
-                style={[styles.modalButton, styles.cancelModalButton, { borderColor: theme.border }]}>
-                <ThemedText type="smallBold" style={styles.cancelModalText}>
-                  {t('create:leaveConfirmStay')}
-                </ThemedText>
-              </AppPressable>
-              <AppPressable
-                onPress={handleConfirmLeave}
-                style={[styles.modalButton, styles.confirmModalButton, { backgroundColor: theme.destructive }]}>
-                <ThemedText type="smallBold" style={styles.confirmModalText}>
-                  {t('create:leaveConfirmExit')}
-                </ThemedText>
-              </AppPressable>
-            </View>
-          </ThemedView>
-        </View>
-      </AppModal>
-      {/* Emoji picker */}
+      <ConfirmDialog
+        visible={confirmLeaveVisible}
+        title={t('create:leaveConfirmTitle')}
+        message={t('create:leaveConfirmMessage')}
+        confirmLabel={t('create:leaveConfirmExit')}
+        cancelLabel={t('create:leaveConfirmStay')}
+        destructive
+        onConfirm={handleConfirmLeave}
+        onCancel={() => setConfirmLeaveVisible(false)}
+      />
+
       <EmojiPicker
         visible={showEmojiPicker}
         onClose={() => {
@@ -670,46 +505,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     position: 'relative',
   },
-autocompleteDropdown: {
-    position: 'absolute',
-    bottom: '100%',
-    left: 0,
-    right: 0,
-    maxHeight: 220,
-    marginBottom: Spacing.one,
-    borderRadius: Radii.lg,
-    zIndex: 1000,
-    overflow: 'hidden',
-    ...Shadows.lg,
-  },
-  autocompleteLoading: {
-    padding: Spacing.three,
-    alignItems: 'center',
-  },
-  autocompleteItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.two + 2,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.two + 4,
-  },
-  autocompleteInfo: {
-    flex: 1,
-    gap: 1,
-  },
-  autocompleteName: {
-    fontSize: 14,
-  },
-  autocompleteSubtext: {
-    fontSize: 12,
-  },
-  hashtagIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: Radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   buttons: {
     flexDirection: 'row',
     gap: Spacing.three,
@@ -730,49 +525,6 @@ autocompleteDropdown: {
   },
   submitButton: {},
   submitText: {
-    color: '#FFFFFF',
-  },
-  // Full-screen (flex:1), no-scroll confirm overlay — mirrors the create-tab guard
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.four,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 340,
-    borderRadius: Radii.lg,
-    padding: Spacing.four,
-    gap: Spacing.three,
-  },
-  modalTitle: {
-    textAlign: 'center',
-  },
-  modalMessage: {
-    textAlign: 'center',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-    marginTop: Spacing.one,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: Spacing.three,
-    borderRadius: Radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelModalButton: {
-    borderWidth: 1,
-  },
-  cancelModalText: {
-    opacity: 0.7,
-  },
-  confirmModalButton: {},
-  confirmModalText: {
     color: '#FFFFFF',
   },
 });

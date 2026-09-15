@@ -78,9 +78,6 @@ export function useCommentLikes(
 
   useEffect(() => {
     if (!factId || !commentId || !enabled) {
-      // Comment no longer qualifies (e.g. closed modal) — drop any stale
-      // list from the previous state so no ghost likes remain.
-      setLikes([]);
       return;
     }
     let active = true;
@@ -95,5 +92,7 @@ export function useCommentLikes(
     };
   }, [factId, commentId, enabled, fetchFresh]);
 
-  return { likes, refetch: fetchFresh };
+  const activeLikes = !factId || !commentId || !enabled ? [] : likes;
+
+  return { likes: activeLikes, refetch: fetchFresh };
 }

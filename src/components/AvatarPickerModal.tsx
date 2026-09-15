@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { AppModal } from '@/components/ui/app-modal';
@@ -40,25 +40,38 @@ export function AvatarPickerModal({
   const [pendingColor, setPendingColor] = useState<string | null>(null);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
 
-  const fetchAvatarOptions = useCallback(async () => {
-    setIsLoadingOptions(true);
-    try {
-      const response = await client.get<ApiAvatarOption[] | { results: ApiAvatarOption[] }>('/users/avatar-options');
-      setAvatarOptions(Array.isArray(response) ? response : (response.results ?? []));
-    } catch {
-      // Silently fail — fallback to manual URL input
-    } finally {
-      setIsLoadingOptions(false);
-    }
-  }, []);
-
-  useEffect(() => {
+  // Sync pending values and start loading when modal opens
+  const [prevVisible, setPrevVisible] = useState(visible);
+  if (visible !== prevVisible) {
+    setPrevVisible(visible);
     if (visible) {
       setPendingColor(currentColor);
       setPendingUrl(currentAvatarUrl ?? null);
-      fetchAvatarOptions();
+      if (avatarOptions.length === 0) {
+        setIsLoadingOptions(true);
+      }
     }
-  }, [visible, currentColor, currentAvatarUrl, fetchAvatarOptions]);
+  }
+
+  useEffect(() => {
+    if (!visible) return;
+    let active = true;
+    client
+      .get<ApiAvatarOption[] | { results: ApiAvatarOption[] }>('/users/avatar-options')
+      .then((response) => {
+        if (!active) return;
+        setAvatarOptions(Array.isArray(response) ? response : (response.results ?? []));
+      })
+      .catch(() => {
+        // Silently fail — fallback to manual URL input
+      })
+      .finally(() => {
+        if (active) setIsLoadingOptions(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [visible]);
 
   const handlePickColor = (color: string) => {
     setPendingColor(color);

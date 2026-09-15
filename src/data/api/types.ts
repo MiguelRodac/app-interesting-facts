@@ -4,6 +4,11 @@
  * Mappers in src/data/mappers convert these to domain types.
  */
 
+export interface ApiValidationErrorDetail {
+  field?: string;
+  message: string;
+}
+
 /** RFC 9457 Problem Details error body */
 export interface ApiErrorResponse {
   type?: string;
@@ -13,6 +18,8 @@ export interface ApiErrorResponse {
   instance?: string;
   /** Backend error code (RFC 9457 "error_code") — surfaced on AppError.code */
   error_code?: string;
+  /** Zod validation details (field-specific errors) */
+  details?: ApiValidationErrorDetail[];
   /** Legacy error format fallback */
   error?: {
     code: string;

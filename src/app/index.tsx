@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';

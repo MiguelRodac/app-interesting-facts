@@ -34,7 +34,6 @@ export default function SearchScreen() {
     hashtagsResults,
     isLoading,
     isLoadingMore,
-    hasMore,
     hasMorePosts,
     hasMorePeople,
     hasMoreHashtags,
@@ -53,7 +52,6 @@ export default function SearchScreen() {
   const params = useLocalSearchParams<{ q?: string }>();
   const segments = useSegments();
   const [inputValue, setInputValue] = useState(query);
-  const latestTextRef = useRef(query);
   const hasCheckedAuth = useRef(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -138,23 +136,27 @@ export default function SearchScreen() {
   );
 
   // Auto-execute search from route params (e.g., from hashtag press).
-  // Run whenever params.q changes — whether the screen mounts fresh with a
-  // query already present or an already-mounted screen receives a new query.
-  useEffect(() => {
+  const [prevParamQ, setPrevParamQ] = useState(params.q);
+  if (params.q !== prevParamQ) {
+    setPrevParamQ(params.q);
     if (params.q) {
       const decodedQuery = decodeURIComponent(params.q);
       setInputValue(decodedQuery);
-      latestTextRef.current = decodedQuery;
       setQuery(decodedQuery);
+    }
+  }
+
+  useEffect(() => {
+    if (params.q) {
+      const decodedQuery = decodeURIComponent(params.q);
       const preferred = decodedQuery.trim().startsWith('#') ? 'posts' : undefined;
       search(decodedQuery, preferred);
     }
-  }, [params.q, setQuery, search]);
+  }, [params.q, search]);
 
   // Real-time search — debounced to avoid spamming the API
   const handleChangeText = useCallback(
     (text: string) => {
-      latestTextRef.current = text;
       setInputValue(text);
       setQuery(text);
 
@@ -165,7 +167,7 @@ export default function SearchScreen() {
 
       // Debounce: search after 500ms of inactivity
       searchTimeoutRef.current = setTimeout(() => {
-        search(latestTextRef.current);
+        search(text);
       }, 500);
     },
     [setQuery, search],
@@ -198,7 +200,6 @@ export default function SearchScreen() {
     (tag: string) => {
       const hashtagQuery = `#${tag}`;
       setInputValue(hashtagQuery);
-      latestTextRef.current = hashtagQuery;
       setQuery(hashtagQuery);
       search(hashtagQuery, 'posts');
     },

@@ -32,14 +32,23 @@ export default function VerifyEmailScreen() {
   const actionMode = String(params.mode ?? '');
   const code = String(params.oobCode ?? '');
 
-  const [status, setStatus] = useState<ActionStatus>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
 
   const isVerifyEmailMode = VERIFY_EMAIL_MODES.includes(actionMode);
   const isResetPasswordMode = actionMode === RESET_PASSWORD_MODE;
   const isSupported = isVerifyEmailMode || isResetPasswordMode;
+  const isLinkInvalid = !isSupported || !code;
+  const isAutoVerifying = isVerifyEmailMode && !isLinkInvalid;
+
+  const [status, setStatus] = useState<ActionStatus>(() => {
+    if (isLinkInvalid) return 'error';
+    if (isAutoVerifying) return 'loading';
+    return 'idle';
+  });
+  const [errorMessage, setErrorMessage] = useState(() => (
+    isLinkInvalid ? (!code ? t('auth:invalidLink') : t('auth:actionNotSupported')) : ''
+  ));
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Validation consistent with the app's auth screens (see change-password.tsx):
   // both fields must meet the MIN/MAX range and match each other.
@@ -50,47 +59,33 @@ export default function VerifyEmailScreen() {
     confirmPassword.length >= MIN_PASSWORD_LENGTH &&
     confirmPassword === newPassword;
 
-  // Handle invalid / missing links before any side effects run.
-  useEffect(() => {
-    if (!isSupported || !code) {
-      setStatus('error');
-      setErrorMessage(
-        !code ? t('auth:invalidLink') : t('auth:actionNotSupported'),
-      );
-    }
-  }, [isSupported, code, t]);
-
   // Fire the verify-before-update flow automatically once the code is valid.
   useEffect(() => {
-    if (!isVerifyEmailMode || !code || status !== 'idle') return;
-    handleVerifyEmail();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isVerifyEmailMode, code]);
+    if (!isAutoVerifying) return;
+    let cancelled = false;
 
-  const handleVerifyEmail = async () => {
-    setStatus('loading');
-    setErrorMessage('');
-    try {
-      const newEmail = await applyEmailActionCode(code);
-
-      // Best-effort backend sync. The browser session may not be signed in
-      // (common when clicking the link in a fresh browser) — if the sync
-      // fails because there's no session, the app reconciles the email on the
-      // next sign-in. Never let a sync failure crash or block the flow.
-      try {
-        if (newEmail) {
-          await useAuthStore.getState().updateProfile({ email: newEmail });
+    applyEmailActionCode(code)
+      .then(async (newEmail) => {
+        if (cancelled) return;
+        try {
+          if (newEmail) {
+            await useAuthStore.getState().updateProfile({ email: newEmail });
+          }
+        } catch {
+          // No session / backend unreachable — verification still succeeded.
         }
-      } catch {
-        // No session / backend unreachable — verification still succeeded.
-      }
+        setStatus('success');
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        setStatus('error');
+        setErrorMessage(getErrorMessage(error));
+      });
 
-      setStatus('success');
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage(getErrorMessage(error));
-    }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [isAutoVerifying, code]);
 
   const handleResetPassword = async () => {
     if (!isValid || status === 'loading') return;
