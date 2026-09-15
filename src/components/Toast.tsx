@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     top: Spacing.three,
     left: Spacing.three,
     right: Spacing.three,
-    zIndex: 100,
+    zIndex: 9999,
     alignItems: 'center',
   },
   card: {
