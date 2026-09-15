@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Animated, View } from 'react-native';
+import { StyleSheet, Animated, View, Platform } from 'react-native';
 
 import { Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -15,8 +15,8 @@ function SkeletonCard() {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.7, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(pulse, { toValue: 0.3, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
       ]),
     );
     loop.start();

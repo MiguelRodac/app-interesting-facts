@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Animated } from 'react-native';
+import { StyleSheet, Animated, Platform } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,8 +31,8 @@ export function Toast() {
     if (!toast) return;
 
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(translateY, { toValue: 0, duration: 200, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
 
     const timer = setTimeout(clearToast, AUTO_DISMISS_MS);
