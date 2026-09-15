@@ -86,5 +86,6 @@
   "openingBrowserDownload": "Iniciando descarga en el navegador...",
   "openingBrowser": "Abriendo navegador...",
   "openWebError": "No se pudo abrir el navegador. Por favor ingresa manualmente a: ",
-  "downloadError": "No se pudo iniciar la descarga. Por favor visita nuestra página web."
+  "downloadError": "No se pudo iniciar la descarga. Por favor visita nuestra página web.",
+  "charsMoreNeeded": "faltan {{count}}"
 }

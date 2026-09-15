@@ -20,6 +20,7 @@ import { getIdToken } from '@/data/auth/firebaseAuth';
 import { useCreateScreenGuard } from '@/data/stores/createScreenGuard';
 import { useUIStore } from '@/data/stores/uiStore';
 import type { ApiUserSearchResult, ApiHashtag, ApiSearchResponse, ApiUser } from '@/data/api/types';
+import { safeInsertText, safeTruncate, cleanSurrogates } from '@/utils/text';
 
 const client = createApiClient(getIdToken);
 
@@ -332,14 +333,12 @@ export default function CreateFactScreen() {
 
   // Emoji picker.
   const handleEmojiSelected = useCallback((emoji: string) => {
-    const pos = cursorPositionRef.current;
     setContent((prev) => {
-      const before = prev.substring(0, pos);
-      const after = prev.substring(pos);
-      return `${before}${emoji}${after}`;
+      const { text, newCursor } = safeInsertText(prev, emoji, cursorPositionRef.current);
+      cursorPositionRef.current = newCursor;
+      previousTextLengthRef.current = text.length;
+      return text;
     });
-    cursorPositionRef.current = pos + emoji.length;
-    requestAnimationFrame(() => contentInputRef.current?.focus());
   }, []);
 
   // Show loading while checking auth
@@ -354,13 +353,31 @@ export default function CreateFactScreen() {
   const isValid = content.trim().length >= MIN_LENGTH && content.trim().length <= MAX_LENGTH;
 
   const handleSubmit = async () => {
-    if (!isValid || isSubmitting) return;
+    if (isSubmitting) return;
+
+    const trimmedLength = content.trim().length;
+    if (trimmedLength === 0) {
+      showToast(t('create:contentRequired'), 'warning');
+      return;
+    }
+    if (trimmedLength < MIN_LENGTH) {
+      showToast(t('create:contentTooShort', { min: MIN_LENGTH }), 'warning');
+      return;
+    }
+    if (trimmedLength > MAX_LENGTH) {
+      showToast(t('create:contentTooLong', { max: MAX_LENGTH }), 'warning');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      const cleanTitle = title.trim()
+        ? safeTruncate(cleanSurrogates(title.trim()), TITLE_MAX_LENGTH)
+        : undefined;
+      const cleanContent = safeTruncate(cleanSurrogates(content.trim()), MAX_LENGTH);
       await addFact({
-        title: title.trim() || undefined,
-        content: content.trim(),
+        title: cleanTitle,
+        content: cleanContent,
       });
       setTitle('');
       setContent('');
@@ -573,8 +590,8 @@ export default function CreateFactScreen() {
               </ThemedText>
             </AppPressable>
             <AppPressable
-              onPress={isValid && !isSubmitting ? handleSubmit : undefined}
-              disabled={!isValid || isSubmitting}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
               hitSlop={6}
               style={[
                 styles.button,
@@ -595,7 +612,10 @@ export default function CreateFactScreen() {
 
     <EmojiPicker
       visible={showEmojiPicker}
-      onClose={() => setShowEmojiPicker(false)}
+      onClose={() => {
+        setShowEmojiPicker(false);
+        requestAnimationFrame(() => contentInputRef.current?.focus());
+      }}
       onSelect={handleEmojiSelected}
     />
 

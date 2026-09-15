@@ -20,6 +20,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import { useBottomInset } from '@/hooks/use-bottom-inset';
 import { isValidEmail, MAX_DISPLAY_NAME_LENGTH } from '@/utils/validation';
+import { safeTruncate } from '@/utils/text';
 
 export default function EditProfileScreen() {
   const { t } = useTranslation(['profile', 'auth', 'create', 'common']);
@@ -103,7 +104,7 @@ export default function EditProfileScreen() {
     }
 
     // maxLength caps typing, but a pasted value could still exceed the limit
-    setPendingDisplayName(trimmed.slice(0, MAX_DISPLAY_NAME_LENGTH));
+    setPendingDisplayName(safeTruncate(trimmed, MAX_DISPLAY_NAME_LENGTH));
     setIsEditingName(false);
   }, [editNameValue, pendingDisplayName]);
 

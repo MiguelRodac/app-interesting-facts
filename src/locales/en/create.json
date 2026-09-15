@@ -17,5 +17,8 @@
   "leaveConfirmMessage": "You have unsaved changes. Are you sure you want to leave?",
   "leaveConfirmStay": "Keep editing",
   "leaveConfirmExit": "Discard",
-  "factSharedSuccess": "Your fact has been shared!"
+  "factSharedSuccess": "Your fact has been shared!",
+  "contentRequired": "Please enter fact content",
+  "contentTooShort": "Content must be at least {{min}} characters",
+  "contentTooLong": "Content cannot exceed {{max}} characters"
 }

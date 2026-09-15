@@ -87,5 +87,6 @@
   "openingBrowserDownload": "Starting download in browser...",
   "openingBrowser": "Opening browser...",
   "openWebError": "Could not open browser. Please visit manually: ",
-  "downloadError": "Could not start download. Please visit our website."
+  "downloadError": "Could not start download. Please visit our website.",
+  "charsMoreNeeded": "{{count}} more needed"
 }

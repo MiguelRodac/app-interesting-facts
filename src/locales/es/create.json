@@ -17,5 +17,8 @@
   "leaveConfirmMessage": "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?",
   "leaveConfirmStay": "Seguir editando",
   "leaveConfirmExit": "Descartar",
-  "factSharedSuccess": "¡Tu dato curioso ha sido compartido!"
+  "factSharedSuccess": "¡Tu dato curioso ha sido compartido!",
+  "contentRequired": "Por favor escribe el contenido del dato curioso",
+  "contentTooShort": "El contenido debe tener al menos {{min}} caracteres",
+  "contentTooLong": "El contenido no puede exceder {{max}} caracteres"
 }

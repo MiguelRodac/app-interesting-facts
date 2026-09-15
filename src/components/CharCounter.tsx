@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -17,9 +18,9 @@ function getColor(current: number, min: number, max: number): string {
 }
 
 export function CharCounter({ current, min = 10, max = 200 }: CharCounterProps) {
+  const { t } = useTranslation('common');
   const theme = useTheme();
   const color = getColor(current, min, max);
-  const remaining = max - current;
 
   return (
     <View style={styles.container}>
@@ -28,7 +29,7 @@ export function CharCounter({ current, min = 10, max = 200 }: CharCounterProps) 
       </ThemedText>
       {current < min ? (
         <ThemedText type="small" style={[styles.hint, { color: theme.muted }]}>
-          {min - current} more needed
+          {t('charsMoreNeeded', { count: min - current, defaultValue: `${min - current} more needed` })}
         </ThemedText>
       ) : null}
     </View>

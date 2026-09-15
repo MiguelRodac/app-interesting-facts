@@ -1,6 +1,7 @@
 import { logger } from "@/lib/logger";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { cleanSurrogates } from "@/utils/text";
 import { createNetworkError, mapApiError } from "./errors";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -40,6 +41,23 @@ export function setUnauthorizedHandler(handler: () => void): void {
   unauthorizedHandler = handler;
 }
 
+function sanitizePayload(data: unknown): unknown {
+  if (typeof data === "string") {
+    return cleanSurrogates(data);
+  }
+  if (Array.isArray(data)) {
+    return data.map(sanitizePayload);
+  }
+  if (data !== null && typeof data === "object") {
+    const res: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+      res[key] = sanitizePayload(value);
+    }
+    return res;
+  }
+  return data;
+}
+
 async function request<T>(options: RequestOptions): Promise<T> {
   const { method, path, body, params, getToken } = options;
 
@@ -62,12 +80,13 @@ async function request<T>(options: RequestOptions): Promise<T> {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  const sanitizedBody = body !== undefined ? sanitizePayload(body) : undefined;
   const startTime = Date.now();
   try {
     const response = await fetch(url.toString(), {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: sanitizedBody !== undefined ? JSON.stringify(sanitizedBody) : undefined,
     });
 
     const duration = Date.now() - startTime;

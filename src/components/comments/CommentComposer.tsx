@@ -24,6 +24,7 @@ import { useRepostsStore } from '@/data/stores/repostsStore';
 import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';
 import { EmojiPicker, EmojiButton } from '@/components/EmojiPicker';
+import { safeInsertText, safeTruncate, cleanSurrogates } from '@/utils/text';
 
 const client = createApiClient(getIdToken);
 
@@ -308,8 +309,9 @@ export function CommentComposer({
   );
 
   const handleSubmit = useCallback(async () => {
-    const trimmed = content.trim();
-    if (trimmed.length < COMMENT_MIN_LENGTH || trimmed.length > COMMENT_MAX_LENGTH || isSubmitting) {
+    const rawTrimmed = content.trim();
+    const trimmed = safeTruncate(cleanSurrogates(rawTrimmed), COMMENT_MAX_LENGTH);
+    if (trimmed.length < COMMENT_MIN_LENGTH || isSubmitting) {
       return;
     }
 
@@ -387,11 +389,10 @@ export function CommentComposer({
   const handleEmojiSelected = useCallback((emoji: string) => {
     const pos = cursorPositionRef.current;
     setContent((prev) => {
-      const before = prev.substring(0, pos);
-      const after = prev.substring(pos);
-      return `${before}${emoji}${after}`;
+      const { text, newCursor } = safeInsertText(prev, emoji, pos);
+      cursorPositionRef.current = newCursor;
+      return text;
     });
-    cursorPositionRef.current = pos + emoji.length;
     requestAnimationFrame(() => inputRef.current?.focus());
   }, []);
 

@@ -22,6 +22,7 @@ import { createApiClient } from '@/data/api/client';
 import { getIdToken } from '@/data/auth/firebaseAuth';
 import type { ApiUserSearchResult, ApiHashtag } from '@/data/api/types';
 import type { Fact } from '@/types';
+import { safeInsertText, safeTruncate, cleanSurrogates } from '@/utils/text';
 
 const client = createApiClient(getIdToken);
 
@@ -276,14 +277,12 @@ export default function EditFactScreen() {
   }, [content]);
 
   const handleEmojiSelected = useCallback((emoji: string) => {
-    const pos = cursorPositionRef.current;
     setContent((prev) => {
-      const before = prev.substring(0, pos);
-      const after = prev.substring(pos);
-      return `${before}${emoji}${after}`;
+      const { text, newCursor } = safeInsertText(prev, emoji, cursorPositionRef.current);
+      cursorPositionRef.current = newCursor;
+      previousTextLengthRef.current = text.length;
+      return text;
     });
-    cursorPositionRef.current = pos + emoji.length;
-    requestAnimationFrame(() => contentInputRef.current?.focus());
   }, []);
 
   const isValid = content.trim().length >= MIN_LENGTH && content.trim().length <= MAX_LENGTH;
@@ -296,9 +295,13 @@ export default function EditFactScreen() {
 
     setIsSubmitting(true);
     try {
+      const cleanTitle = title.trim()
+        ? safeTruncate(cleanSurrogates(title.trim()), TITLE_MAX_LENGTH)
+        : undefined;
+      const cleanContent = safeTruncate(cleanSurrogates(content.trim()), MAX_LENGTH);
       await updateFact(fact.id, {
-        title: title.trim() || undefined,
-        content: content.trim(),
+        title: cleanTitle,
+        content: cleanContent,
       });
       useUIStore.getState().showToast(t('common:factUpdated', { defaultValue: 'Dato actualizado exitosamente' }), 'success');
       router.replace(`/fact/${fact.id}`);
@@ -592,7 +595,10 @@ export default function EditFactScreen() {
       {/* Emoji picker */}
       <EmojiPicker
         visible={showEmojiPicker}
-        onClose={() => setShowEmojiPicker(false)}
+        onClose={() => {
+          setShowEmojiPicker(false);
+          requestAnimationFrame(() => contentInputRef.current?.focus());
+        }}
         onSelect={handleEmojiSelected}
       />
     </KeyboardAvoidingView>
