@@ -139,9 +139,7 @@ async function request<T>(options: RequestOptions): Promise<T> {
         errorCode === "APP_VERSION_OUTDATED" ||
         errorCode === "APP_VERSION_MISSING"
       ) {
-        if (Platform.OS !== "web") {
-          appUpdateHandler?.();
-        }
+        appUpdateHandler?.();
       }
       throw mapApiError(response.status, responseBody);
     }

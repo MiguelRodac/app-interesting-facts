@@ -257,8 +257,10 @@ export function CommentComposer({
         useUIStore.getState().showToast(t('common:commentPosted'), 'success');
         onDone?.();
       }
-    } catch {
-      // Error handled by store → ErrorBanner
+    } catch (error) {
+      // The API error is already dispatched to useUIStore by the store (→ ErrorBanner),
+      // but we log it here to avoid swallowing unexpected runtime or render errors.
+      console.error('[CommentComposer] Error submitting comment:', error);
     } finally {
       setIsSubmitting(false);
     }
