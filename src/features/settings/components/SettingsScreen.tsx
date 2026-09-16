@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
-import { AppModal } from '@/shared/ui/app-modal';
 import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,21 +8,24 @@ import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { ThemedView } from '@/shared/ui/themed-view';
 import { DevLogsModal } from '@/features/dev-logs';
-import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
-import { useThemeContext, type ThemePreference } from '@/shared/hooks/theme-provider';
+import { Spacing, MaxContentWidth } from '@/constants/theme';
+import { useThemeContext } from '@/shared/hooks/theme-provider';
 import { useTheme } from '@/shared/hooks/use-theme';
 import { useTopInset } from '@/shared/hooks/use-top-inset';
 import { useBottomInset } from '@/shared/hooks/use-bottom-inset';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useLanguage } from '@/shared/hooks/use-language';
 import { useUIStore } from '@/shared/stores/uiStore';
-import type { LanguagePreference } from '@/i18n';
+import { SettingsThemeSection } from './SettingsThemeSection';
+import { SettingsLanguageSection } from './SettingsLanguageSection';
+import { SettingsAccountSection } from './SettingsAccountSection';
+import { SettingsLogoutModal } from './SettingsLogoutModal';
 
 const REQUIRED_TAPS = 10;
 const appVersion = process.env.EXPO_PUBLIC_APP_VERSION ?? '0.0.3';
 
 export function SettingsScreen() {
-  const { t } = useTranslation(['settings', 'auth', 'common']);
+  const { t } = useTranslation('settings');
   const theme = useTheme();
   const topInset = useTopInset();
   const bottomInset = useBottomInset();
@@ -35,27 +37,6 @@ export function SettingsScreen() {
   const [logsModalVisible, setLogsModalVisible] = useState(false);
   const [tapCount, setTapCount] = useState(0);
   const showToast = useUIStore((s) => s.showToast);
-
-  const themeOptions: {
-    value: ThemePreference;
-    label: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    iconFocused: keyof typeof Ionicons.glyphMap;
-  }[] = [
-    { value: 'system', label: t('settings:themeSystem'), icon: 'phone-portrait-outline', iconFocused: 'phone-portrait' },
-    { value: 'light', label: t('settings:themeLight'), icon: 'sunny-outline', iconFocused: 'sunny' },
-    { value: 'dark', label: t('settings:themeDark'), icon: 'moon-outline', iconFocused: 'moon' },
-  ];
-
-  const languageOptions: {
-    value: LanguagePreference;
-    label: string;
-    icon: keyof typeof Ionicons.glyphMap;
-  }[] = [
-    { value: 'system', label: t('settings:langSystem'), icon: 'globe-outline' },
-    { value: 'en', label: t('settings:langEn'), icon: 'language-outline' },
-    { value: 'es', label: t('settings:langEs'), icon: 'language-outline' },
-  ];
 
   const handleOpenPassword = () => {
     if (!user) {
@@ -80,7 +61,7 @@ export function SettingsScreen() {
       setLogsModalVisible(true);
     } else if (nextCount >= 5) {
       const remaining = REQUIRED_TAPS - nextCount;
-      showToast(t('settings:devLogsTapCountdown', { count: remaining }));
+      showToast(t('devLogsTapCountdown', { count: remaining }));
     }
   };
 
@@ -100,133 +81,30 @@ export function SettingsScreen() {
           hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </AppPressable>
-        <ThemedText type="subtitle">{t('settings:title')}</ThemedText>
+        <ThemedText type="subtitle">{t('title')}</ThemedText>
         <View style={styles.backButton} />
       </View>
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(Spacing.six, bottomInset + Spacing.four) }]}
         keyboardShouldPersistTaps="handled">
-        {/* Appearance */}
-        <View style={styles.section}>
-          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-            {t('settings:sectionAppearance')}
-          </ThemedText>
-          <ThemedView type="backgroundElement" style={styles.card}>
-            {themeOptions.map((option, index) => {
-              const isSelected = themePreference === option.value;
-              const iconName = isSelected ? option.iconFocused : option.icon;
-              return (
-                <AppPressable
-                  key={option.value}
-                  onPress={() => setThemePreference(option.value)}
-                  style={[
-                    styles.row,
-                    index < themeOptions.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
-                  ]}>
-                  <Ionicons name={iconName} size={20} color={isSelected ? theme.primary : theme.muted} />
-                  <ThemedText type="default" style={{ color: isSelected ? theme.primary : theme.text }}>
-                    {option.label}
-                  </ThemedText>
-                  <View style={styles.flexSpacer} />
-                  <Ionicons
-                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={isSelected ? theme.primary : theme.muted}
-                  />
-                </AppPressable>
-              );
-            })}
-          </ThemedView>
-        </View>
+        <SettingsThemeSection
+          themePreference={themePreference}
+          onSelectPreference={setThemePreference}
+        />
 
-        {/* Language */}
-        <View style={styles.section}>
-          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-            {t('settings:sectionLanguage')}
-          </ThemedText>
-          <ThemedView type="backgroundElement" style={styles.card}>
-            {languageOptions.map((option, index) => {
-              const isSelected = langPreference === option.value;
-              return (
-                <AppPressable
-                  key={option.value}
-                  onPress={() => setLanguagePreference(option.value)}
-                  style={[
-                    styles.row,
-                    index < languageOptions.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.border },
-                  ]}>
-                  <Ionicons name={option.icon} size={20} color={isSelected ? theme.primary : theme.muted} />
-                  <ThemedText type="default" style={{ color: isSelected ? theme.primary : theme.text }}>
-                    {option.label}
-                  </ThemedText>
-                  <View style={styles.flexSpacer} />
-                  <Ionicons
-                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={isSelected ? theme.primary : theme.muted}
-                  />
-                </AppPressable>
-              );
-            })}
-          </ThemedView>
-        </View>
+        <SettingsLanguageSection
+          languagePreference={langPreference}
+          onSelectPreference={setLanguagePreference}
+        />
 
-        {/* Account */}
-        <View style={styles.section}>
-          <ThemedText type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>
-            {t('settings:sectionAccount')}
-          </ThemedText>
-          <ThemedView type="backgroundElement" style={styles.card}>
-            {user ? (
-              <>
-                <AppPressable
-                  onPress={handleOpenPassword}
-                  style={[styles.row, { borderBottomWidth: 1, borderBottomColor: theme.border }]}>
-                  <Ionicons name="key-outline" size={20} color={theme.textSecondary} />
-                  <ThemedText type="default">{t('settings:changePassword')}</ThemedText>
-                  <View style={styles.flexSpacer} />
-                  <Ionicons name="chevron-forward" size={18} color={theme.muted} />
-                </AppPressable>
-                <AppPressable onPress={() => setLogoutModalVisible(true)} style={styles.row}>
-                  <Ionicons name="log-out-outline" size={20} color={theme.destructive} />
-                  <ThemedText type="default" style={{ color: theme.destructive }}>
-                    {t('settings:logout')}
-                  </ThemedText>
-                  <View style={styles.flexSpacer} />
-                </AppPressable>
-              </>
-            ) : (
-              <>
-                <AppPressable
-                  onPress={() => router.push('/auth/login')}
-                  style={[styles.row, { borderBottomWidth: 1, borderBottomColor: theme.border }]}>
-                  <Ionicons name="log-in-outline" size={20} color={theme.primary} />
-                  <ThemedText type="default" style={{ color: theme.text }}>
-                    {t('auth:signInTitle')}
-                  </ThemedText>
-                  <View style={styles.flexSpacer} />
-                  <Ionicons name="chevron-forward" size={18} color={theme.muted} />
-                </AppPressable>
-                <AppPressable
-                  onPress={() => router.push('/auth/register')}
-                  style={styles.row}>
-                  <Ionicons name="person-add-outline" size={20} color={theme.primary} />
-                  <ThemedText type="default" style={{ color: theme.text }}>
-                    {t('auth:createAccountTitle')}
-                  </ThemedText>
-                  <View style={styles.flexSpacer} />
-                  <Ionicons name="chevron-forward" size={18} color={theme.muted} />
-                </AppPressable>
-              </>
-            )}
-          </ThemedView>
-          {!user && (
-            <ThemedText type="small" themeColor="textSecondary">
-              {t('settings:anonymousNotice')}
-            </ThemedText>
-          )}
-        </View>
+        <SettingsAccountSection
+          isSignedIn={!!user}
+          onOpenPassword={handleOpenPassword}
+          onRequestLogout={() => setLogoutModalVisible(true)}
+          onGoToLogin={() => router.push('/auth/login')}
+          onGoToRegister={() => router.push('/auth/register')}
+        />
 
         {/* App Version Footer (tap 10 times to open logs) */}
         <View style={styles.versionFooter}>
@@ -239,37 +117,12 @@ export function SettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* Logout confirmation modal */}
-      <AppModal visible={logoutModalVisible} transparent animationType="fade" onRequestClose={() => setLogoutModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <ThemedView type="backgroundElement" style={styles.modalCard}>
-            <ThemedText type="subtitle" style={styles.modalTitle}>
-              {t('settings:logoutTitle')}
-            </ThemedText>
-            <ThemedText type="default" themeColor="textSecondary" style={styles.modalMessage}>
-              {t('settings:logoutMessage')}
-            </ThemedText>
-            <View style={styles.modalActions}>
-              <AppPressable
-                onPress={() => setLogoutModalVisible(false)}
-                style={[styles.modalButton, { borderColor: theme.border }]}>
-                <ThemedText type="smallBold" themeColor="textSecondary">
-                  {t('common:cancel')}
-                </ThemedText>
-              </AppPressable>
-              <AppPressable
-                onPress={handleLogout}
-                style={[styles.modalButton, { backgroundColor: theme.destructive }]}>
-                <ThemedText type="smallBold" style={styles.modalButtonText}>
-                  {t('settings:logout')}
-                </ThemedText>
-              </AppPressable>
-            </View>
-          </ThemedView>
-        </View>
-      </AppModal>
+      <SettingsLogoutModal
+        visible={logoutModalVisible}
+        onClose={() => setLogoutModalVisible(false)}
+        onConfirmLogout={handleLogout}
+      />
 
-      {/* Developer Logs & Diagnostics Modal */}
       <DevLogsModal visible={logsModalVisible} onClose={() => setLogsModalVisible(false)} />
     </ThemedView>
   );
@@ -298,63 +151,6 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
-  },
-  section: {
-    gap: Spacing.two,
-  },
-  sectionTitle: {
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  card: {
-    borderRadius: Radii.md,
-    overflow: 'hidden',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-  flexSpacer: {
-    flex: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.four,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 340,
-    borderRadius: Radii.lg,
-    padding: Spacing.four,
-    gap: Spacing.three,
-  },
-  modalTitle: {
-    textAlign: 'center',
-  },
-  modalMessage: {
-    textAlign: 'center',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    marginTop: Spacing.one,
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: Spacing.two + 4,
-    borderRadius: Radii.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalButtonText: {
-    color: '#FFFFFF',
   },
   versionFooter: {
     alignItems: 'center',
