@@ -1,7 +1,7 @@
 {
   "name": "app-interesting-facts",
   "main": "expo-router/entry",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
