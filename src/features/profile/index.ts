@@ -1,7 +1,10 @@
-// Components
+// Components & Screens
 export { AvatarPickerModal } from './components/AvatarPickerModal';
 export { UserAvatar } from './components/UserAvatar';
 export { EditProfileScreen } from './components/EditProfileScreen';
+export { MyProfileScreen } from './components/MyProfileScreen';
+export { UserProfileScreen } from './components/UserProfileScreen';
+
 
 // Stores
 export { useUserProfileStore } from './stores/userProfileStore';

@@ -1,4 +1,4 @@
-// Components
+// Components & Screens
 export { FactCard } from './components/FactCard';
 export { LikeButton } from './components/LikeButton';
 export { LikedByLine } from './components/LikedByLine';
@@ -8,6 +8,10 @@ export { MentionDropdown } from './components/MentionDropdown';
 export { StyledContent } from './components/StyledContent';
 export { FactDetailScreen } from './components/FactDetailScreen';
 export { RepostDetailScreen } from './components/RepostDetailScreen';
+export { FeedScreen } from './components/FeedScreen';
+export { CreateFactScreen } from './components/CreateFactScreen';
+export { EditFactScreen } from './components/EditFactScreen';
+
 
 // Stores
 export { useFactsStore } from './stores/factsStore';
