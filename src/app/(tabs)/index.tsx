@@ -5,15 +5,13 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { AppPressable } from '@/components/ui/app-pressable';
-import { FactCard } from '@/components/FactCard';
+import { FactCard, LikesModal, useFacts } from '@/features/facts';
 import { EmptyState } from '@/components/EmptyState';
-import { LikesModal } from '@/components/LikesModal';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
-import { useFacts } from '@/data/hooks/useFacts';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useUIStore } from '@/data/stores/uiStore';
 import { useTheme } from '@/hooks/use-theme';

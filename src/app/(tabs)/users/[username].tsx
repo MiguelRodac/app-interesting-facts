@@ -6,16 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { EmptyState } from '@/components/EmptyState';
-import { FactCard } from '@/components/FactCard';
-import { LikesModal } from '@/components/LikesModal';
+import { FactCard, LikesModal, useUserLikes, useRepostsStore } from '@/features/facts';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { UserAvatar } from '@/components/UserAvatar';
+import { UserAvatar, useUserProfile } from '@/features/profile';
 import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
-import { useUserProfile } from '@/data/hooks/useUserProfile';
-import { useUserLikes } from '@/data/hooks/useUserLikes';
-import { useRepostsStore } from '@/data/stores/repostsStore';
 import { useUIStore } from '@/data/stores/uiStore';
 import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
