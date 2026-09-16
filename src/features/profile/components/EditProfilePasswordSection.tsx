@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { PasswordField } from '@/features/auth';
+import { PasswordField } from '@/features/auth/components/PasswordField';
 import { AppPressable } from '@/shared/ui/app-pressable';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { Spacing } from '@/constants/theme';

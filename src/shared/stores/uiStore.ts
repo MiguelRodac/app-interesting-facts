@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { AppError } from '@/types';
-import { useLogStore } from '@/features/dev-logs';
+import { useLogStore } from '@/features/dev-logs/stores/logStore';
 
 export type ToastType = 'success' | 'info' | 'warning';
 

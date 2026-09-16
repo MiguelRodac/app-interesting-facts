@@ -1,12 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import {
-  useFactsStore,
-  useRepostsStore,
-  useUserLikes,
-  useMentionedFacts,
-} from '@/features/facts';
+import { useFactsStore } from '@/features/facts/stores/factsStore';
+import { useRepostsStore } from '@/features/facts/stores/repostsStore';
+import { useUserLikes } from '@/features/facts/hooks/useUserLikes';
+import { useMentionedFacts } from '@/features/facts/hooks/useMentionedFacts';
 import type { Fact } from '@/types';
 
 export type ProfileTab = 'mine' | 'liked' | 'mentions';

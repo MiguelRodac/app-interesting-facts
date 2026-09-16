@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useUserProfile } from './useUserProfile';
-import { useUserLikes, useRepostsStore } from '@/features/facts';
+import { useUserLikes } from '@/features/facts/hooks/useUserLikes';
+import { useRepostsStore } from '@/features/facts/stores/repostsStore';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import type { Fact } from '@/types';
 

@@ -8,6 +8,7 @@ import { notifyFactLikesChanged } from '../hooks/useFactLikes';
 import { broadcastEntryUpdate } from '@/shared/events/entryUpdateBus';
 import { useAuthStore } from '@/features/auth/stores/authStore';
 import { useUIStore } from '@/shared/stores/uiStore';
+import { registerOnLogout } from '@/features/auth/services/logoutRegistry';
 import {
   upsertFact,
   mergeFacts,
@@ -474,3 +475,5 @@ export const useFactsStore = create<FactsState>((set, get) => ({
     });
   },
 }));
+
+registerOnLogout(() => useFactsStore.getState().reset());

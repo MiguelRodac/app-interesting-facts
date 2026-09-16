@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import type { Author, Fact, Hashtag } from '@/types';
 import { createApiClient } from '@/shared/api/client';
-import type { ApiSearchResponse, ApiHashtag } from '@/shared/api/types';
+import type { ApiSearchResponse } from '@/shared/api/types';
 import { mapFactsDtos } from '@/features/facts/mappers/factMapper';
 import { mapAuthorDto } from '@/features/profile/mappers/userMapper';
-import { getIdToken } from '@/features/auth';
-
+import { getIdToken } from '@/features/auth/services/firebaseAuth';
+import { registerOnLogout } from '@/features/auth/services/logoutRegistry';
 
 const client = createApiClient(getIdToken);
 
@@ -277,3 +277,5 @@ export const useSearchStore = create<SearchState>((set, get) => ({
     }));
   },
 }));
+
+registerOnLogout(() => useSearchStore.getState().clearResults());

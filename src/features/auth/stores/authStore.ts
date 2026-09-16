@@ -3,12 +3,8 @@ import type { Author, AppError } from '@/types';
 import * as authService from '../services/authService';
 import { isFirebaseAuthError, mapFirebaseError } from '../services/firebaseErrors';
 import { setUnauthorizedHandler } from '@/shared/api/client';
-import { clearCommentsCache } from '@/features/comments/hooks/useFactComments';
-import { useCommentsStore } from '@/features/comments/stores/commentsStore';
 import { useUIStore } from '@/shared/stores/uiStore';
-import { useFactsStore } from '@/features/facts/stores/factsStore';
-import { useSearchStore } from '@/features/search/stores/searchStore';
-import { useUserProfileStore } from '@/features/profile/stores/userProfileStore';
+import { runLogoutHandlers } from '../services/logoutRegistry';
 
 interface AuthState {
   user: Author | null;
@@ -67,11 +63,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await authService.logout();
     set({ user: null, token: null, isAuthenticated: false });
-    useFactsStore.getState().reset();
-    useSearchStore.getState().clearResults();
-    useUserProfileStore.getState().clearProfile();
-    useCommentsStore.getState().reset();
-    clearCommentsCache();
+    runLogoutHandlers();
   },
 
   updateProfile: async (data) => {

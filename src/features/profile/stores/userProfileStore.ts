@@ -9,6 +9,7 @@ import { mapAuthorDto } from '@/features/profile/mappers/userMapper';
 import { applyEntryUpdate, subscribeEntryUpdates } from '@/shared/events/entryUpdateBus';
 import { useFactsStore, type ToggleRepostResult } from '@/features/facts/stores/factsStore';
 import { useUIStore } from '@/shared/stores/uiStore';
+import { registerOnLogout } from '@/features/auth/services/logoutRegistry';
 
 const client = createApiClient(getIdToken);
 
@@ -159,3 +160,5 @@ subscribeEntryUpdates((scope, anchor, patch) => {
     useUserProfileStore.setState({ facts: updated });
   }
 });
+
+registerOnLogout(() => useUserProfileStore.getState().clearProfile());

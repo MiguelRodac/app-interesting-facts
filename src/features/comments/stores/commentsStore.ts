@@ -14,6 +14,7 @@ import { notifyCommentLikesChanged } from '@/features/comments/hooks/useCommentL
 import { mapCommentDto } from '@/features/comments/mappers/commentMapper';
 import { useAuthStore } from '@/features/auth/stores/authStore';
 import { useUIStore } from '@/shared/stores/uiStore';
+import { registerOnLogout } from '@/features/auth/services/logoutRegistry';
 
 const client = createApiClient(getIdToken);
 
@@ -231,3 +232,5 @@ export const useCommentsStore = create<CommentsState>(() => ({
     clearCommentsCache();
   },
 }));
+
+registerOnLogout(() => useCommentsStore.getState().reset());

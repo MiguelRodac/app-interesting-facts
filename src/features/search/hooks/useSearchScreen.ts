@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, FlatList } from 'react-native';
 import { useRouter, useLocalSearchParams, useSegments, useFocusEffect } from 'expo-router';
 import { useSearch } from './useSearch';
-import { useAuth } from '@/features/auth';
-import { useFactsStore, useRepostsStore } from '@/features/facts';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useFactsStore } from '@/features/facts/stores/factsStore';
+import { useRepostsStore } from '@/features/facts/stores/repostsStore';
 import type { Author, Fact } from '@/types';
 
 export type SearchTabKey = 'people' | 'posts' | 'hashtags';
