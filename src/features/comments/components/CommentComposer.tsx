@@ -1,41 +1,30 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Platform,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/shared/ui/themed-text';
 import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { AppPressable } from '@/shared/ui/app-pressable';
 import { MentionDropdown } from '@/shared/ui/MentionDropdown';
-import { Radii, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useKeyboardHeight } from '@/shared/hooks/use-keyboard-height';
-import { useMentionSearch } from '@/features/search/hooks/useMentionSearch';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import type { ApiUserSearchResult } from '@/shared/api/types';
-import { useCommentsStore } from '../stores/commentsStore';
-import { useRepostsStore } from '@/features/facts/stores/repostsStore';
-import { useUIStore } from '@/shared/stores/uiStore';
 import { useTheme } from '@/shared/hooks/use-theme';
 import { EmojiPicker, EmojiButton } from '@/shared/ui/EmojiPicker';
-import { safeInsertText, cleanSurrogates } from '@/utils/text';
+import {
+  useCommentComposer,
+  COMMENT_MIN_LENGTH,
+  COMMENT_MAX_LENGTH,
+  INITIAL_LINE_HEIGHT,
+  MAX_HEIGHT,
+} from '../hooks/useCommentComposer';
+import { CommentReplyBanner, type ReplyTarget } from './CommentReplyBanner';
 
-export const COMMENT_MIN_LENGTH = 1;
-export const COMMENT_MAX_LENGTH = 500;
-
-const INITIAL_LINE_HEIGHT = 34;
-const MAX_HEIGHT = 96;
-
-export interface ReplyTarget {
-  commentId: string;
-  username: string;
-  authorUsername?: string;
-  initialText?: string;
-}
+export { COMMENT_MIN_LENGTH, COMMENT_MAX_LENGTH, type ReplyTarget };
 
 export interface CommentComposerProps {
   factId?: string;
@@ -50,55 +39,41 @@ export interface CommentComposerProps {
   onPendingTextChange?: (hasPendingText: boolean) => void;
 }
 
-export function CommentComposer({
-  factId,
-  repostEntryId,
-  commentId,
-  mode = 'create',
-  initialValue = '',
-  replyTo = null,
-  onDone,
-  onCancelReply,
-  onCancelEdit,
-  onPendingTextChange,
-}: CommentComposerProps) {
-  const { t } = useTranslation(['common', 'create']);
+export function CommentComposer(props: CommentComposerProps) {
+  const { mode = 'create', replyTo = null } = props;
+  const { t } = useTranslation('common');
   const theme = useTheme();
   const { user } = useAuth();
   const keyboardHeight = useKeyboardHeight();
   const isEdit = mode === 'edit';
-  const isRepost = !!repostEntryId;
-  const addComment = useCommentsStore((s) => s.addComment);
-  const updateComment = useCommentsStore((s) => s.updateComment);
-  const addRepostComment = useRepostsStore((s) => s.addRepostComment);
-  const updateRepostComment = useRepostsStore((s) => s.updateRepostComment);
-
-  const [content, setContent] = useState(initialValue);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [inputHeight, setInputHeight] = useState(INITIAL_LINE_HEIGHT);
-  const [focused, setFocused] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
-  const inputRef = useRef<TextInput>(null);
-  const cursorPositionRef = useRef(0);
-  const previousTextLengthRef = useRef(0);
-  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
+    content,
+    isSubmitting,
+    inputHeight,
+    focused,
+    showEmojiPicker,
+    setShowEmojiPicker,
+    inputRef,
     showMentions,
-    setShowMentions,
-    mentionResults,
     isSearchingMentions,
+    mentionResults,
     selectedMentionIndex,
     setSelectedMentionIndex,
-    searchMentions,
-    closeMentions,
-    applyMention,
-  } = useMentionSearch();
-
-  const trimmedLength = content.trim().length;
-  const canSubmit =
-    trimmedLength >= COMMENT_MIN_LENGTH && trimmedLength <= COMMENT_MAX_LENGTH && !isSubmitting;
+    canSubmit,
+    postLabel,
+    handleContentSizeChange,
+    handleFocus,
+    handleContentChange,
+    handleSelectionChange,
+    handleContentBlur,
+    handleSelectMention,
+    handleSubmit,
+    handleCancelEdit,
+    handleCancelReply,
+    handleEmojiPress,
+    handleEmojiSelected,
+  } = useCommentComposer(props);
 
   const avatarUser = user
     ? {
@@ -107,207 +82,6 @@ export function CommentComposer({
         avatarUrl: user.avatarUrl,
       }
     : { displayName: 'User' };
-
-  const [prevTarget, setPrevTarget] = useState({ mode, commentId, replyToCommentId: replyTo?.commentId });
-  if (
-    prevTarget.mode !== mode ||
-    prevTarget.commentId !== commentId ||
-    prevTarget.replyToCommentId !== replyTo?.commentId
-  ) {
-    setPrevTarget({ mode, commentId, replyToCommentId: replyTo?.commentId });
-    if (mode === 'edit' && commentId) {
-      setContent(initialValue);
-    } else if (replyTo) {
-      setContent(replyTo.initialText ?? '');
-    } else {
-      setContent('');
-      setInputHeight(INITIAL_LINE_HEIGHT);
-    }
-  }
-
-  useEffect(() => {
-    const blur = blurTimeoutRef.current;
-    return () => {
-      if (blur) clearTimeout(blur);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (replyTo) {
-      cursorPositionRef.current = (replyTo.initialText ?? '').length;
-      closeMentions();
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
-    }
-  }, [replyTo, closeMentions]);
-
-  useEffect(() => {
-    onPendingTextChange?.(content.length > 0);
-  }, [content, onPendingTextChange]);
-
-  const handleContentSizeChange = useCallback(
-    (event: { nativeEvent: { contentSize: { height: number } } }) => {
-      if (!content) {
-        setInputHeight(INITIAL_LINE_HEIGHT);
-        return;
-      }
-      setInputHeight(
-        Math.max(INITIAL_LINE_HEIGHT, Math.min(event.nativeEvent.contentSize.height, MAX_HEIGHT))
-      );
-    },
-    [content]
-  );
-
-  const handleFocus = useCallback(() => setFocused(true), []);
-
-  const handleContentChange = useCallback(
-    (text: string) => {
-      setContent(text);
-      if (!text) {
-        setInputHeight(INITIAL_LINE_HEIGHT);
-      }
-
-      const rawCursorPos = cursorPositionRef.current;
-      const cursorPos =
-        rawCursorPos >= text.length ||
-        (rawCursorPos === 0 && text.length > 0) ||
-        rawCursorPos === previousTextLengthRef.current
-          ? text.length
-          : rawCursorPos;
-      previousTextLengthRef.current = text.length;
-
-      const lastAtIndex = text.lastIndexOf('@', cursorPos);
-      if (lastAtIndex !== -1) {
-        const textAfterAt = text.substring(lastAtIndex + 1, cursorPos);
-        if (!textAfterAt.includes(' ') && textAfterAt.length <= 20) {
-          setShowMentions(true);
-          searchMentions(textAfterAt);
-          return;
-        }
-      }
-
-      closeMentions();
-    },
-    [searchMentions, closeMentions, setShowMentions]
-  );
-
-  const handleSelectionChange = useCallback(
-    (event: { nativeEvent: { selection: { start: number; end: number } } }) => {
-      cursorPositionRef.current = event.nativeEvent.selection.start;
-    },
-    []
-  );
-
-  const handleContentBlur = useCallback(() => {
-    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
-    setFocused(false);
-    blurTimeoutRef.current = setTimeout(() => {
-      closeMentions();
-    }, 150);
-  }, [closeMentions]);
-
-  const handleSelectMention = useCallback(
-    (userMention: ApiUserSearchResult) => {
-      const { newContent, newCursor } = applyMention(content, cursorPositionRef.current, userMention);
-      setContent(newContent);
-      cursorPositionRef.current = newCursor;
-      requestAnimationFrame(() => inputRef.current?.focus());
-    },
-    [content, applyMention]
-  );
-
-  const handleSubmit = useCallback(async () => {
-    const rawTrimmed = content.trim();
-    const trimmed = cleanSurrogates(rawTrimmed);
-    if (trimmed.length < COMMENT_MIN_LENGTH || isSubmitting) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      if (isEdit && commentId) {
-        if (isRepost && repostEntryId) {
-          await updateRepostComment(repostEntryId, commentId, trimmed);
-        } else if (factId) {
-          await updateComment(factId, commentId, trimmed);
-        }
-        setContent('');
-        setInputHeight(INITIAL_LINE_HEIGHT);
-        useUIStore.getState().showToast(t('common:commentUpdated'), 'success');
-        onDone?.();
-      } else if (replyTo) {
-        if (isRepost && repostEntryId) {
-          await addRepostComment(repostEntryId, trimmed, replyTo.commentId);
-        } else if (factId) {
-          await addComment(factId, trimmed, replyTo.commentId);
-        }
-        setContent('');
-        setInputHeight(INITIAL_LINE_HEIGHT);
-        useUIStore.getState().showToast(t('common:replyPosted'), 'success');
-        onDone?.();
-      } else {
-        if (isRepost && repostEntryId) {
-          await addRepostComment(repostEntryId, trimmed);
-        } else if (factId) {
-          await addComment(factId, trimmed);
-        }
-        setContent('');
-        setInputHeight(INITIAL_LINE_HEIGHT);
-        useUIStore.getState().showToast(t('common:commentPosted'), 'success');
-        onDone?.();
-      }
-    } catch (error) {
-      // The API error is already dispatched to useUIStore by the store (→ ErrorBanner),
-      // but we log it here to avoid swallowing unexpected runtime or render errors.
-      console.error('[CommentComposer] Error submitting comment:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [
-    content,
-    isSubmitting,
-    isEdit,
-    commentId,
-    replyTo,
-    isRepost,
-    repostEntryId,
-    factId,
-    updateRepostComment,
-    updateComment,
-    addRepostComment,
-    addComment,
-    onDone,
-    t,
-  ]);
-
-  const handleCancelEdit = useCallback(() => {
-    setContent('');
-    setInputHeight(INITIAL_LINE_HEIGHT);
-    closeMentions();
-    onCancelEdit?.();
-  }, [onCancelEdit, closeMentions]);
-
-  const handleCancelReply = useCallback(() => {
-    setContent('');
-    setInputHeight(INITIAL_LINE_HEIGHT);
-    closeMentions();
-    onCancelReply?.();
-  }, [onCancelReply, closeMentions]);
-
-  const handleEmojiPress = useCallback(() => setShowEmojiPicker((v) => !v), []);
-
-  const handleEmojiSelected = useCallback((emoji: string) => {
-    const pos = cursorPositionRef.current;
-    setContent((prev) => {
-      const { text, newCursor } = safeInsertText(prev, emoji, pos);
-      cursorPositionRef.current = newCursor;
-      return text;
-    });
-    requestAnimationFrame(() => inputRef.current?.focus());
-  }, []);
-
-  const postLabel = isEdit ? t('common:save') : t('common:post');
 
   return (
     <>
@@ -323,15 +97,7 @@ export function CommentComposer({
           Platform.OS === 'ios' && keyboardHeight > 0 && { paddingBottom: keyboardHeight },
         ]}>
         {replyTo ? (
-          <View style={[styles.replyBanner, { backgroundColor: theme.backgroundElement }]}>
-            <Ionicons name="return-down-forward" size={16} color={theme.primary} />
-            <ThemedText type="small" themeColor="textSecondary" style={styles.replyText} numberOfLines={1}>
-              {t('common:replyingTo', { username: replyTo.username || replyTo.authorUsername || '' })}
-            </ThemedText>
-            <AppPressable onPress={handleCancelReply} hitSlop={8} style={styles.replyDismiss}>
-              <Ionicons name="close" size={16} color={theme.textSecondary} />
-            </AppPressable>
-          </View>
+          <CommentReplyBanner replyTo={replyTo} onCancelReply={handleCancelReply} />
         ) : null}
 
         <View style={styles.row}>
@@ -348,7 +114,7 @@ export function CommentComposer({
                   styles.input,
                   { color: theme.text, height: !content ? INITIAL_LINE_HEIGHT : inputHeight },
                 ]}
-                placeholder={isEdit ? t('common:editCommentPlaceholder') : t('common:addCommentPlaceholder')}
+                placeholder={isEdit ? t('editCommentPlaceholder') : t('addCommentPlaceholder')}
                 placeholderTextColor={theme.muted}
                 value={content}
                 onChangeText={handleContentChange}
@@ -378,7 +144,7 @@ export function CommentComposer({
             {isEdit ? (
               <AppPressable onPress={handleCancelEdit} disabled={isSubmitting} hitSlop={6} style={styles.textButton}>
                 <ThemedText type="smallBold" themeColor="textSecondary" style={styles.cancelText}>
-                  {t('common:cancel')}
+                  {t('cancel')}
                 </ThemedText>
               </AppPressable>
             ) : null}
@@ -417,22 +183,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.two,
-  },
-  replyBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one + 2,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    borderRadius: Radii.sm,
-    marginBottom: Spacing.one,
-  },
-  replyText: {
-    flex: 1,
-    fontSize: 13,
-  },
-  replyDismiss: {
-    padding: Spacing.half,
   },
   row: {
     flexDirection: 'row',
