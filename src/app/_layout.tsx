@@ -4,7 +4,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider as ExpoThemeProvider } from 'exp
 import * as SplashScreen from 'expo-splash-screen';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { AppUpdateGate } from '@/components/AppUpdateGate';
+import { AppUpdateGate } from '@/features/update';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { GlobalConfirmDialog } from '@/components/GlobalConfirmDialog';
 import { Toast } from '@/components/Toast';
