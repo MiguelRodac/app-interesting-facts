@@ -19,3 +19,5 @@ export * from './animated-icon';
 export * from './external-link';
 export * from './hint-row';
 export * from './web-badge';
+export * from './MentionDropdown';
+export * from './HashtagDropdown';

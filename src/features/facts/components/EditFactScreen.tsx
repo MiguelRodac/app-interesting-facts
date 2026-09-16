@@ -14,8 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { CharCounter } from '@/shared/ui/CharCounter';
 import { EmojiPicker, EmojiButton } from '@/shared/ui/EmojiPicker';
-import { MentionDropdown } from './MentionDropdown';
-import { HashtagDropdown } from './HashtagDropdown';
+import { MentionDropdown, HashtagDropdown } from '@/shared/ui';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { ThemedView } from '@/shared/ui/themed-view';

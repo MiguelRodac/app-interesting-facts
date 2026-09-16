@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { AppPressable } from '@/shared/ui/app-pressable';
-import { MentionDropdown } from '@/features/facts/components/MentionDropdown';
+import { MentionDropdown } from '@/shared/ui/MentionDropdown';
 import { Radii, Spacing } from '@/constants/theme';
 import { useKeyboardHeight } from '@/shared/hooks/use-keyboard-height';
 import { useMentionSearch } from '@/features/search/hooks/useMentionSearch';
