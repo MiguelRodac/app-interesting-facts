@@ -3,9 +3,9 @@ import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/shared/ui/themed-text';
 import type { Author } from '@/types';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/shared/hooks/use-theme';
 
 interface UserAvatarProps {
   user: Pick<Author, 'displayName'> & {

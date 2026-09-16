@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
 import { PasswordField, useAuth } from '@/features/auth';
-import { LanguageToggle } from '@/components/LanguageToggle';
+import { LanguageToggle } from '@/shared/ui/LanguageToggle';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { useTopInset } from '@/hooks/use-top-inset';
-import { useBottomInset } from '@/hooks/use-bottom-inset';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useTopInset } from '@/shared/hooks/use-top-inset';
+import { useBottomInset } from '@/shared/hooks/use-bottom-inset';
 import { isValidEmail, MIN_PASSWORD_LENGTH } from '@/utils/validation';
 
 export default function LoginScreen() {

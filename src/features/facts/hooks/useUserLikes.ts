@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Fact } from '@/types';
-import { createApiClient } from '@/data/api/client';
-import { getIdToken } from '@/data/auth/firebaseAuth';
-import type { ApiFactFeedItem, ApiPaginatedResponse } from '@/data/api/types';
-import { mapFactsDtos } from '@/data/mappers/factMapper';
+import { createApiClient } from '@/shared/api/client';
+import { getIdToken } from '@/features/auth/services/firebaseAuth';
+import type { ApiFactFeedItem, ApiPaginatedResponse } from '@/shared/api/types';
+import { mapFactsDtos } from '@/features/facts/mappers/factMapper';
 import { applyEntryUpdate, subscribeEntryUpdates } from './entryUpdateBus';
 
 const client = createApiClient(getIdToken);

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createApiClient } from '@/data/api/client';
-import type { ApiCommentsResponse } from '@/data/api/types';
-import { getIdToken } from '@/data/auth/firebaseAuth';
-import { mapCommentsDtos } from '@/data/mappers/commentMapper';
+import { createApiClient } from '@/shared/api/client';
+import type { ApiCommentsResponse } from '@/shared/api/types';
+import { getIdToken } from '@/features/auth/services/firebaseAuth';
+import { mapCommentsDtos } from '@/features/comments/mappers/commentMapper';
 import type { Comment } from '@/types';
 
 const client = createApiClient(getIdToken);

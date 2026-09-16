@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 
 import type { Fact, PublicProfile } from '@/types';
-import { createApiClient } from '@/data/api/client';
-import type { ApiAuthor, ApiFactFeedItem, ApiCursorPaginatedResponse } from '@/data/api/types';
-import { getIdToken } from '@/data/auth/firebaseAuth';
-import { mapFactsDtos } from '@/data/mappers/factMapper';
-import { mapAuthorDto } from '@/data/mappers/userMapper';
+import { createApiClient } from '@/shared/api/client';
+import type { ApiAuthor, ApiFactFeedItem, ApiCursorPaginatedResponse } from '@/shared/api/types';
+import { getIdToken } from '@/features/auth/services/firebaseAuth';
+import { mapFactsDtos } from '@/features/facts/mappers/factMapper';
+import { mapAuthorDto } from '@/features/profile/mappers/userMapper';
 import { applyEntryUpdate, subscribeEntryUpdates } from '@/shared/events/entryUpdateBus';
 import { useFactsStore, type ToggleRepostResult } from '@/features/facts/stores/factsStore';
-import { useUIStore } from '@/data/stores/uiStore';
+import { useUIStore } from '@/shared/stores/uiStore';
 
 const client = createApiClient(getIdToken);
 

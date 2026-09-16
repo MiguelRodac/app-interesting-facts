@@ -2,11 +2,11 @@ import { StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useTheme } from '@/hooks/use-theme';
+import { AppModal } from '@/shared/ui/app-modal';
+import { AppPressable } from '@/shared/ui/app-pressable';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { useTheme } from '@/shared/hooks/use-theme';
 import { Radii, Spacing, Shadows } from '@/constants/theme';
 
 interface InstallGuideModalProps {

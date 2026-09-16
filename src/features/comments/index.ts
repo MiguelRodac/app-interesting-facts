@@ -3,6 +3,8 @@ export { CommentItem } from './components/CommentItem';
 export { CommentSection } from './components/CommentSection';
 export { useCommentsStore } from './stores/commentsStore';
 export { useFactComments, clearCommentsCache, notifyFactCommentsChanged } from './hooks/useFactComments';
+export { useCommentLikes } from './hooks/useCommentLikes';
+export * from './mappers/commentMapper';
 export type { ReplyTarget, CommentComposerProps } from './components/CommentComposer';
 export type { CommentItemProps } from './components/CommentItem';
 export type { CommentSectionProps } from './components/CommentSection';

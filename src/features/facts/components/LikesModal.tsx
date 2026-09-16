@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppModal } from '@/shared/ui/app-modal';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/shared/ui/themed-text';
 import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { Radii, Spacing } from '@/constants/theme';
 import { useFactLikes } from '../hooks/useFactLikes';
-import { useCommentLikes } from '@/data/hooks/useCommentLikes';
+import { useCommentLikes } from '@/features/comments/hooks/useCommentLikes';
 import { useRepostLikes } from '../hooks/useRepostLikes';
 import { useRepostCommentLikes } from '../hooks/useRepostCommentLikes';
-import { useAuth } from '@/data/hooks/useAuth';
-import { useTheme } from '@/hooks/use-theme';
-import type { ApiFactLike } from '@/data/api/types';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useTheme } from '@/shared/hooks/use-theme';
+import type { ApiFactLike } from '@/shared/api/types';
 
 interface LikesModalProps {
   factId?: string | null;

@@ -4,17 +4,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { PasswordField } from '@/components/PasswordField';
-import { AppPressable } from '@/components/ui/app-pressable';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { PasswordField } from '@/features/auth';
+import { AppPressable } from '@/shared/ui/app-pressable';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
 import { Radii, Spacing } from '@/constants/theme';
 import {
   applyEmailActionCode,
   confirmPasswordResetAction,
-} from '@/data/auth/firebaseAuth';
-import { useAuthStore } from '@/data/stores/authStore';
-import { useTheme } from '@/hooks/use-theme';
+} from '@/features/auth/services/firebaseAuth';
+import { useAuthStore } from '@/features/auth/stores/authStore';
+import { useTheme } from '@/shared/hooks/use-theme';
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '@/utils/validation';
 
 type ActionStatus = 'idle' | 'loading' | 'success' | 'error';

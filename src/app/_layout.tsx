@@ -5,12 +5,12 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { AppUpdateGate } from '@/features/update';
-import { ErrorBanner } from '@/components/ErrorBanner';
-import { GlobalConfirmDialog } from '@/components/GlobalConfirmDialog';
-import { Toast } from '@/components/Toast';
-import { useAuthStore } from '@/data/stores/authStore';
+import { ErrorBanner } from '@/shared/ui/ErrorBanner';
+import { GlobalConfirmDialog } from '@/shared/ui/GlobalConfirmDialog';
+import { Toast } from '@/shared/ui/Toast';
+import { useAuthStore } from '@/features/auth/stores/authStore';
 import { Colors } from '@/constants/theme';
-import { ThemeProvider, useThemeContext } from '@/hooks/theme-provider';
+import { ThemeProvider, useThemeContext } from '@/shared/hooks/theme-provider';
 import { logger } from '@/lib/logger';
 import '@/i18n';
 

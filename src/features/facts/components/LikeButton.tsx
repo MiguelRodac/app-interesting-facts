@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { StyleSheet, type GestureResponderEvent } from 'react-native';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,7 +11,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/shared/hooks/use-theme';
 
 interface LikeButtonProps {
   liked: boolean;

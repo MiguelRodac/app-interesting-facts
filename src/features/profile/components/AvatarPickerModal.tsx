@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppModal } from '@/shared/ui/app-modal';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
 import { Radii, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { createApiClient } from '@/data/api/client';
-import { getIdToken } from '@/data/auth/firebaseAuth';
-import type { ApiAvatarOption } from '@/data/api/types';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { createApiClient } from '@/shared/api/client';
+import { getIdToken } from '@/features/auth/services/firebaseAuth';
+import type { ApiAvatarOption } from '@/shared/api/types';
 
 const client = createApiClient(getIdToken);
 

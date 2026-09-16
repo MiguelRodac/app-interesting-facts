@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { LanguageToggle } from '@/components/LanguageToggle';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { LanguageToggle } from '@/shared/ui/LanguageToggle';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
-import { sendPasswordReset } from '@/data/auth/firebaseAuth';
-import { useUIStore } from '@/data/stores/uiStore';
-import { useTheme } from '@/hooks/use-theme';
-import { useTopInset } from '@/hooks/use-top-inset';
+import { sendPasswordReset } from '@/features/auth/services/firebaseAuth';
+import { useUIStore } from '@/shared/stores/uiStore';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useTopInset } from '@/shared/hooks/use-top-inset';
 import { isValidEmail } from '@/utils/validation';
 
 export default function ForgotPasswordScreen() {

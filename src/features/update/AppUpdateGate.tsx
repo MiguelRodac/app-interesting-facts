@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { useSegments } from 'expo-router';
 
-import { ThemedView } from '@/components/themed-view';
-import { setAppUpdateHandler } from '@/data/api/client';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { setAppUpdateHandler } from '@/shared/api/client';
 import { Spacing } from '@/constants/theme';
 import { useUpdateStore } from './stores/updateStore';
 import { WebUpdateCard } from './components/WebUpdateCard';

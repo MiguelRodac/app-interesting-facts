@@ -3,13 +3,13 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { StyledContent } from '@/features/facts/components/StyledContent';
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/shared/ui/themed-text';
 import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD, checkIsCollapsible } from '@/constants/facts';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/shared/hooks/use-theme';
 import { canEditComment, formatRelativeTime } from '@/utils/commentTime';
 import type { Comment, CommentAuthor } from '@/types';
 import { useCommentsStore } from '../stores/commentsStore';

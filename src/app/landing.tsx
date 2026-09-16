@@ -1,19 +1,19 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { ActivityIndicator, Linking, Platform, StyleSheet, ScrollView, View, useWindowDimensions } from 'react-native';
-import { AppPressable } from '@/components/ui/app-pressable';
-import { AppModal } from '@/components/ui/app-modal';
+import { AppPressable } from '@/shared/ui/app-pressable';
+import { AppModal } from '@/shared/ui/app-modal';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { LanguageToggle } from '@/components/LanguageToggle';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { LanguageToggle } from '@/shared/ui/LanguageToggle';
 import { APK_URL } from '@/config/landing';
 import { Radii, Spacing, Shadows } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { useThemeContext } from '@/hooks/theme-provider';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useThemeContext } from '@/shared/hooks/theme-provider';
 
 const BREAKPOINT = 600;
 

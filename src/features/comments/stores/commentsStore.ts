@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import type { AppError, Comment, CommentAuthor } from '@/types';
-import { createApiClient } from '@/data/api/client';
-import type { ApiComment } from '@/data/api/types';
-import { getIdToken } from '@/data/auth/firebaseAuth';
+import { createApiClient } from '@/shared/api/client';
+import type { ApiComment } from '@/shared/api/types';
+import { getIdToken } from '@/features/auth/services/firebaseAuth';
 import {
   clearCommentsCache,
   getCachedComments,
@@ -10,10 +10,10 @@ import {
   notifyCommentsOptimistic,
   setCachedComments,
 } from '../hooks/useFactComments';
-import { notifyCommentLikesChanged } from '@/data/hooks/useCommentLikes';
-import { mapCommentDto } from '@/data/mappers/commentMapper';
-import { useAuthStore } from '@/data/stores/authStore';
-import { useUIStore } from '@/data/stores/uiStore';
+import { notifyCommentLikesChanged } from '@/features/comments/hooks/useCommentLikes';
+import { mapCommentDto } from '@/features/comments/mappers/commentMapper';
+import { useAuthStore } from '@/features/auth/stores/authStore';
+import { useUIStore } from '@/shared/stores/uiStore';
 
 const client = createApiClient(getIdToken);
 

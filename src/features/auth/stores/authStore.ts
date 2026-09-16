@@ -2,12 +2,12 @@ import { create } from 'zustand';
 import type { Author, AppError } from '@/types';
 import * as authService from '../services/authService';
 import { isFirebaseAuthError, mapFirebaseError } from '../services/firebaseErrors';
-import { setUnauthorizedHandler } from '@/data/api/client';
+import { setUnauthorizedHandler } from '@/shared/api/client';
 import { clearCommentsCache } from '@/features/comments/hooks/useFactComments';
 import { useCommentsStore } from '@/features/comments/stores/commentsStore';
-import { useUIStore } from '@/data/stores/uiStore';
+import { useUIStore } from '@/shared/stores/uiStore';
 import { useFactsStore } from '@/features/facts/stores/factsStore';
-import { useSearchStore } from '@/data/stores/searchStore';
+import { useSearchStore } from '@/features/search/stores/searchStore';
 import { useUserProfileStore } from '@/features/profile/stores/userProfileStore';
 
 interface AuthState {

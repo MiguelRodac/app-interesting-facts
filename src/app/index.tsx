@@ -1,19 +1,19 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { LanguageToggle } from '@/components/LanguageToggle';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { LanguageToggle } from '@/shared/ui/LanguageToggle';
 import { LANDING_ENABLED } from '@/config/landing';
 import { Spacing, MaxContentWidth } from '@/constants/theme';
-import { useAuth } from '@/data/hooks/useAuth';
-import { useTheme } from '@/hooks/use-theme';
-import { useTopInset } from '@/hooks/use-top-inset';
-import { useBottomInset } from '@/hooks/use-bottom-inset';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useTopInset } from '@/shared/hooks/use-top-inset';
+import { useBottomInset } from '@/shared/hooks/use-bottom-inset';
 
 export default function HomeScreen() {
   const { t } = useTranslation(['common', 'landing']);

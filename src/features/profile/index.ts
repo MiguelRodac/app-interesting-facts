@@ -8,3 +8,6 @@ export { useUserProfileStore } from './stores/userProfileStore';
 
 // Hooks
 export { useUserProfile } from './hooks/useUserProfile';
+
+// Mappers
+export * from './mappers/userMapper';

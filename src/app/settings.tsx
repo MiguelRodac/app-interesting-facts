@@ -1,22 +1,22 @@
 import { useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppModal } from '@/shared/ui/app-modal';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { DevLogsModal } from '@/components/DevLogsModal';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { DevLogsModal } from '@/features/dev-logs';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
-import { useThemeContext, type ThemePreference } from '@/hooks/theme-provider';
-import { useTheme } from '@/hooks/use-theme';
-import { useTopInset } from '@/hooks/use-top-inset';
-import { useBottomInset } from '@/hooks/use-bottom-inset';
-import { useAuth } from '@/data/hooks/useAuth';
-import { useLanguage } from '@/hooks/use-language';
-import { useUIStore } from '@/data/stores/uiStore';
+import { useThemeContext, type ThemePreference } from '@/shared/hooks/theme-provider';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useTopInset } from '@/shared/hooks/use-top-inset';
+import { useBottomInset } from '@/shared/hooks/use-bottom-inset';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useLanguage } from '@/shared/hooks/use-language';
+import { useUIStore } from '@/shared/stores/uiStore';
 import type { LanguagePreference } from '@/i18n';
 
 const REQUIRED_TAPS = 10;

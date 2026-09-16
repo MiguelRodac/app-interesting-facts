@@ -8,20 +8,20 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/shared/ui/themed-text';
 import { UserAvatar } from '@/shared/ui/UserAvatar';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { MentionDropdown } from '@/features/facts/components/MentionDropdown';
 import { Radii, Spacing } from '@/constants/theme';
-import { useKeyboardHeight } from '@/hooks/use-keyboard-height';
-import { useMentionSearch } from '@/hooks/useMentionSearch';
+import { useKeyboardHeight } from '@/shared/hooks/use-keyboard-height';
+import { useMentionSearch } from '@/features/search/hooks/useMentionSearch';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import type { ApiUserSearchResult } from '@/data/api/types';
+import type { ApiUserSearchResult } from '@/shared/api/types';
 import { useCommentsStore } from '../stores/commentsStore';
 import { useRepostsStore } from '@/features/facts/stores/repostsStore';
-import { useUIStore } from '@/data/stores/uiStore';
-import { useTheme } from '@/hooks/use-theme';
-import { EmojiPicker, EmojiButton } from '@/components/EmojiPicker';
+import { useUIStore } from '@/shared/stores/uiStore';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { EmojiPicker, EmojiButton } from '@/shared/ui/EmojiPicker';
 import { safeInsertText, cleanSurrogates } from '@/utils/text';
 
 export const COMMENT_MIN_LENGTH = 1;

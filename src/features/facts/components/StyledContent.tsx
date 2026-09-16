@@ -3,9 +3,9 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { parseContent } from '@/utils/parseContent';
-import { useTheme } from '@/hooks/use-theme';
-import { useAuth } from '@/data/hooks/useAuth';
-import { useUIStore } from '@/data/stores/uiStore';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useUIStore } from '@/shared/stores/uiStore';
 
 interface StyledContentProps {
   content: string;

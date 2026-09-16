@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import type { Author, Fact, FactLike } from '@/types';
-import { createApiClient } from '@/data/api/client';
-import type { ApiFact, ApiFactFeedItem, ApiCursorPaginatedResponse, ApiRepostResponse } from '@/data/api/types';
-import { mapFactsDtos, mapFactDto, mapRepostDto } from '@/data/mappers/factMapper';
+import { createApiClient } from '@/shared/api/client';
+import type { ApiFact, ApiFactFeedItem, ApiCursorPaginatedResponse, ApiRepostResponse } from '@/shared/api/types';
+import { mapFactsDtos, mapFactDto, mapRepostDto } from '@/features/facts/mappers/factMapper';
 import { getIdToken } from '@/features/auth/services/firebaseAuth';
 import { notifyFactLikesChanged } from '../hooks/useFactLikes';
 import { broadcastEntryUpdate } from '@/shared/events/entryUpdateBus';
 import { useAuthStore } from '@/features/auth/stores/authStore';
-import { useUIStore } from '@/data/stores/uiStore';
+import { useUIStore } from '@/shared/stores/uiStore';
 
 const PAGE_SIZE = 20;
 const PROFILE_PAGE_SIZE = 50;

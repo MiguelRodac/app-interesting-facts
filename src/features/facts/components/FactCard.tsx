@@ -1,20 +1,20 @@
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
 import { StyledContent } from './StyledContent';
 import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { LikeButton } from './LikeButton';
 import { LikedByLine } from './LikedByLine';
 import { Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD, checkIsCollapsible } from '@/constants/facts';
-import { useAuth } from '@/data/hooks/useAuth';
-import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useTheme } from '@/shared/hooks/use-theme';
 import type { Fact } from '@/types';
 
 interface FactCardProps {

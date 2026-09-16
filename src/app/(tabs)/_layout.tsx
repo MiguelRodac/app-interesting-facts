@@ -1,15 +1,15 @@
 import { useState, useCallback } from 'react';
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppModal } from '@/shared/ui/app-modal';
+import { AppPressable } from '@/shared/ui/app-pressable';
 
-import { TabBar } from '@/components/TabBar';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useCreateScreenGuard } from '@/data/stores/createScreenGuard';
+import { TabBar } from '@/shared/ui/TabBar';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { useCreateScreenGuard } from '@/features/facts/guards/createScreenGuard';
 import { Radii, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/shared/hooks/use-theme';
 import { triggerScrollToTop } from '@/lib/scrollToTop';
 
 export default function TabsLayout() {

@@ -1,24 +1,24 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView, BackHandler } from 'react-native';
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppModal } from '@/shared/ui/app-modal';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { AvatarPickerModal } from '@/components/AvatarPickerModal';
-import { PasswordField } from '@/components/PasswordField';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { UserAvatar } from '@/components/UserAvatar';
+import { AvatarPickerModal } from '@/features/profile';
+import { PasswordField } from '@/features/auth';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { Radii, Spacing } from '@/constants/theme';
-import { useAuth } from '@/data/hooks/useAuth';
-import { changeEmail } from '@/data/auth/firebaseAuth';
-import { isFirebaseAuthError, mapFirebaseError } from '@/data/auth/firebaseErrors';
-import { useUIStore } from '@/data/stores/uiStore';
-import { useTheme } from '@/hooks/use-theme';
-import { useTopInset } from '@/hooks/use-top-inset';
-import { useBottomInset } from '@/hooks/use-bottom-inset';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { changeEmail } from '@/features/auth/services/firebaseAuth';
+import { isFirebaseAuthError, mapFirebaseError } from '@/features/auth/services/firebaseErrors';
+import { useUIStore } from '@/shared/stores/uiStore';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useTopInset } from '@/shared/hooks/use-top-inset';
+import { useBottomInset } from '@/shared/hooks/use-bottom-inset';
 import { isValidEmail, MAX_DISPLAY_NAME_LENGTH } from '@/utils/validation';
 import { safeTruncate } from '@/utils/text';
 

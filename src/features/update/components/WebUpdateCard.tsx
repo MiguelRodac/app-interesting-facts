@@ -3,9 +3,9 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { AppPressable } from '@/components/ui/app-pressable';
-import { ThemedText } from '@/components/themed-text';
-import { useTheme } from '@/hooks/use-theme';
+import { AppPressable } from '@/shared/ui/app-pressable';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { useTheme } from '@/shared/hooks/use-theme';
 import { Radii, Spacing } from '@/constants/theme';
 
 export function WebUpdateCard() {

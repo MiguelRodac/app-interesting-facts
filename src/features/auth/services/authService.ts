@@ -1,5 +1,5 @@
-import { createApiClient } from '@/data/api/client';
-import { mapUserDto } from '@/data/mappers/userMapper';
+import { createApiClient } from '@/shared/api/client';
+import { mapUserDto } from '@/features/profile/mappers/userMapper';
 import {
   signIn,
   signUp,
@@ -11,7 +11,7 @@ import {
   setCachedUser,
 } from './firebaseAuth';
 import type { Author } from '@/types';
-import type { ApiProfileResponse } from '@/data/api/types';
+import type { ApiProfileResponse } from '@/shared/api/types';
 
 /**
  * Auth service — high-level auth operations consumed by authStore.

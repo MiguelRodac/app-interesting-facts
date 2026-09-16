@@ -1,26 +1,26 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
 import { PasswordField, useAuth, getIdToken } from '@/features/auth';
-import { useTheme } from '@/hooks/use-theme';
-import { useTopInset } from '@/hooks/use-top-inset';
-import { useBottomInset } from '@/hooks/use-bottom-inset';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { createApiClient } from '@/data/api/client';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useTopInset } from '@/shared/hooks/use-top-inset';
+import { useBottomInset } from '@/shared/hooks/use-bottom-inset';
+import { LanguageToggle } from '@/shared/ui/LanguageToggle';
+import { createApiClient } from '@/shared/api/client';
 import {
   isValidEmail,
   isValidUsername,
   MAX_DISPLAY_NAME_LENGTH,
   MIN_PASSWORD_LENGTH,
 } from '@/utils/validation';
-import type { ApiUsernameCheck } from '@/data/api/types';
+import type { ApiUsernameCheck } from '@/shared/api/types';
 
 const client = createApiClient(getIdToken);
 

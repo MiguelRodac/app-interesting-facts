@@ -1,4 +1,4 @@
-import { useLogStore, type LogLevel } from '@/data/stores/logStore';
+import { useLogStore, type LogLevel } from '@/features/dev-logs/stores/logStore';
 
 export interface ApiLogParams {
   method: string;

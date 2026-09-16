@@ -1,11 +1,11 @@
 import { StyleSheet, View, FlatList, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { AppPressable } from '@/components/ui/app-pressable';
-import { ThemedText } from '@/components/themed-text';
-import { UserAvatar } from '@/components/UserAvatar';
+import { AppPressable } from '@/shared/ui/app-pressable';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { Radii, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import type { ApiUserSearchResult } from '@/data/api/types';
+import { useTheme } from '@/shared/hooks/use-theme';
+import type { ApiUserSearchResult } from '@/shared/api/types';
 
 interface MentionDropdownProps {
   visible: boolean;

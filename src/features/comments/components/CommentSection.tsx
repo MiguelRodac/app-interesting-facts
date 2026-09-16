@@ -3,15 +3,15 @@ import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { CommentItem } from './CommentItem';
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText } from '@/shared/ui/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useFactComments } from '../hooks/useFactComments';
 import { useRepostComments } from '@/features/facts/hooks/useRepostComments';
 import { useCommentsStore } from '../stores/commentsStore';
 import { useRepostsStore } from '@/features/facts/stores/repostsStore';
-import { useUIStore } from '@/data/stores/uiStore';
-import { useTheme } from '@/hooks/use-theme';
+import { useUIStore } from '@/shared/stores/uiStore';
+import { useTheme } from '@/shared/hooks/use-theme';
 import type { Comment, CommentAuthor } from '@/types';
 
 export interface CommentSectionProps {

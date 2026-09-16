@@ -9,33 +9,33 @@ import {
   Platform,
   BackHandler,
 } from 'react-native';
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppModal } from '@/shared/ui/app-modal';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { EmptyState } from '@/components/EmptyState';
-import { LikeButton } from '@/components/LikeButton';
-import { LikedByLine } from '@/components/LikedByLine';
-import { LikesModal } from '@/components/LikesModal';
-import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { EmptyState } from '@/shared/ui/EmptyState';
+import { LikeButton } from '@/features/facts';
+import { LikedByLine } from '@/features/facts';
+import { LikesModal } from '@/features/facts';
+import { LoadingSkeleton } from '@/shared/ui/LoadingSkeleton';
 import { CommentComposer, CommentSection } from '@/features/comments';
-import { StyledContent } from '@/components/StyledContent';
-import { TabBar } from '@/components/TabBar';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { UserAvatar } from '@/components/UserAvatar';
+import { StyledContent } from '@/features/facts';
+import { TabBar } from '@/shared/ui/TabBar';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { MaxContentWidth, Radii, Shadows, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES_DETAIL, COLLAPSE_THRESHOLD_DETAIL, checkIsCollapsible } from '@/constants/facts';
-import { useFacts } from '@/data/hooks/useFacts';
-import { notifyFactCommentsChanged, useFactComments } from '@/data/hooks/useFactComments';
-import { subscribeEntryUpdates } from '@/data/hooks/entryUpdateBus';
-import { useAuth } from '@/data/hooks/useAuth';
-import { useTheme } from '@/hooks/use-theme';
-import { useTopInset } from '@/hooks/use-top-inset';
-import { useUIStore } from '@/data/stores/uiStore';
+import { useFacts } from '@/features/facts/hooks/useFacts';
+import { notifyFactCommentsChanged, useFactComments } from '@/features/comments/hooks/useFactComments';
+import { subscribeEntryUpdates } from '@/shared/events/entryUpdateBus';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useTopInset } from '@/shared/hooks/use-top-inset';
+import { useUIStore } from '@/shared/stores/uiStore';
 import type { Comment, Fact } from '@/types';
 
 /** Reply target — enough to prefill the fixed composer in reply mode. */

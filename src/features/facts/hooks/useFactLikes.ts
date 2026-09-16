@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { createApiClient } from '@/data/api/client';
-import { getIdToken } from '@/data/auth/firebaseAuth';
-import type { ApiFactLike } from '@/data/api/types';
+import { createApiClient } from '@/shared/api/client';
+import { getIdToken } from '@/features/auth/services/firebaseAuth';
+import type { ApiFactLike } from '@/shared/api/types';
 
 const client = createApiClient(getIdToken);
 

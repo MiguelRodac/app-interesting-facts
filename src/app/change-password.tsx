@@ -1,20 +1,20 @@
 import { useState } from 'react';
 import { StyleSheet, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { PasswordField } from '@/components/PasswordField';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { PasswordField } from '@/features/auth';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
-import { useAuth } from '@/data/hooks/useAuth';
-import { changePassword } from '@/data/auth/firebaseAuth';
-import { isFirebaseAuthError, mapFirebaseError } from '@/data/auth/firebaseErrors';
-import { useUIStore } from '@/data/stores/uiStore';
-import { useTheme } from '@/hooks/use-theme';
-import { useTopInset } from '@/hooks/use-top-inset';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { changePassword } from '@/features/auth/services/firebaseAuth';
+import { isFirebaseAuthError, mapFirebaseError } from '@/features/auth/services/firebaseErrors';
+import { useUIStore } from '@/shared/stores/uiStore';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useTopInset } from '@/shared/hooks/use-top-inset';
 
 export default function ChangePasswordScreen() {
   const { t } = useTranslation(['auth', 'common']);

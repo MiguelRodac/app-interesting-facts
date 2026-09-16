@@ -1,23 +1,23 @@
 import { useCallback, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { AppModal } from '@/components/ui/app-modal';
-import { AppPressable } from '@/components/ui/app-pressable';
+import { AppModal } from '@/shared/ui/app-modal';
+import { AppPressable } from '@/shared/ui/app-pressable';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { FactCard, LikesModal, useUserLikes, useMentionedFacts, useFactsStore, useRepostsStore } from '@/features/facts';
 import { UserAvatar } from '@/features/profile';
-import { EmptyState } from '@/components/EmptyState';
-import { LoadingSkeleton } from '@/components/LoadingSkeleton';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { LanguageToggle } from '@/components/LanguageToggle';
+import { EmptyState } from '@/shared/ui/EmptyState';
+import { LoadingSkeleton } from '@/shared/ui/LoadingSkeleton';
+import { ThemedText } from '@/shared/ui/themed-text';
+import { ThemedView } from '@/shared/ui/themed-view';
+import { LanguageToggle } from '@/shared/ui/LanguageToggle';
 import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
-import { useAuth } from '@/data/hooks/useAuth';
-import { useUIStore } from '@/data/stores/uiStore';
-import { useTheme } from '@/hooks/use-theme';
-import { useTopInset } from '@/hooks/use-top-inset';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useUIStore } from '@/shared/stores/uiStore';
+import { useTheme } from '@/shared/hooks/use-theme';
+import { useTopInset } from '@/shared/hooks/use-top-inset';
 import type { Fact } from '@/types';
 
 type ProfileTab = 'mine' | 'liked' | 'mentions';
