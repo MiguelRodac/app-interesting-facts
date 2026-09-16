@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
-import { AppPressable } from '@/shared/ui/app-pressable';
 import { FactCard } from './FactCard';
 import { LikesModal } from './LikesModal';
 import { useFacts } from '../hooks/useFacts';
@@ -13,17 +11,17 @@ import { LoadingSkeleton } from '@/shared/ui/LoadingSkeleton';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { ThemedView } from '@/shared/ui/themed-view';
 import { LanguageToggle } from '@/shared/ui/LanguageToggle';
-import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useUIStore } from '@/shared/stores/uiStore';
 import { useTheme } from '@/shared/hooks/use-theme';
 import { useTopInset } from '@/shared/hooks/use-top-inset';
 import { registerScrollToTop } from '@/lib/scrollToTop';
 import type { Fact } from '@/types';
+import { FeedFooter } from './FeedFooter';
 
 export function FeedScreen() {
-
-  const { t } = useTranslation(['feed', 'common']);
+  const { t } = useTranslation('feed');
   const { facts, isLoading, hasMore, fetchFacts, loadMore, toggleLike, toggleRepost, toggleRepostLike } = useFacts();
   const { isAuthenticated } = useAuth();
   const router = useRouter();
@@ -35,8 +33,6 @@ export function FeedScreen() {
   const firstFocusRef = useRef(true);
   const flatListRef = useRef<FlatList<Fact>>(null);
 
-  // Initial fetch shows the skeleton; later focus refreshes are silent
-  // (background merge keeps new facts on top without resetting scroll).
   useFocusEffect(
     useCallback(() => {
       fetchFacts(firstFocusRef.current ? undefined : true);
@@ -53,7 +49,6 @@ export function FeedScreen() {
     }
   }, [fetchFacts]);
 
-  // Register scroll-to-top handler so the tab bar can trigger it
   useEffect(() => {
     return registerScrollToTop(() => {
       flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -93,7 +88,7 @@ export function FeedScreen() {
       const res = await toggleRepost(factId);
       if (res?.success) {
         useUIStore.getState().showToast(
-          res.reposted ? t('feed:repostPublished') : t('feed:repostRemoved'),
+          res.reposted ? t('repostPublished') : t('repostRemoved'),
           'success'
         );
       }
@@ -132,63 +127,14 @@ export function FeedScreen() {
     [isAuthenticated, handleFactPress, handleLike, handleRepost, handleRepostLike, handleRequireLogin],
   );
 
-  const renderFooter = useCallback(() => {
-    if (isLoading && facts.length > 0) return <LoadingSkeleton count={1} />;
-    if (!hasMore && facts.length > 0) {
-      if (!isAuthenticated) {
-        return (
-          <View style={styles.footerContainer}>
-            <ThemedView type="backgroundElement" style={[styles.guestCard, { borderColor: theme.border }]}>
-              <Ionicons name="sparkles" size={28} color={theme.primary} />
-              <ThemedText type="subtitle" style={styles.guestTitle}>
-                {t('feed:guestBannerTitle')}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.guestSubtitle}>
-                {t('feed:guestBannerSubtitle')}
-              </ThemedText>
-              <View style={styles.guestButtons}>
-                <AppPressable
-                  style={[styles.guestButton, { backgroundColor: theme.primary }]}
-                  onPress={() => router.push('/auth/login')}>
-                  <ThemedText type="smallBold" style={styles.guestButtonText}>
-                    {t('feed:guestBannerSignIn')}
-                  </ThemedText>
-                </AppPressable>
-                <AppPressable
-                  style={[styles.guestButton, { borderColor: theme.border, borderWidth: 1 }]}
-                  onPress={() => router.push('/auth/register')}>
-                  <ThemedText type="smallBold" style={{ color: theme.text }}>
-                    {t('feed:guestBannerSignUp')}
-                  </ThemedText>
-                </AppPressable>
-              </View>
-            </ThemedView>
-          </View>
-        );
-      }
-      return (
-        <View style={styles.endOfList}>
-          <Ionicons name="checkmark-circle-outline" size={28} color={theme.muted} />
-          <ThemedText type="small" themeColor="textSecondary" style={styles.endOfListText}>
-            {t('feed:endOfListTitle')}
-          </ThemedText>
-          <ThemedText type="small" themeColor="muted">
-            {t('feed:endOfListSubtitle')}
-          </ThemedText>
-        </View>
-      );
-    }
-    return null;
-  }, [isLoading, facts.length, hasMore, isAuthenticated, theme, t, router]);
-
   const renderEmpty = useCallback(() => {
     if (isLoading) {
       return <LoadingSkeleton count={3} />;
     }
     return (
       <EmptyState
-        title={t('feed:emptyTitle')}
-        subtitle={t('feed:emptySubtitle')}
+        title={t('emptyTitle')}
+        subtitle={t('emptySubtitle')}
         icon="bulb-outline"
       />
     );
@@ -198,7 +144,7 @@ export function FeedScreen() {
     <ThemedView style={styles.container}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: topInset }]}>
-        <ThemedText type="subtitle">{t('feed:title')}</ThemedText>
+        <ThemedText type="subtitle">{t('title')}</ThemedText>
         {!isAuthenticated && <LanguageToggle />}
       </View>
 
@@ -211,7 +157,14 @@ export function FeedScreen() {
         contentContainerStyle={styles.list}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={renderFooter}
+        ListFooterComponent={
+          <FeedFooter
+            isLoading={isLoading}
+            factsCount={facts.length}
+            hasMore={hasMore}
+            isAuthenticated={isAuthenticated}
+          />
+        }
         ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -260,50 +213,5 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
-  },
-  footerContainer: {
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.two,
-  },
-  guestCard: {
-    borderWidth: 1,
-    borderRadius: Radii.lg,
-    padding: Spacing.four,
-    alignItems: 'center',
-    textAlign: 'center',
-    gap: Spacing.two,
-    marginVertical: Spacing.two,
-  },
-  guestTitle: {
-    textAlign: 'center',
-  },
-  guestSubtitle: {
-    textAlign: 'center',
-    maxWidth: 300,
-  },
-  guestButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  guestButton: {
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-    borderRadius: Radii.md,
-    minWidth: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  guestButtonText: {
-    color: '#FFFFFF',
-  },
-  endOfList: {
-    alignItems: 'center',
-    paddingVertical: Spacing.five,
-    gap: Spacing.one,
-  },
-  endOfListText: {
-    fontWeight: '600',
   },
 });
