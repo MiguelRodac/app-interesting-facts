@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AppError, Comment, CommentAuthor, Fact } from '@/types';
+import type { AppError, Comment, Fact } from '@/types';
 import { createApiClient } from '@/shared/api/client';
 import type { ApiComment } from '@/shared/api/types';
 import { getIdToken } from '@/features/auth/services/firebaseAuth';
@@ -17,9 +17,6 @@ import { mapCommentDto } from '@/features/comments/mappers/commentMapper';
 import { useAuthStore } from '@/features/auth/stores/authStore';
 import { useFactsStore } from './factsStore';
 import { useUIStore } from '@/shared/stores/uiStore';
-
-const client = createApiClient(getIdToken);
-
 import {
   buildOptimisticComment,
   mapComment,
@@ -27,6 +24,8 @@ import {
   insertReply,
   findRepostEntry,
 } from './repostsStoreHelpers';
+
+const client = createApiClient(getIdToken);
 
 /**
  * Builds the optimistic liked-by list for the current user's repost like/

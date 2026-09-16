@@ -96,11 +96,17 @@ export function useFactDetailScreen(id?: string, from?: string) {
   }, [id, fetchFactById]);
 
   useEffect(() => {
+    let cancelled = false;
     if (!cachedFact) {
-      loadFact();
-    } else {
-      setLoading(false);
+      void Promise.resolve().then(() => {
+        if (!cancelled) {
+          loadFact();
+        }
+      });
     }
+    return () => {
+      cancelled = true;
+    };
   }, [id, cachedFact, loadFact]);
 
   useEffect(() => {

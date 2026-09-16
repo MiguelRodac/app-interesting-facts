@@ -33,7 +33,7 @@ export const LogFilterBar = React.memo(function LogFilterBar({
 }: LogFilterBarProps) {
   const theme = useTheme();
 
-  const filterTabs: Array<{ id: LogLevel | 'all'; label: string; color?: string }> = [
+  const filterTabs: { id: LogLevel | 'all'; label: string; color?: string }[] = [
     { id: 'all', label: `Todos (${counts.all})` },
     { id: 'error', label: `Errores (${counts.error})`, color: '#FF453A' },
     { id: 'warn', label: `Warns (${counts.warn})`, color: '#FF9F0A' },

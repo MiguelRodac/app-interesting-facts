@@ -97,11 +97,17 @@ export function useRepostDetailScreen(id?: string, from?: string) {
   }, [id, fetchRepostById]);
 
   useEffect(() => {
+    let cancelled = false;
     if (!cachedFact) {
-      loadRepost();
-    } else {
-      setLoading(false);
+      void Promise.resolve().then(() => {
+        if (!cancelled) {
+          loadRepost();
+        }
+      });
     }
+    return () => {
+      cancelled = true;
+    };
   }, [id, cachedFact, loadRepost]);
 
   useEffect(() => {

@@ -6,7 +6,6 @@ import { Toast } from '@/shared/ui/Toast';
 import { AppModal } from '@/shared/ui/app-modal';
 import { ThemedView } from '@/shared/ui/themed-view';
 import { Spacing, MaxContentWidth } from '@/constants/theme';
-import { useTheme } from '@/shared/hooks/use-theme';
 import { useColorScheme } from '@/shared/hooks/use-color-scheme';
 import { useTopInset } from '@/shared/hooks/use-top-inset';
 import { useBottomInset } from '@/shared/hooks/use-bottom-inset';
@@ -25,7 +24,6 @@ interface DevLogsModalProps {
 }
 
 export function DevLogsModal({ visible, onClose }: DevLogsModalProps) {
-  const theme = useTheme();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const topInset = useTopInset();

@@ -14,7 +14,6 @@ import { ThemedView } from '@/shared/ui/themed-view';
 import { BottomTabInset, MaxContentWidth, Radii, Spacing } from '@/constants/theme';
 import { useTheme } from '@/shared/hooks/use-theme';
 import { useTopInset } from '@/shared/hooks/use-top-inset';
-import type { Fact } from '@/types';
 import { useMyProfileScreen } from '../hooks/useMyProfileScreen';
 import { MyProfileHeader } from './MyProfileHeader';
 import { MyProfileTabs } from './MyProfileTabs';

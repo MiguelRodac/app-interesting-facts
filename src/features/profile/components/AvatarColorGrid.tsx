@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { AppPressable } from '@/shared/ui/app-pressable';
 import { ThemedText } from '@/shared/ui/themed-text';
-import { Radii, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/shared/hooks/use-theme';
 import type { ApiAvatarOption } from '@/shared/api/types';
 
