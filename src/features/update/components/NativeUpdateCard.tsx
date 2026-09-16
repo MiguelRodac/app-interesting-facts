@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
@@ -27,15 +26,10 @@ export function NativeUpdateCard({ appVersion, webUrl, onOpenGuide }: NativeUpda
       if (Platform.OS === 'web') {
         window.open(webUrl, '_blank');
       } else {
-        const supported = await Linking.canOpenURL(webUrl).catch(() => false);
-        if (supported) {
-          await Linking.openURL(webUrl);
-        } else {
-          await WebBrowser.openBrowserAsync(webUrl, {
-            presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-            controlsColor: theme.primary,
-          });
-        }
+        // Direct Linking.openURL opens the external system browser (Chrome/etc.),
+        // leaving the app process so the user can complete the web download flow
+        // without being bounced back by an in-app WebBrowser tab.
+        await Linking.openURL(webUrl);
       }
     } catch {
       Alert.alert(
@@ -47,7 +41,7 @@ export function NativeUpdateCard({ appVersion, webUrl, onOpenGuide }: NativeUpda
         setIsRedirecting(false);
       }, 1500);
     }
-  }, [t, theme.primary, webUrl]);
+  }, [t, webUrl]);
 
   return (
     <View style={styles.card}>
