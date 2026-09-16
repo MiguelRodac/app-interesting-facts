@@ -50,7 +50,11 @@ export function AvatarImageGrid({
             <AppPressable
               key={option.id}
               onPress={() => onPickAvatar(option)}
-              style={[styles.avatarOption, isSelected && styles.optionSelected]}>
+              style={[
+                styles.avatarOption,
+                { backgroundColor: option.color ?? 'transparent' },
+                isSelected && styles.optionSelected,
+              ]}>
               <Image
                 source={{ uri: option.url ?? undefined }}
                 style={styles.avatarImage}
@@ -69,6 +73,8 @@ export function AvatarImageGrid({
   );
 }
 
+const CIRCLE_SIZE = 52;
+
 const styles = StyleSheet.create({
   sectionTitle: {
     marginBottom: Spacing.two,
@@ -80,20 +86,22 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   avatarOption: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    overflow: 'hidden',
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: '100%',
+    height: '100%',
+    borderRadius: CIRCLE_SIZE / 2,
+    overflow: 'hidden',
   },
   noAvatarOption: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
