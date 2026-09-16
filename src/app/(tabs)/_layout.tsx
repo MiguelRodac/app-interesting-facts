@@ -63,7 +63,13 @@ export default function TabsLayout() {
 
       // If already on the home tab, scroll to top and refresh
       if (activeTab === 'index' && name === 'index') {
-        triggerScrollToTop();
+        triggerScrollToTop('index');
+        return;
+      }
+
+      // If already on the profile tab, scroll to top and refresh
+      if (activeTab === 'profile' && name === 'profile') {
+        triggerScrollToTop('profile');
         return;
       }
 

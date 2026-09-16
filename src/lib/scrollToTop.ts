@@ -1,21 +1,21 @@
 type ScrollHandler = () => void;
 
-let handler: ScrollHandler | null = null;
+const handlers = new Map<string, ScrollHandler>();
 
 /**
- * Register a scroll-to-top handler (called by the feed screen).
+ * Register a scroll-to-top handler for a specific target screen ('index' | 'profile').
  * Returns an unregister function for cleanup.
  */
-export function registerScrollToTop(fn: ScrollHandler): () => void {
-  handler = fn;
+export function registerScrollToTop(fn: ScrollHandler, target = 'index'): () => void {
+  handlers.set(target, fn);
   return () => {
-    handler = null;
+    handlers.delete(target);
   };
 }
 
 /**
- * Trigger scroll-to-top on the active feed screen (called by the tab bar).
+ * Trigger scroll-to-top on the specified screen (called by the tab bar).
  */
-export function triggerScrollToTop(): void {
-  handler?.();
+export function triggerScrollToTop(target = 'index'): void {
+  handlers.get(target)?.();
 }

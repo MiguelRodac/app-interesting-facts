@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { AppModal } from '@/shared/ui/app-modal';
 import { AppPressable } from '@/shared/ui/app-pressable';
@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { FactCard, LikesModal } from '@/features/facts';
+import type { Fact } from '@/types';
+import { registerScrollToTop } from '@/lib/scrollToTop';
 import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { LoadingSkeleton } from '@/shared/ui/LoadingSkeleton';
@@ -50,6 +52,15 @@ export function MyProfileScreen() {
     handleRepostLike,
     router,
   } = useMyProfileScreen();
+
+  const flatListRef = useRef<FlatList<Fact>>(null);
+
+  useEffect(() => {
+    return registerScrollToTop(() => {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      handleRefresh();
+    }, 'profile');
+  }, [handleRefresh]);
 
   const renderEmpty = useCallback(() => {
     if (activeTab === 'mine') {
@@ -98,6 +109,7 @@ export function MyProfileScreen() {
   return (
     <ThemedView style={[styles.container, { paddingTop: topInset }]}>
       <FlatList
+        ref={flatListRef}
         data={displayedFacts}
         keyExtractor={(item) => (item.isRepost ? `repost-${item.id}` : item.id)}
         contentContainerStyle={styles.listContent}

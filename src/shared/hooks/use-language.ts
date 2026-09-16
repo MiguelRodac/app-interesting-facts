@@ -33,11 +33,9 @@ export function useLanguage() {
 
   const setLanguagePreference = useCallback(async (newPref: LanguagePreference) => {
     setPreferenceState(newPref);
-    try {
-      await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newPref);
-    } catch {
-      // ignore
-    }
+    AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newPref).catch(() => {
+      // Non-fatal — preference won't survive restart
+    });
 
     const resolvedLang = newPref === 'system' ? getSystemLanguage() : newPref;
     await i18n.changeLanguage(resolvedLang);

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import { useColorScheme as useSystemColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -47,9 +47,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const resolvedScheme: 'light' | 'dark' =
     preference === 'system' ? (systemScheme === 'dark' ? 'dark' : 'light') : preference;
 
+  const contextValue = useMemo(
+    () => ({ colorScheme: resolvedScheme, preference, setPreference, toggleDarkMode }),
+    [resolvedScheme, preference, setPreference, toggleDarkMode]
+  );
+
   return (
-    <ThemeContext.Provider
-      value={{ colorScheme: resolvedScheme, preference, setPreference, toggleDarkMode }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

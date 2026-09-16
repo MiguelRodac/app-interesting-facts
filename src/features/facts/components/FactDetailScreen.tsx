@@ -161,12 +161,12 @@ export function FactDetailScreen() {
 
       {/* Bottom tab bar */}
       <TabBar
-        activeTab="feed"
+        activeTab={from === 'search' ? 'search' : from === 'profile' ? 'profile' : 'index'}
         onTabPress={(tab) => {
-          if (tab === 'feed') router.replace('/(tabs)');
-          else if (tab === 'search') router.replace('/(tabs)/search');
+          if (tab === 'search') router.replace('/(tabs)/search');
           else if (tab === 'create') router.replace('/(tabs)/create');
           else if (tab === 'profile') router.replace('/(tabs)/profile');
+          else router.replace('/(tabs)');
         }}
       />
 
