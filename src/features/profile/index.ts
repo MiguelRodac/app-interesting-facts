@@ -1,6 +1,7 @@
 // Components
 export { AvatarPickerModal } from './components/AvatarPickerModal';
 export { UserAvatar } from './components/UserAvatar';
+export { EditProfileScreen } from './components/EditProfileScreen';
 
 // Stores
 export { useUserProfileStore } from './stores/userProfileStore';

@@ -6,6 +6,8 @@ export { LikesModal } from './components/LikesModal';
 export { HashtagDropdown } from './components/HashtagDropdown';
 export { MentionDropdown } from './components/MentionDropdown';
 export { StyledContent } from './components/StyledContent';
+export { FactDetailScreen } from './components/FactDetailScreen';
+export { RepostDetailScreen } from './components/RepostDetailScreen';
 
 // Stores
 export { useFactsStore } from './stores/factsStore';
