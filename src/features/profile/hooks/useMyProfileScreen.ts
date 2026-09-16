@@ -128,7 +128,7 @@ export function useMyProfileScreen() {
   );
 
   const handleEditProfile = useCallback(() => {
-    router.push('/(tabs)/profile/edit' as any);
+    router.push('/edit-profile');
   }, [router]);
 
   const handleSettings = useCallback(() => {
