@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { StyledContent } from './StyledContent';
-import { UserAvatar } from '@/features/profile';
+import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { LikeButton } from './LikeButton';
 import { LikedByLine } from './LikedByLine';
 import { Radii, Shadows, Spacing } from '@/constants/theme';

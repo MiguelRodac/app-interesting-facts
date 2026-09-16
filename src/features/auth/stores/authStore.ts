@@ -3,11 +3,12 @@ import type { Author, AppError } from '@/types';
 import * as authService from '../services/authService';
 import { isFirebaseAuthError, mapFirebaseError } from '../services/firebaseErrors';
 import { setUnauthorizedHandler } from '@/data/api/client';
-import { clearCommentsCache, useCommentsStore } from '@/features/comments';
+import { clearCommentsCache } from '@/features/comments/hooks/useFactComments';
+import { useCommentsStore } from '@/features/comments/stores/commentsStore';
 import { useUIStore } from '@/data/stores/uiStore';
-import { useFactsStore } from '@/features/facts';
+import { useFactsStore } from '@/features/facts/stores/factsStore';
 import { useSearchStore } from '@/data/stores/searchStore';
-import { useUserProfileStore } from '@/features/profile';
+import { useUserProfileStore } from '@/features/profile/stores/userProfileStore';
 
 interface AuthState {
   user: Author | null;

@@ -6,7 +6,8 @@ import type { ApiAuthor, ApiFactFeedItem, ApiCursorPaginatedResponse } from '@/d
 import { getIdToken } from '@/data/auth/firebaseAuth';
 import { mapFactsDtos } from '@/data/mappers/factMapper';
 import { mapAuthorDto } from '@/data/mappers/userMapper';
-import { applyEntryUpdate, subscribeEntryUpdates, useFactsStore, type ToggleRepostResult } from '@/features/facts';
+import { applyEntryUpdate, subscribeEntryUpdates } from '@/shared/events/entryUpdateBus';
+import { useFactsStore, type ToggleRepostResult } from '@/features/facts/stores/factsStore';
 import { useUIStore } from '@/data/stores/uiStore';
 
 const client = createApiClient(getIdToken);

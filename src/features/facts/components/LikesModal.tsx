@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
-import { UserAvatar } from '@/features/profile';
+import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { Radii, Spacing } from '@/constants/theme';
 import { useFactLikes } from '../hooks/useFactLikes';
 import { useCommentLikes } from '@/data/hooks/useCommentLikes';

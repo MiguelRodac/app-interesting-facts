@@ -3,10 +3,10 @@ import type { Author, Fact, FactLike } from '@/types';
 import { createApiClient } from '@/data/api/client';
 import type { ApiFact, ApiFactFeedItem, ApiCursorPaginatedResponse, ApiRepostResponse } from '@/data/api/types';
 import { mapFactsDtos, mapFactDto, mapRepostDto } from '@/data/mappers/factMapper';
-import { getIdToken } from '@/data/auth/firebaseAuth';
+import { getIdToken } from '@/features/auth/services/firebaseAuth';
 import { notifyFactLikesChanged } from '../hooks/useFactLikes';
-import { broadcastEntryUpdate } from '../hooks/entryUpdateBus';
-import { useAuthStore } from '@/data/stores/authStore';
+import { broadcastEntryUpdate } from '@/shared/events/entryUpdateBus';
+import { useAuthStore } from '@/features/auth/stores/authStore';
 import { useUIStore } from '@/data/stores/uiStore';
 
 const PAGE_SIZE = 20;

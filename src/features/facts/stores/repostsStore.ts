@@ -2,19 +2,19 @@ import { create } from 'zustand';
 import type { AppError, Comment, CommentAuthor, Fact } from '@/types';
 import { createApiClient } from '@/data/api/client';
 import type { ApiComment } from '@/data/api/types';
-import { getIdToken } from '@/data/auth/firebaseAuth';
+import { getIdToken } from '@/features/auth/services/firebaseAuth';
 import {
   clearRepostCommentsCache,
   getCachedRepostComments,
   notifyRepostCommentsChanged,
   notifyRepostCommentsOptimistic,
   setCachedRepostComments,
-} from '@/data/hooks/useRepostComments';
-import { notifyRepostCommentLikesChanged } from '@/data/hooks/useRepostCommentLikes';
-import { notifyRepostLikesChanged } from '@/data/hooks/useRepostLikes';
-import { broadcastEntryUpdate } from '@/data/hooks/entryUpdateBus';
+} from '../hooks/useRepostComments';
+import { notifyRepostCommentLikesChanged } from '../hooks/useRepostCommentLikes';
+import { notifyRepostLikesChanged } from '../hooks/useRepostLikes';
+import { broadcastEntryUpdate } from '@/shared/events/entryUpdateBus';
 import { mapCommentDto } from '@/data/mappers/commentMapper';
-import { useAuthStore } from '@/data/stores/authStore';
+import { useAuthStore } from '@/features/auth/stores/authStore';
 import { useFactsStore } from './factsStore';
 import { useUIStore } from '@/data/stores/uiStore';
 

@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppPressable } from '@/components/ui/app-pressable';
 
 import { ThemedText } from '@/components/themed-text';
-import { UserAvatar } from '@/features/profile';
+import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing } from '@/constants/theme';
 import type { LikePreview } from '@/types';

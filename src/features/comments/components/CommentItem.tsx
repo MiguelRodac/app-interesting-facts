@@ -4,16 +4,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { AppPressable } from '@/components/ui/app-pressable';
-import { StyledContent } from '@/components/StyledContent';
+import { StyledContent } from '@/features/facts/components/StyledContent';
 import { ThemedText } from '@/components/themed-text';
-import { UserAvatar } from '@/components/UserAvatar';
+import { UserAvatar } from '@/shared/ui/UserAvatar';
 import { COLLAPSE_LINES, COLLAPSE_THRESHOLD, checkIsCollapsible } from '@/constants/facts';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { canEditComment, formatRelativeTime } from '@/utils/commentTime';
 import type { Comment, CommentAuthor } from '@/types';
 import { useCommentsStore } from '../stores/commentsStore';
-import { useRepostsStore } from '@/data/stores/repostsStore';
+import { useRepostsStore } from '@/features/facts/stores/repostsStore';
 
 export interface CommentItemProps {
   comment: Comment;
