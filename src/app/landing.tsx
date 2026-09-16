@@ -260,98 +260,96 @@ export default function LandingScreen() {
           </View>
 
           {/* Accordion Item 1: Android APK */}
-          {APK_URL && (
-            <View style={[styles.accordionItem, { borderColor: theme.border }]}>
-              <AppPressable
-                style={[
-                  styles.accordionHeader,
-                  activeAccordion === 'apk' && { borderBottomWidth: 1, borderBottomColor: theme.border },
-                ]}
-                onPress={() => setActiveAccordion((prev) => (prev === 'apk' ? null : 'apk'))}>
-                <View style={styles.accordionHeaderLeft}>
-                  <Ionicons name="logo-android" size={22} color={theme.primary} />
-                  <View style={styles.accordionTitleWrap}>
-                    <ThemedText type="smallBold" themeColor="text">
-                      {t('landing:tabApkTitle')}
+          <View style={[styles.accordionItem, { borderColor: theme.border }]}>
+            <AppPressable
+              style={[
+                styles.accordionHeader,
+                activeAccordion === 'apk' && { borderBottomWidth: 1, borderBottomColor: theme.border },
+              ]}
+              onPress={() => setActiveAccordion((prev) => (prev === 'apk' ? null : 'apk'))}>
+              <View style={styles.accordionHeaderLeft}>
+                <Ionicons name="logo-android" size={22} color={theme.primary} />
+                <View style={styles.accordionTitleWrap}>
+                  <ThemedText type="smallBold" themeColor="text">
+                    {t('landing:tabApkTitle')}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {t('landing:tabApkSubtitle')}
+                  </ThemedText>
+                </View>
+              </View>
+              <Ionicons
+                name={activeAccordion === 'apk' ? 'chevron-up-outline' : 'chevron-down-outline'}
+                size={20}
+                color={theme.textSecondary}
+              />
+            </AppPressable>
+
+            {activeAccordion === 'apk' && (
+              <View style={styles.accordionBody}>
+                <View style={[styles.guideSteps, isNarrow && styles.guideStepsNarrow]}>
+                  <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                    <View style={[styles.guideStepNumber, { backgroundColor: theme.primary }]}>
+                      <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>1</ThemedText>
+                    </View>
+                    <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
+                      {t('landing:installStep1Title')}
                     </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {t('landing:tabApkSubtitle')}
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
+                      {t('landing:installStep1Desc')}
+                    </ThemedText>
+                  </View>
+
+                  <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                    <View style={[styles.guideStepNumber, { backgroundColor: theme.primary }]}>
+                      <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>2</ThemedText>
+                    </View>
+                    <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
+                      {t('landing:installStep2Title')}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
+                      {t('landing:installStep2Desc')}
+                    </ThemedText>
+                  </View>
+
+                  <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                    <View style={[styles.guideStepNumber, { backgroundColor: theme.primary }]}>
+                      <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>3</ThemedText>
+                    </View>
+                    <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
+                      {t('landing:installStep3Title')}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
+                      {t('landing:installStep3Desc')}
                     </ThemedText>
                   </View>
                 </View>
-                <Ionicons
-                  name={activeAccordion === 'apk' ? 'chevron-up-outline' : 'chevron-down-outline'}
-                  size={20}
-                  color={theme.textSecondary}
-                />
-              </AppPressable>
 
-              {activeAccordion === 'apk' && (
-                <View style={styles.accordionBody}>
-                  <View style={[styles.guideSteps, isNarrow && styles.guideStepsNarrow]}>
-                    <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
-                      <View style={[styles.guideStepNumber, { backgroundColor: theme.primary }]}>
-                        <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>1</ThemedText>
-                      </View>
-                      <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
-                        {t('landing:installStep1Title')}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
-                        {t('landing:installStep1Desc')}
-                      </ThemedText>
-                    </View>
-
-                    <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
-                      <View style={[styles.guideStepNumber, { backgroundColor: theme.primary }]}>
-                        <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>2</ThemedText>
-                      </View>
-                      <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
-                        {t('landing:installStep2Title')}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
-                        {t('landing:installStep2Desc')}
-                      </ThemedText>
-                    </View>
-
-                    <View style={[styles.guideStepItem, { borderColor: theme.border, backgroundColor: theme.background }]}>
-                      <View style={[styles.guideStepNumber, { backgroundColor: theme.primary }]}>
-                        <ThemedText type="smallBold" style={{ color: '#FFFFFF' }}>3</ThemedText>
-                      </View>
-                      <ThemedText type="smallBold" themeColor="text" style={styles.guideStepTitle}>
-                        {t('landing:installStep3Title')}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.guideStepDesc}>
-                        {t('landing:installStep3Desc')}
-                      </ThemedText>
-                    </View>
-                  </View>
-
-                  <AppPressable
-                    style={[
-                      styles.ctaPrimary,
-                      isNarrow && styles.ctaNarrow,
-                      {
-                        backgroundColor: theme.primary,
-                        alignSelf: 'center',
-                        marginTop: Spacing.three,
-                        opacity: isDownloading ? 0.7 : 1,
-                      },
-                    ]}
-                    disabled={isDownloading}
-                    onPress={handleConfirmDownload}>
-                    {isDownloading ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Ionicons name="download-outline" size={20} color="#FFFFFF" />
-                    )}
-                    <ThemedText type="default" style={styles.ctaPrimaryText}>
-                      {isDownloading ? t('landing:downloading') : t('landing:downloadApk')}
-                    </ThemedText>
-                  </AppPressable>
-                </View>
-              )}
-            </View>
-          )}
+                <AppPressable
+                  style={[
+                    styles.ctaPrimary,
+                    isNarrow && styles.ctaNarrow,
+                    {
+                      backgroundColor: theme.primary,
+                      alignSelf: 'center',
+                      marginTop: Spacing.three,
+                      opacity: isDownloading ? 0.7 : 1,
+                    },
+                  ]}
+                  disabled={isDownloading}
+                  onPress={handleConfirmDownload}>
+                  {isDownloading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons name="download-outline" size={20} color="#FFFFFF" />
+                  )}
+                  <ThemedText type="default" style={styles.ctaPrimaryText}>
+                    {isDownloading ? t('landing:downloading') : t('landing:downloadApk')}
+                  </ThemedText>
+                </AppPressable>
+              </View>
+            )}
+          </View>
 
           {/* Accordion Item 2: PWA / Web App (iOS, Android, Desktop) */}
           <View style={[styles.accordionItem, { borderColor: theme.border }]}>

@@ -7,4 +7,4 @@
  */
 export const LANDING_ENABLED = process.env.EXPO_PUBLIC_LANDING_ENABLED === 'true';
 
-export const APK_URL = process.env.EXPO_PUBLIC_APK_URL ?? null;
+export const APK_URL = process.env.EXPO_PUBLIC_APK_URL || '/app-interesting-facts.apk';
