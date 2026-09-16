@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useFactsStore } from '@/features/facts/stores/factsStore';
@@ -51,6 +51,10 @@ export function useMyProfileScreen() {
   const firstFocusRef = useRef(true);
   const userId = user?.id;
 
+  useEffect(() => {
+    firstFocusRef.current = true;
+  }, [userId]);
+
   const handleEndReached = useCallback(() => {
     if (!userId) return;
     if (activeTab === 'mine') {
@@ -88,30 +92,29 @@ export function useMyProfileScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (firstFocusRef.current) {
-        firstFocusRef.current = false;
-        return;
-      }
-      if (userId) {
-        fetchUserFacts(userId);
-      }
-    }, [userId, fetchUserFacts]),
+      if (!userId) return;
+      const isFirst = firstFocusRef.current;
+      firstFocusRef.current = false;
+      fetchUserFacts(userId, !isFirst);
+      refetchLikes(!isFirst);
+      refetchMentions(!isFirst);
+    }, [userId, fetchUserFacts, refetchLikes, refetchMentions]),
   );
 
   const handleRefresh = useCallback(async () => {
+    if (!userId) return;
     setRefreshing(true);
     try {
-      if (userId) {
-        await Promise.all([
-          fetchUserFacts(userId),
-          refetchLikes(),
-          refetchMentions(),
-        ]);
-      }
+      await Promise.all([
+        fetchUserFacts(userId, true),
+        fetchFacts(true),
+        refetchLikes(true),
+        refetchMentions(true),
+      ]);
     } finally {
       setRefreshing(false);
     }
-  }, [userId, fetchUserFacts, refetchLikes, refetchMentions]);
+  }, [userId, fetchUserFacts, fetchFacts, refetchLikes, refetchMentions]);
 
   const handleFactPress = useCallback(
     (fact: Fact) => {
