@@ -7,10 +7,9 @@ import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { PasswordField } from '@/components/PasswordField';
+import { PasswordField, useAuth } from '@/features/auth';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
-import { useAuth } from '@/data/hooks/useAuth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import { useBottomInset } from '@/hooks/use-bottom-inset';

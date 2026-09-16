@@ -8,14 +8,12 @@ import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Radii, Spacing, MaxContentWidth } from '@/constants/theme';
-import { useAuth } from '@/data/hooks/useAuth';
+import { PasswordField, useAuth, getIdToken } from '@/features/auth';
 import { useTheme } from '@/hooks/use-theme';
 import { useTopInset } from '@/hooks/use-top-inset';
 import { useBottomInset } from '@/hooks/use-bottom-inset';
-import { PasswordField } from '@/components/PasswordField';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { createApiClient } from '@/data/api/client';
-import { getIdToken } from '@/data/auth/firebaseAuth';
 import {
   isValidEmail,
   isValidUsername,

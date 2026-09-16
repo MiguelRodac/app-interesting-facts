@@ -2,7 +2,7 @@ export { CommentComposer } from './components/CommentComposer';
 export { CommentItem } from './components/CommentItem';
 export { CommentSection } from './components/CommentSection';
 export { useCommentsStore } from './stores/commentsStore';
-export { useFactComments } from './hooks/useFactComments';
+export { useFactComments, clearCommentsCache, notifyFactCommentsChanged } from './hooks/useFactComments';
 export type { ReplyTarget, CommentComposerProps } from './components/CommentComposer';
 export type { CommentItemProps } from './components/CommentItem';
 export type { CommentSectionProps } from './components/CommentSection';
