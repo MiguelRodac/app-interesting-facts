@@ -1,223 +1,64 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { StyleSheet, TextInput, View, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView, BackHandler } from 'react-native';
+import { StyleSheet, View, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { AppModal } from '@/shared/ui/app-modal';
 import { AppPressable } from '@/shared/ui/app-pressable';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { AvatarPickerModal } from '@/features/profile';
-import { PasswordField } from '@/features/auth';
+import { AvatarPickerModal } from './AvatarPickerModal';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { ThemedView } from '@/shared/ui/themed-view';
-import { UserAvatar } from '@/shared/ui/UserAvatar';
-import { Radii, Spacing } from '@/constants/theme';
-import { useAuth } from '@/features/auth/hooks/useAuth';
-import { changeEmail } from '@/features/auth/services/firebaseAuth';
-import { isFirebaseAuthError, mapFirebaseError } from '@/features/auth/services/firebaseErrors';
-import { useUIStore } from '@/shared/stores/uiStore';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/shared/hooks/use-theme';
 import { useTopInset } from '@/shared/hooks/use-top-inset';
 import { useBottomInset } from '@/shared/hooks/use-bottom-inset';
-import { isValidEmail, MAX_DISPLAY_NAME_LENGTH } from '@/utils/validation';
-import { safeTruncate } from '@/utils/text';
+import { useEditProfileScreen } from '../hooks/useEditProfileScreen';
+import { EditProfileAvatarSection } from './EditProfileAvatarSection';
+import { EditProfileFields } from './EditProfileFields';
+import { EditProfilePasswordSection } from './EditProfilePasswordSection';
 
 export function EditProfileScreen() {
-  const { t } = useTranslation(['profile', 'auth', 'create', 'common']);
-  const { user, updateProfile, isLoading } = useAuth();
-  const showToast = useUIStore((s) => s.showToast);
-  const setError = useUIStore((s) => s.setError);
-  const router = useRouter();
+  const { t } = useTranslation(['profile', 'create', 'common']);
   const theme = useTheme();
   const topInset = useTopInset();
   const bottomInset = useBottomInset();
 
-  // Pending changes — only sent to backend on "Done"
-  const [pendingDisplayName, setPendingDisplayName] = useState(user?.displayName ?? '');
-  const [pendingEmail, setPendingEmail] = useState(user?.email ?? '');
-  const [pendingAvatarColor, setPendingAvatarColor] = useState<string | null>(user?.avatarColor ?? null);
-  const [pendingAvatarUrl, setPendingAvatarUrl] = useState<string | null>(user?.avatarUrl ?? null);
-
-  // Email change requires the current password (Firebase re-authentication)
-  const [isPasswordPromptVisible, setIsPasswordPromptVisible] = useState(false);
-  const [passwordValue, setPasswordValue] = useState('');
-  const [isConfirmingEmail, setIsConfirmingEmail] = useState(false);
-
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editNameValue, setEditNameValue] = useState('');
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
-  const [editEmailValue, setEditEmailValue] = useState('');
-  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmLeaveVisible, setConfirmLeaveVisible] = useState(false);
-  // Subtle focus indicator — only a bottom underline lights up, not the whole box.
-  const [editingFocused, setEditingFocused] = useState(false);
-
-  // Sync with user changes when user updates
-  const [prevUser, setPrevUser] = useState(user);
-  if (user !== prevUser) {
-    setPrevUser(user);
-    if (user) {
-      setPendingDisplayName(user.displayName);
-      setPendingEmail(user.email ?? '');
-      setPendingAvatarColor(user.avatarColor ?? null);
-      setPendingAvatarUrl(user.avatarUrl ?? null);
-    }
-  }
-
-  // Resolves whether the user has made any real edits relative to the saved profile.
-  const hasChanges = useMemo(() => {
-    if (!user) return false;
-    return (
-      pendingDisplayName !== user.displayName ||
-      pendingEmail !== (user.email ?? '') ||
-      pendingAvatarColor !== (user.avatarColor ?? null) ||
-      pendingAvatarUrl !== (user.avatarUrl ?? null)
-    );
-  }, [user, pendingDisplayName, pendingEmail, pendingAvatarColor, pendingAvatarUrl]);
-
-  // Intercept Android hardware back button — confirm before leaving with unsaved changes
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (hasChanges) {
-        setConfirmLeaveVisible(true);
-        return true;
-      }
-      return false;
-    });
-    return () => subscription.remove();
-  }, [hasChanges]);
-
-  const handleStartEditName = useCallback(() => {
-    setEditNameValue(pendingDisplayName);
-    setIsEditingName(true);
-  }, [pendingDisplayName]);
-
-  const handleCancelEditName = useCallback(() => {
-    setIsEditingName(false);
-    setEditNameValue('');
-  }, []);
-
-  const handleConfirmEditName = useCallback(() => {
-    const trimmed = editNameValue.trim();
-    if (trimmed.length < 2 || trimmed === pendingDisplayName) {
-      setIsEditingName(false);
-      return;
-    }
-
-    // maxLength caps typing, but a pasted value could still exceed the limit
-    setPendingDisplayName(safeTruncate(trimmed, MAX_DISPLAY_NAME_LENGTH));
-    setIsEditingName(false);
-  }, [editNameValue, pendingDisplayName]);
-
-  const handleStartEditEmail = useCallback(() => {
-    setEditEmailValue(pendingEmail);
-    setIsEditingEmail(true);
-  }, [pendingEmail]);
-
-  const handleCancelEditEmail = useCallback(() => {
-    setIsEditingEmail(false);
-    setEditEmailValue('');
-  }, []);
-
-  const handleConfirmEditEmail = useCallback(() => {
-    const trimmed = editEmailValue.trim();
-    // Basic email validation
-    if (!isValidEmail(trimmed) || trimmed === pendingEmail) {
-      setIsEditingEmail(false);
-      return;
-    }
-
-    setPendingEmail(trimmed);
-    setIsEditingEmail(false);
-  }, [editEmailValue, pendingEmail]);
-
-  const handleSelectAvatarOption = useCallback((color: string | null, url: string | null) => {
-    setPendingAvatarColor(color);
-    setPendingAvatarUrl(url);
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    // Local email format check before hitting the backend (422 otherwise)
-    if (!isValidEmail(pendingEmail)) {
-      showToast(t('profile:validEmailRequired'), 'warning');
-      return;
-    }
-
-    // Email changes go through Firebase (identity) — ask for the password
-    // first so we can re-authenticate before sending the verification link.
-    const emailChanged = user != null && pendingEmail.trim() !== (user.email ?? '').trim();
-    if (emailChanged) {
-      setPasswordValue('');
-      setIsPasswordPromptVisible(true);
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await updateProfile({
-        displayName: pendingDisplayName,
-        avatarColor: pendingAvatarColor,
-        avatarUrl: pendingAvatarUrl,
-      });
-      showToast(t('profile:profileUpdated'), 'success');
-      router.replace('/(tabs)/profile');
-    } catch {
-      // Error handled by uiStore
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [pendingDisplayName, pendingEmail, pendingAvatarColor, pendingAvatarUrl, updateProfile, router, user, showToast, t]);
-
-  const handleCancelPasswordPrompt = useCallback(() => {
-    setIsPasswordPromptVisible(false);
-    setPasswordValue('');
-  }, []);
-
-  // 1. Re-authenticate + send a verification link to the new email
-  //    (verifyBeforeUpdateEmail — the email is NOT changed yet).
-  // 2. Sync displayName/avatar only — the email must NOT be sent to the
-  //    backend until the user clicks the link and Firebase applies it.
-  const handleConfirmEmailChange = useCallback(async () => {
-    const newEmail = pendingEmail.trim();
-    setIsConfirmingEmail(true);
-    try {
-      await changeEmail(newEmail, passwordValue);
-      await updateProfile({
-        displayName: pendingDisplayName,
-        avatarColor: pendingAvatarColor,
-        avatarUrl: pendingAvatarUrl,
-      });
-      showToast(
-        t('profile:emailVerificationSent'),
-        'warning',
-      );
-      router.replace('/(tabs)/profile');
-    } catch (error) {
-      setIsConfirmingEmail(false);
-      setPasswordValue('');
-      setIsPasswordPromptVisible(true);
-      setError(isFirebaseAuthError(error) ? mapFirebaseError(error) : (error as never));
-    }
-  }, [pendingEmail, passwordValue, pendingDisplayName, pendingAvatarColor, pendingAvatarUrl, updateProfile, showToast, setError, router, t]);
-
-  const handleCancel = useCallback(() => {
-    // With unsaved changes, block the in-screen back button and ask for confirmation.
-    if (hasChanges) {
-      setConfirmLeaveVisible(true);
-      return;
-    }
-    router.replace('/(tabs)/profile');
-  }, [router, hasChanges]);
-
-  const handleConfirmLeave = useCallback(() => {
-    setConfirmLeaveVisible(false);
-    router.replace('/(tabs)/profile');
-  }, [router]);
-
-  const handleCancelLeave = useCallback(() => {
-    setConfirmLeaveVisible(false);
-  }, []);
+  const {
+    user,
+    isLoading,
+    isSubmitting,
+    pendingDisplayName,
+    pendingEmail,
+    pendingAvatarColor,
+    pendingAvatarUrl,
+    isEditingName,
+    editNameValue,
+    setEditNameValue,
+    isEditingEmail,
+    editEmailValue,
+    setEditEmailValue,
+    editingFocused,
+    setEditingFocused,
+    isAvatarModalVisible,
+    setIsAvatarModalVisible,
+    isPasswordPromptVisible,
+    passwordValue,
+    setPasswordValue,
+    isConfirmingEmail,
+    confirmLeaveVisible,
+    handleStartEditName,
+    handleCancelEditName,
+    handleConfirmEditName,
+    handleStartEditEmail,
+    handleCancelEditEmail,
+    handleConfirmEditEmail,
+    handleSelectAvatarOption,
+    handleSave,
+    handleCancel,
+    handleConfirmLeave,
+    handleCancelLeave,
+    handleCancelPasswordPrompt,
+    handleConfirmEmailChange,
+  } = useEditProfileScreen();
 
   if (isLoading || !user) {
     return (
@@ -226,8 +67,6 @@ export function EditProfileScreen() {
       </ThemedView>
     );
   }
-
-  const hasUrlAvatar = pendingAvatarUrl != null && pendingAvatarUrl.trim().length > 0;
 
   return (
     <KeyboardAvoidingView
@@ -256,182 +95,46 @@ export function EditProfileScreen() {
             { paddingBottom: Math.max(Spacing.six, bottomInset + Spacing.four) },
           ]}
           keyboardShouldPersistTaps="handled">
-          {/* Avatar section */}
-          <View style={styles.avatarSection}>
-            <AppPressable onPress={() => setIsAvatarModalVisible(true)} style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <UserAvatar
-                  user={{
-                    displayName: pendingDisplayName,
-                    avatarColor: pendingAvatarColor ?? undefined,
-                    avatarUrl: hasUrlAvatar ? pendingAvatarUrl : null,
-                  }}
-                  size={96}
-                />
-              </View>
-              <View style={[styles.avatarBadge, { backgroundColor: theme.primary }]}>
-                <Ionicons name="camera" size={16} color="#FFFFFF" />
-              </View>
-            </AppPressable>
-            <AppPressable onPress={() => setIsAvatarModalVisible(true)}>
-              <ThemedText type="small" themeColor="primary">
-                {t('profile:tapToChange')}
-              </ThemedText>
-            </AppPressable>
-          </View>
+          <EditProfileAvatarSection
+            displayName={pendingDisplayName}
+            avatarColor={pendingAvatarColor}
+            avatarUrl={pendingAvatarUrl}
+            onPress={() => setIsAvatarModalVisible(true)}
+          />
 
-          {/* Display name row */}
-          <View style={styles.fieldSection}>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.fieldLabel}>
-              {t('profile:displayName')}
-            </ThemedText>
-            {isEditingName ? (
-              <View style={styles.editNameRow}>
-                <TextInput
-                  style={[
-                    styles.nameInput,
-                    {
-                      backgroundColor: theme.backgroundElement,
-                      color: theme.text,
-                      borderBottomColor: editingFocused ? theme.primary : theme.border,
-                    },
-                  ]}
-                  value={editNameValue}
-                  onChangeText={setEditNameValue}
-                  maxLength={MAX_DISPLAY_NAME_LENGTH}
-                  autoFocus
-                  autoCapitalize="words"
-                  editable={!isSubmitting}
-                  onFocus={() => setEditingFocused(true)}
-                  onBlur={() => setEditingFocused(false)}
-                />
-                <AppPressable
-                  onPress={handleConfirmEditName}
-                  style={[styles.iconButton, { backgroundColor: theme.success }]}
-                  disabled={isSubmitting}>
-                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                </AppPressable>
-                <AppPressable
-                  onPress={handleCancelEditName}
-                  style={[styles.iconButton, { backgroundColor: theme.muted }]}
-                  disabled={isSubmitting}>
-                  <Ionicons name="close" size={20} color="#FFFFFF" />
-                </AppPressable>
-              </View>
-            ) : (
-              <AppPressable onPress={handleStartEditName} style={styles.nameDisplayRow}>
-                <ThemedText type="default" style={styles.nameDisplayText}>
-                  {pendingDisplayName}
-                </ThemedText>
-                <Ionicons name="pencil" size={18} color={theme.muted} />
-              </AppPressable>
-            )}
-          </View>
+          <EditProfileFields
+            username={user.username}
+            pendingDisplayName={pendingDisplayName}
+            isEditingName={isEditingName}
+            editNameValue={editNameValue}
+            onChangeEditNameValue={setEditNameValue}
+            onStartEditName={handleStartEditName}
+            onConfirmEditName={handleConfirmEditName}
+            onCancelEditName={handleCancelEditName}
+            pendingEmail={pendingEmail}
+            isEditingEmail={isEditingEmail}
+            editEmailValue={editEmailValue}
+            onChangeEditEmailValue={setEditEmailValue}
+            onStartEditEmail={handleStartEditEmail}
+            onConfirmEditEmail={handleConfirmEditEmail}
+            onCancelEditEmail={handleCancelEditEmail}
+            editingFocused={editingFocused}
+            onFocusInput={() => setEditingFocused(true)}
+            onBlurInput={() => setEditingFocused(false)}
+            isSubmitting={isSubmitting}
+          />
 
-          {/* Username (read-only) */}
-          <View style={styles.fieldSection}>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.fieldLabel}>
-              {t('profile:username')}
-            </ThemedText>
-            <View style={styles.readOnlyRow}>
-              <ThemedText type="default" themeColor="muted">
-                @{user.username}
-              </ThemedText>
-            </View>
-          </View>
-
-          {/* Email row */}
-          <View style={styles.fieldSection}>
-            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.fieldLabel}>
-              {t('profile:email')}
-            </ThemedText>
-            {isEditingEmail ? (
-              <View style={styles.editNameRow}>
-                <TextInput
-                  style={[
-                    styles.nameInput,
-                    {
-                      backgroundColor: theme.backgroundElement,
-                      color: theme.text,
-                      borderBottomColor: editingFocused ? theme.primary : theme.border,
-                    },
-                  ]}
-                  value={editEmailValue}
-                  onChangeText={setEditEmailValue}
-                  maxLength={254}
-                  autoFocus
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  editable={!isSubmitting}
-                  onFocus={() => setEditingFocused(true)}
-                  onBlur={() => setEditingFocused(false)}
-                />
-                <AppPressable
-                  onPress={handleConfirmEditEmail}
-                  style={[styles.iconButton, { backgroundColor: theme.success }]}
-                  disabled={isSubmitting}>
-                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-                </AppPressable>
-                <AppPressable
-                  onPress={handleCancelEditEmail}
-                  style={[styles.iconButton, { backgroundColor: theme.muted }]}
-                  disabled={isSubmitting}>
-                  <Ionicons name="close" size={20} color="#FFFFFF" />
-                </AppPressable>
-              </View>
-            ) : (
-              <AppPressable onPress={handleStartEditEmail} style={styles.nameDisplayRow}>
-                <ThemedText type="default" style={styles.nameDisplayText}>
-                  {pendingEmail}
-                </ThemedText>
-                <Ionicons name="pencil" size={18} color={theme.muted} />
-              </AppPressable>
-            )}
-          </View>
-
-          {/* Password confirmation for email changes */}
           {isPasswordPromptVisible && (
-            <View style={styles.passwordSection}>
-              <ThemedText type="smallBold" themeColor="textSecondary" style={styles.fieldLabel}>
-                {t('profile:confirmEmailTitle')}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {t('profile:confirmEmailSubtitle')}
-              </ThemedText>
-              <PasswordField
-                value={passwordValue}
-                onChangeText={setPasswordValue}
-                label={t('auth:currentPassword')}
-                placeholder={t('auth:passwordPlaceholder')}
-                editable={!isConfirmingEmail}
-              />
-              <View style={styles.passwordButtons}>
-                <AppPressable
-                  style={[styles.passwordButton, styles.passwordCancelButton, { borderColor: theme.border }]}
-                  onPress={handleCancelPasswordPrompt}
-                  disabled={isConfirmingEmail}>
-                  <ThemedText type="smallBold" style={styles.passwordCancelText}>
-                    {t('common:cancel')}
-                  </ThemedText>
-                </AppPressable>
-                <AppPressable
-                  style={[
-                    styles.passwordButton,
-                    styles.passwordConfirmButton,
-                    { backgroundColor: isConfirmingEmail || passwordValue.length === 0 ? theme.muted : theme.primary },
-                  ]}
-                  onPress={handleConfirmEmailChange}
-                  disabled={isConfirmingEmail || passwordValue.length === 0}>
-                  <ThemedText type="smallBold" style={styles.passwordConfirmText}>
-                    {isConfirmingEmail ? t('common:confirming') : t('common:confirm')}
-                  </ThemedText>
-                </AppPressable>
-              </View>
-            </View>
+            <EditProfilePasswordSection
+              passwordValue={passwordValue}
+              onChangePasswordValue={setPasswordValue}
+              isConfirmingEmail={isConfirmingEmail}
+              onCancel={handleCancelPasswordPrompt}
+              onConfirm={handleConfirmEmailChange}
+            />
           )}
         </ScrollView>
 
-        {/* Avatar picker modal */}
         <AvatarPickerModal
           visible={isAvatarModalVisible}
           currentColor={pendingAvatarColor}
@@ -440,7 +143,6 @@ export function EditProfileScreen() {
           onSelectAvatarOption={handleSelectAvatarOption}
         />
 
-        {/* Unsaved changes confirmation — full-screen, no scroll (matches create tab guard) */}
         <AppModal visible={confirmLeaveVisible} transparent animationType="fade" onRequestClose={handleCancelLeave}>
           <View style={styles.modalOverlay}>
             <ThemedView type="backgroundElement" style={styles.modalContent}>
@@ -505,106 +207,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.six,
   },
-  avatarSection: {
-    alignItems: 'center',
-    paddingVertical: Spacing.four,
-    gap: Spacing.two,
-  },
-  avatarContainer: {
-    position: 'relative',
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  fieldSection: {
-    marginTop: Spacing.four,
-    gap: Spacing.two,
-  },
-  fieldLabel: {
-    marginBottom: Spacing.half,
-  },
-  nameDisplayRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  nameDisplayText: {
-    flex: 1,
-  },
-  editNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  nameInput: {
-    flex: 1,
-    borderBottomWidth: 1,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-  },
-  iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-readOnlyRow: {
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-  },
-  passwordSection: {
-    marginTop: Spacing.four,
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderWidth: 1,
-    borderRadius: Radii.lg,
-    borderColor: 'transparent',
-  },
-  passwordButtons: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  passwordButton: {
-    flex: 1,
-    paddingVertical: Spacing.three,
-    borderRadius: Radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  passwordCancelButton: {
-    borderWidth: 1,
-  },
-  passwordCancelText: {
-    opacity: 0.7,
-  },
-  passwordConfirmButton: {},
-  passwordConfirmText: {
-    color: '#FFFFFF',
-  },
-  // Full-screen (flex:1), no-scroll confirm overlay — mirrors the create-tab guard
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -615,7 +217,7 @@ readOnlyRow: {
   modalContent: {
     width: '100%',
     maxWidth: 340,
-    borderRadius: Radii.lg,
+    borderRadius: 16,
     padding: Spacing.four,
     gap: Spacing.three,
   },
@@ -627,13 +229,12 @@ readOnlyRow: {
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: Spacing.three,
-    marginTop: Spacing.one,
+    gap: Spacing.two,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: Spacing.three,
-    borderRadius: Radii.md,
+    height: 44,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -641,7 +242,7 @@ readOnlyRow: {
     borderWidth: 1,
   },
   cancelModalText: {
-    opacity: 0.7,
+    color: '#8E8E93',
   },
   confirmModalButton: {},
   confirmModalText: {
