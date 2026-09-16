@@ -201,36 +201,21 @@ export function useCommentComposer({
     setIsSubmitting(true);
     try {
       if (isEdit && commentId) {
-        if (isRepost && repostEntryId) {
-          await updateRepostComment(repostEntryId, commentId, trimmed);
-        } else if (factId) {
-          await updateComment(factId, commentId, trimmed);
-        }
-        setContent('');
-        setInputHeight(INITIAL_LINE_HEIGHT);
+        if (isRepost && repostEntryId) await updateRepostComment(repostEntryId, commentId, trimmed);
+        else if (factId) await updateComment(factId, commentId, trimmed);
         useUIStore.getState().showToast(t('common:commentUpdated'), 'success');
-        onDone?.();
       } else if (replyTo) {
-        if (isRepost && repostEntryId) {
-          await addRepostComment(repostEntryId, trimmed, replyTo.commentId);
-        } else if (factId) {
-          await addComment(factId, trimmed, replyTo.commentId);
-        }
-        setContent('');
-        setInputHeight(INITIAL_LINE_HEIGHT);
+        if (isRepost && repostEntryId) await addRepostComment(repostEntryId, trimmed, replyTo.commentId);
+        else if (factId) await addComment(factId, trimmed, replyTo.commentId);
         useUIStore.getState().showToast(t('common:replyPosted'), 'success');
-        onDone?.();
       } else {
-        if (isRepost && repostEntryId) {
-          await addRepostComment(repostEntryId, trimmed);
-        } else if (factId) {
-          await addComment(factId, trimmed);
-        }
-        setContent('');
-        setInputHeight(INITIAL_LINE_HEIGHT);
+        if (isRepost && repostEntryId) await addRepostComment(repostEntryId, trimmed);
+        else if (factId) await addComment(factId, trimmed);
         useUIStore.getState().showToast(t('common:commentPosted'), 'success');
-        onDone?.();
       }
+      setContent('');
+      setInputHeight(INITIAL_LINE_HEIGHT);
+      onDone?.();
     } catch (error) {
       console.error('[CommentComposer] Error submitting comment:', error);
     } finally {
