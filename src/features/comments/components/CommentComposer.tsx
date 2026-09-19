@@ -94,7 +94,7 @@ export function CommentComposer(props: CommentComposerProps) {
         style={[
           styles.wrap,
           { borderTopColor: theme.border, backgroundColor: theme.background },
-          Platform.OS === 'ios' && keyboardHeight > 0 && { paddingBottom: keyboardHeight },
+          Platform.OS === 'android' && keyboardHeight > 0 && { paddingBottom: keyboardHeight },
         ]}>
         {replyTo ? (
           <CommentReplyBanner replyTo={replyTo} onCancelReply={handleCancelReply} />

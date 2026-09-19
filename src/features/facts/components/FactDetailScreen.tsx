@@ -22,6 +22,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { COLLAPSE_LINES_DETAIL, COLLAPSE_THRESHOLD_DETAIL, checkIsCollapsible } from '@/constants/facts';
 import { useTheme } from '@/shared/hooks/use-theme';
 import { useTopInset } from '@/shared/hooks/use-top-inset';
+import { useKeyboardHeight } from '@/shared/hooks/use-keyboard-height';
 import { FactDetailCard } from './FactDetailCard';
 import { FactDiscardCommentModal } from './FactDiscardCommentModal';
 import { useFactDetailScreen } from '../hooks/useFactDetailScreen';
@@ -32,6 +33,7 @@ export function FactDetailScreen() {
   const router = useRouter();
   const theme = useTheme();
   const topInset = useTopInset();
+  const keyboardHeight = useKeyboardHeight();
   const scrollViewRef = useRef<ScrollView>(null);
 
   const {
@@ -95,6 +97,7 @@ export function FactDetailScreen() {
       keyboardVerticalOffset={0}>
       <ScrollView
         ref={scrollViewRef}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.scroll, { paddingTop: topInset }]}
         refreshControl={
           <RefreshControl
@@ -160,15 +163,17 @@ export function FactDetailScreen() {
       )}
 
       {/* Bottom tab bar */}
-      <TabBar
-        activeTab={from === 'search' ? 'search' : from === 'profile' ? 'profile' : 'index'}
-        onTabPress={(tab) => {
-          if (tab === 'search') router.replace('/(tabs)/search');
-          else if (tab === 'create') router.replace('/(tabs)/create');
-          else if (tab === 'profile') router.replace('/(tabs)/profile');
-          else router.replace('/(tabs)');
-        }}
-      />
+      {keyboardHeight === 0 && (
+        <TabBar
+          activeTab={from === 'search' ? 'search' : from === 'profile' ? 'profile' : 'index'}
+          onTabPress={(tab) => {
+            if (tab === 'search') router.replace('/(tabs)/search');
+            else if (tab === 'create') router.replace('/(tabs)/create');
+            else if (tab === 'profile') router.replace('/(tabs)/profile');
+            else router.replace('/(tabs)');
+          }}
+        />
+      )}
 
       {/* Delete confirmation */}
       <ConfirmDialog
