@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { DarkTheme, DefaultTheme, ThemeProvider as ExpoThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
 import { AppUpdateGate } from '@/features/update';
 import { ErrorBanner } from '@/shared/ui/ErrorBanner';
@@ -130,6 +131,7 @@ function RootLayoutInner() {
 
   return (
     <ExpoThemeProvider value={theme}>
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       {Platform.OS === 'web' && !isFramelessWeb ? (
         <>
           {/* Web app: on desktop it renders inside a phone-sized frame so it
