@@ -50,6 +50,8 @@ package-lock.json
 # typescript
 *.tsbuildinfo
 
+coverage/
+
 example
 
 .idea/
