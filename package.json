@@ -2,6 +2,7 @@
   "name": "app-interesting-facts",
   "main": "expo-router/entry",
   "version": "0.2.1",
+  "packageManager": "pnpm@11.16.0",
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
