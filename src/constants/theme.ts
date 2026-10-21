@@ -46,6 +46,22 @@ export const AlertColors = {
   error: { background: '#FDE7EC', text: '#B71C1C', border: '#EF9A9A', icon: '#C62828' },
 } as const;
 
+/** Server warming-up notification surface palette (Azul Brand) with theme-aware contrast. */
+export const ServerWarmingColors = {
+  light: {
+    background: '#EBF3FE',
+    border: '#99C2FE',
+    text: '#083370',
+    spinner: '#3C87F7',
+  },
+  dark: {
+    background: '#12233F',
+    border: '#2D5B99',
+    text: '#E8F1FF',
+    spinner: '#5B9DF7',
+  },
+} as const;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

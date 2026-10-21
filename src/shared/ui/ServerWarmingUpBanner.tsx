@@ -1,55 +1,62 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { ThemedText } from '@/shared/ui/themed-text';
 import { ThemedView } from '@/shared/ui/themed-view';
-import { Radii, Shadows, Spacing } from '@/constants/theme';
+import { Radii, ServerWarmingColors, Shadows, Spacing } from '@/constants/theme';
 import { useUIStore } from '@/shared/stores/uiStore';
-import { useTheme } from '@/shared/hooks/use-theme';
+import { useColorScheme } from '@/shared/hooks/use-color-scheme';
 
 export function ServerWarmingUpBanner() {
   const { t } = useTranslation(['common']);
   const isServerWakingUp = useUIStore((s) => s.isServerWakingUp);
   const insets = useSafeAreaInsets();
-  const theme = useTheme();
+  const scheme = useColorScheme();
+  const colors = ServerWarmingColors[scheme];
   const topOffset = Math.max(Spacing.four, insets.top + Spacing.three);
 
+  const [visible, setVisible] = useState(isServerWakingUp);
   const [opacity] = useState(() => new Animated.Value(0));
   const [translateY] = useState(() => new Animated.Value(-16));
 
   useEffect(() => {
     if (isServerWakingUp) {
+      setVisible(true);
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 250,
+          duration: 300,
           useNativeDriver: Platform.OS !== 'web',
         }),
         Animated.timing(translateY, {
           toValue: 0,
-          duration: 250,
+          duration: 300,
           useNativeDriver: Platform.OS !== 'web',
         }),
       ]).start();
-    } else {
+    } else if (visible) {
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 0,
-          duration: 200,
+          duration: 300,
           useNativeDriver: Platform.OS !== 'web',
         }),
         Animated.timing(translateY, {
           toValue: -16,
-          duration: 200,
+          duration: 300,
           useNativeDriver: Platform.OS !== 'web',
         }),
-      ]).start();
+      ]).start(({ finished }) => {
+        if (finished) {
+          setVisible(false);
+        }
+      });
     }
-  }, [isServerWakingUp, opacity, translateY]);
+  }, [isServerWakingUp, opacity, translateY, visible]);
 
-  if (!isServerWakingUp) return null;
+  if (!visible) return null;
 
   return (
     <Animated.View
@@ -61,13 +68,13 @@ export function ServerWarmingUpBanner() {
         style={[
           styles.pill,
           {
-            backgroundColor: theme.backgroundElement,
-            borderColor: theme.border,
+            backgroundColor: colors.background,
+            borderColor: colors.border,
           },
           Shadows.md,
         ]}>
-        <ActivityIndicator size="small" color={theme.primary} />
-        <ThemedText type="small" themeColor="text" style={styles.text} numberOfLines={2}>
+        <ActivityIndicator size="small" color={colors.spinner} />
+        <ThemedText type="small" style={[styles.text, { color: colors.text }]} numberOfLines={2}>
           {t('common:serverWakingUp', {
             defaultValue: 'Despertando el servidor... esto puede tardar unos segundos.',
           })}
@@ -98,7 +105,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
   },
   text: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontWeight: '600',
+    flexShrink: 1,
   },
 });

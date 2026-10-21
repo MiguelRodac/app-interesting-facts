@@ -10,8 +10,15 @@ import {
   subscribeToAuthState,
   setCachedUser,
 } from './firebaseAuth';
+import {
+  getStoredAuthor,
+  setStoredAuthor,
+  clearStoredAuthor,
+} from './authStorage';
 import type { Author } from '@/types';
 import type { ApiProfileResponse } from '@/shared/api/types';
+
+export { getStoredAuthor, setStoredAuthor, clearStoredAuthor, waitForAuthInit };
 
 /**
  * Auth service — high-level auth operations consumed by authStore.
@@ -40,10 +47,12 @@ export async function login(email: string, password: string): Promise<AuthResult
 
   // Step 2: Get user profile from backend using Firebase token
   const backendUser = await client.get<ApiProfileResponse>('/auth/me');
+  const user = mapUserDto(backendUser);
+  await setStoredAuthor(user);
 
   return {
     token,
-    user: mapUserDto(backendUser),
+    user,
   };
 }
 
@@ -65,10 +74,12 @@ export async function completeOnboarding(data: {
     username: data.username,
     displayName: data.displayName,
   });
+  const user = mapUserDto(backendUser);
+  await setStoredAuthor(user);
 
   return {
     token,
-    user: mapUserDto(backendUser),
+    user,
   };
 }
 
@@ -92,10 +103,12 @@ export async function registerNewUser(data: {
     username: data.username,
     displayName: data.displayName,
   });
+  const user = mapUserDto(backendUser);
+  await setStoredAuthor(user);
 
   return {
     token,
-    user: mapUserDto(backendUser),
+    user,
   };
 }
 
@@ -108,31 +121,69 @@ export async function fetchCurrentUser(): Promise<Author | null> {
 
   try {
     const user = await client.get<ApiProfileResponse>('/auth/me');
-    return mapUserDto(user);
+    const author = mapUserDto(user);
+    await setStoredAuthor(author);
+    return author;
   } catch {
     return null;
   }
 }
 
 /**
- * Hydrate auth state on app start.
- * Waits for Firebase to restore any persisted session (onAuthStateChanged
- * fires once immediately), then fetches the backend profile.
- * Returns null if no persisted Firebase session exists.
+ * Fast, non-blocking local session restore.
+ * Checks Firebase local state and cached author profile from storage (~20ms).
+ * Does NOT hit the network or block the UI waiting for sleeping backend servers.
  */
-export async function hydrateAuth(): Promise<Author | null> {
-  // Wait for Firebase to determine auth state — this is async.
-  // Synchronous getCurrentUser() returns null before Firebase has
-  // finished checking IndexedDB/localStorage for persisted credentials.
-  const firebaseUser = await waitForAuthInit();
+export async function initLocalAuth(): Promise<{ user: Author | null; hasSession: boolean }> {
+  const [cachedUser, firebaseUser] = await Promise.all([
+    getStoredAuthor(),
+    waitForAuthInit(),
+  ]);
+
+  if (!firebaseUser) {
+    await clearStoredAuthor();
+    return { user: null, hasSession: false };
+  }
+
+  const initialUser: Author = cachedUser ?? {
+    id: firebaseUser.uid,
+    username: firebaseUser.email?.split('@')[0] ?? 'user',
+    displayName: firebaseUser.displayName ?? firebaseUser.email?.split('@')[0] ?? 'User',
+    avatarUrl: firebaseUser.photoURL ?? null,
+    avatarColor: null,
+  };
+
+  return { user: initialUser, hasSession: true };
+}
+
+/**
+ * Background profile sync against the backend API.
+ * Runs asynchronously after the UI is already mounted.
+ */
+export async function syncProfile(): Promise<Author | null> {
+  const firebaseUser = getCurrentUser();
   if (!firebaseUser) return null;
 
   try {
-    const user = await client.get<ApiProfileResponse>('/auth/me');
-    return mapUserDto(user);
-  } catch {
+    const backendUser = await client.get<ApiProfileResponse>('/auth/me');
+    const user = mapUserDto(backendUser);
+    await setStoredAuthor(user);
+    return user;
+  } catch (err: any) {
+    if (err?.status === 401) {
+      await logout();
+      return null;
+    }
     return null;
   }
+}
+
+/**
+ * Hydrate auth state on app start (instant local lookup).
+ */
+export async function hydrateAuth(): Promise<Author | null> {
+  const { user } = await initLocalAuth();
+  return user;
 }
 
 /**
@@ -142,6 +193,7 @@ export async function hydrateAuth(): Promise<Author | null> {
 export function subscribeToAuth(callback: (user: Author | null) => void): () => void {
   return subscribeToAuthState(async (firebaseUser) => {
     if (!firebaseUser) {
+      await clearStoredAuthor();
       callback(null);
       return;
     }
@@ -155,9 +207,10 @@ export function subscribeToAuth(callback: (user: Author | null) => void): () => 
 }
 
 /**
- * Logout — clears Firebase session.
+ * Logout — clears Firebase session and cached storage.
  */
 export async function logout(): Promise<void> {
+  await clearStoredAuthor();
   await signOut();
   setCachedUser(null);
 }
@@ -178,7 +231,9 @@ export async function updateProfile(data: {
     avatarUrl: data.avatarUrl ?? null,
     avatarColor: data.avatarColor ?? null,
   });
-  return mapUserDto(backendUser);
+  const updatedUser = mapUserDto(backendUser);
+  await setStoredAuthor(updatedUser);
+  return updatedUser;
 }
 
 /**
@@ -187,6 +242,5 @@ export async function updateProfile(data: {
 export function getInitialUser(): Author | null {
   const firebaseUser = getCurrentUser();
   if (!firebaseUser) return null;
-  // Note: Full user data requires async fetch from backend
   return null;
 }

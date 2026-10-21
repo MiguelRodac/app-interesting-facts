@@ -16,7 +16,7 @@ interface AuthState {
   logout: () => Promise<void>;
   /** Update current user's profile (displayName, email, avatarUrl, avatarColor) */
   updateProfile: (data: { displayName?: string; email?: string; avatarUrl?: string | null; avatarColor?: string | null }) => Promise<void>;
-  /** Hydrate auth state from Firebase on app start */
+  /** Hydrate auth state on app start (instant local lookup + background sync) */
   hydrate: () => Promise<void>;
   /** Set user directly after login/register */
   setAuth: (user: Author, token: string) => void;
@@ -80,21 +80,34 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  /** Hydrate auth state from Firebase on app start.
-   * Checks if Firebase has a session, then fetches profile from backend.
+  /** Hydrate auth state from local storage/Firebase on app start.
+   * Instant local resolution unblocks UI rendering immediately.
+   * Background sync refreshes profile from backend API.
    */
   hydrate: async () => {
     set({ isLoading: true });
     try {
-      const user = await authService.hydrateAuth();
-      if (user) {
+      const { user, hasSession } = await authService.initLocalAuth();
+      if (hasSession && user) {
         set({ user, isAuthenticated: true, isLoading: false });
       } else {
-        set({ isLoading: false });
+        set({ user: null, isAuthenticated: false, isLoading: false });
       }
     } catch {
-      set({ isLoading: false });
+      set({ user: null, isAuthenticated: false, isLoading: false });
     }
+
+    // Non-blocking background sync with backend API
+    authService
+      .syncProfile()
+      .then((freshUser) => {
+        if (freshUser) {
+          set({ user: freshUser });
+        }
+      })
+      .catch(() => {
+        // Non-fatal: keep local session
+      });
   },
 
   setAuth: (user, token) => {
