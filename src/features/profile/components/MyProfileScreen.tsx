@@ -141,7 +141,6 @@ export function MyProfileScreen() {
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         renderItem={({ item }) => (
-          <View style={styles.cardWrapper}>
             <FactCard
               fact={item}
               variant="preview"
@@ -153,7 +152,6 @@ export function MyProfileScreen() {
               onOpenLikes={!item.isRepost ? () => setLikesFactId(item.originalFactId ?? item.id) : undefined}
               onOpenRepostLikes={item.isRepost ? () => setLikesRepostId(item.id) : undefined}
             />
-          </View>
         )}
       />
 
@@ -189,14 +187,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingBottom: BottomTabInset + Spacing.four,
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
-  },
-  cardWrapper: {
-    marginBottom: Spacing.three,
   },
   footerLoading: {
     paddingVertical: Spacing.two,

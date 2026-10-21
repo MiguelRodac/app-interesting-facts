@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   card: {
     padding: Spacing.three,
     borderRadius: Radii.md,
-    marginBottom: Spacing.two,
+    marginBottom: Spacing.cardGap,
   },
   body: {
     gap: Spacing.two,

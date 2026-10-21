@@ -83,7 +83,6 @@ export function UserProfileScreen() {
         data={displayedFacts}
         keyExtractor={(item) => (item.isRepost ? `repost-${item.id}` : item.id)}
         renderItem={({ item }) => (
-          <View style={styles.cardWrapper}>
             <FactCard
               fact={item}
               variant="preview"
@@ -96,7 +95,6 @@ export function UserProfileScreen() {
               onOpenRepostLikes={item.isRepost ? () => setLikesRepostId(item.id) : undefined}
               onRequireLogin={handleRequireLogin}
             />
-          </View>
         )}
         ListHeaderComponent={
           <UserProfileHeader
@@ -146,14 +144,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   list: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.six,
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
-  },
-  cardWrapper: {
-    marginBottom: Spacing.three,
   },
   footerLoading: {
     paddingVertical: Spacing.two,
