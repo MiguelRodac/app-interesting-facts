@@ -7,6 +7,12 @@ jest.mock('@/shared/hooks/use-color-scheme', () => ({
   useColorScheme: () => 'dark',
 }));
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, left: 0, right: 0, bottom: 0 }),
+  SafeAreaProvider: ({ children }: any) => children,
+  SafeAreaConsumer: ({ children }: any) => children({ top: 0, left: 0, right: 0, bottom: 0 }),
+}));
+
 jest.mock('expo-localization', () => ({
   getLocales: () => [{ languageCode: 'es', languageTag: 'es-ES' }],
 }));

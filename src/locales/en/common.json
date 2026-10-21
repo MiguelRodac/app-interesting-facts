@@ -94,5 +94,6 @@
   "openingBrowser": "Opening browser...",
   "openWebError": "Could not open browser. Please visit manually: ",
   "downloadError": "Could not start download. Please visit our website.",
-  "charsMoreNeeded": "{{count}} more needed"
+  "charsMoreNeeded": "{{count}} more needed",
+  "serverWakingUp": "Waking up server... this may take a few seconds."
 }

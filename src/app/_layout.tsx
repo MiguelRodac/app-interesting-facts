@@ -9,6 +9,7 @@ import { AppUpdateGate } from '@/features/update';
 import { ErrorBanner } from '@/shared/ui/ErrorBanner';
 import { GlobalConfirmDialog } from '@/shared/ui/GlobalConfirmDialog';
 import { Toast } from '@/shared/ui/Toast';
+import { ServerWarmingUpBanner } from '@/shared/ui/ServerWarmingUpBanner';
 import { useAuthStore } from '@/features/auth/stores/authStore';
 import { Colors } from '@/constants/theme';
 import { ThemeProvider, useThemeContext } from '@/shared/hooks/theme-provider';
@@ -147,6 +148,7 @@ function RootLayoutInner() {
               <View style={styles.root}>
                 {appStack}
                 <AppUpdateGate />
+                <ServerWarmingUpBanner />
                 <ErrorBanner />
                 <Toast />
                 <GlobalConfirmDialog />
@@ -160,6 +162,7 @@ function RootLayoutInner() {
           <View style={styles.root}>
             {appStack}
             <AppUpdateGate />
+            <ServerWarmingUpBanner />
             <ErrorBanner />
             <Toast />
             <GlobalConfirmDialog />

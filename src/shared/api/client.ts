@@ -3,6 +3,7 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { cleanSurrogates } from "@/utils/text";
 import { createNetworkError, mapApiError } from "./errors";
+import { useUIStore } from "@/shared/stores/uiStore";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 const APP_VERSION =
@@ -40,6 +41,9 @@ let unauthorizedHandler: (() => void) | null = null;
 export function setUnauthorizedHandler(handler: () => void): void {
   unauthorizedHandler = handler;
 }
+
+let activeSlowRequests = 0;
+const SLOW_REQUEST_THRESHOLD_MS = 2500;
 
 function sanitizePayload(data: unknown): unknown {
   if (typeof data === "string") {
@@ -82,6 +86,13 @@ async function request<T>(options: RequestOptions): Promise<T> {
 
   const sanitizedBody = body !== undefined ? sanitizePayload(body) : undefined;
   const startTime = Date.now();
+
+  let slowTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+    activeSlowRequests++;
+    useUIStore.getState().setServerWakingUp(true);
+    slowTimer = null;
+  }, SLOW_REQUEST_THRESHOLD_MS);
+
   try {
     const response = await fetch(url.toString(), {
       method,
@@ -164,6 +175,16 @@ async function request<T>(options: RequestOptions): Promise<T> {
       throw error;
     }
     throw createNetworkError(error);
+  } finally {
+    if (slowTimer) {
+      clearTimeout(slowTimer);
+      slowTimer = null;
+    } else {
+      activeSlowRequests = Math.max(0, activeSlowRequests - 1);
+      if (activeSlowRequests === 0) {
+        useUIStore.getState().setServerWakingUp(false);
+      }
+    }
   }
 }
 

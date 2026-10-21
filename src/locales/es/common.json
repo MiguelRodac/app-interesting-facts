@@ -94,5 +94,6 @@
   "openingBrowser": "Abriendo navegador...",
   "openWebError": "No se pudo abrir el navegador. Por favor ingresa manualmente a: ",
   "downloadError": "No se pudo iniciar la descarga. Por favor visita nuestra página web.",
-  "charsMoreNeeded": "faltan {{count}}"
+  "charsMoreNeeded": "faltan {{count}}",
+  "serverWakingUp": "Despertando el servidor... esto puede tardar unos segundos."
 }

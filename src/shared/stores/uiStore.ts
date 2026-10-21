@@ -23,11 +23,13 @@ export interface ConfirmDialogOptions {
 interface UIState {
   error: AppError | null;
   isLoading: boolean;
+  isServerWakingUp: boolean;
   toast: ToastData | null;
   confirmDialog: ConfirmDialogOptions | null;
   setError: (error: AppError) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
+  setServerWakingUp: (waking: boolean) => void;
   showToast: (message: string, type?: ToastType) => void;
   clearToast: () => void;
   showConfirm: (options: ConfirmDialogOptions) => void;
@@ -39,6 +41,7 @@ let toastId = 0;
 export const useUIStore = create<UIState>((set) => ({
   error: null,
   isLoading: false,
+  isServerWakingUp: false,
   toast: null,
   confirmDialog: null,
   setError: (error) => {
@@ -47,6 +50,7 @@ export const useUIStore = create<UIState>((set) => ({
   },
   clearError: () => set({ error: null }),
   setLoading: (isLoading) => set({ isLoading }),
+  setServerWakingUp: (isServerWakingUp) => set({ isServerWakingUp }),
   showToast: (message, type = 'info') =>
     set({ toast: { id: ++toastId, message, type } }),
   clearToast: () => set({ toast: null }),
