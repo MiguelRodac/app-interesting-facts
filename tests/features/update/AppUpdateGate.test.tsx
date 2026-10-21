@@ -1,6 +1,6 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { useSegments } from 'expo-router';
 
 import { AppUpdateGate } from '@/features/update/AppUpdateGate';
@@ -50,6 +50,31 @@ describe('AppUpdateGate component', () => {
     // Modal is closed
     await waitFor(() => {
       expect(queryByText('¿Cómo instalar la actualización?')).toBeNull();
+    });
+  });
+
+  it('shows consent modal when clicking update button and opens APK download URL on confirm', async () => {
+    jest.spyOn(Linking, 'openURL').mockImplementation(() => Promise.resolve());
+    useUpdateStore.setState({ updateRequired: true });
+
+    const { getByText, queryByText } = await render(<AppUpdateGate />);
+
+    const updateBtn = getByText('Actualizar en la página web');
+    fireEvent.press(updateBtn);
+
+    // Consent modal must be shown
+    await waitFor(() => {
+      expect(getByText('¿Deseas descargar el archivo APK de instalación en tu dispositivo?')).toBeTruthy();
+    });
+
+    // Confirm button inside modal
+    const confirmBtn = getByText('Descargar');
+    fireEvent.press(confirmBtn);
+
+    await waitFor(() => {
+      expect(Linking.openURL).toHaveBeenCalledWith(
+        expect.stringContaining('app-interesting-facts.apk'),
+      );
     });
   });
 

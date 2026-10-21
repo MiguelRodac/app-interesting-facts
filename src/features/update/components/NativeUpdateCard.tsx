@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
+import { ApkDownloadConsentModal } from '@/features/landing/components/ApkDownloadConsentModal';
 import { AppPressable } from '@/shared/ui/app-pressable';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { useTheme } from '@/shared/hooks/use-theme';
@@ -10,38 +11,44 @@ import { Radii, Spacing } from '@/constants/theme';
 
 interface NativeUpdateCardProps {
   appVersion: string;
+  downloadUrl?: string;
   webUrl: string;
   onOpenGuide: () => void;
 }
 
-export function NativeUpdateCard({ appVersion, webUrl, onOpenGuide }: NativeUpdateCardProps) {
-  const { t } = useTranslation(['common']);
+export function NativeUpdateCard({ appVersion, downloadUrl, webUrl, onOpenGuide }: NativeUpdateCardProps) {
+  const { t } = useTranslation(['common', 'landing']);
   const theme = useTheme();
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [consentModalVisible, setConsentModalVisible] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleGoToWeb = useCallback(async () => {
-    if (!webUrl) return;
-    setIsRedirecting(true);
+  const handleOpenConsent = useCallback(() => {
+    setConsentModalVisible(true);
+  }, []);
+
+  const handleConfirmDownload = useCallback(async () => {
+    const targetUrl = downloadUrl || webUrl;
+    if (!targetUrl) return;
+
+    setIsDownloading(true);
     try {
       if (Platform.OS === 'web') {
-        window.open(webUrl, '_blank');
+        window.open(targetUrl, '_blank');
       } else {
-        // Direct Linking.openURL opens the external system browser (Chrome/etc.),
-        // leaving the app process so the user can complete the web download flow
-        // without being bounced back by an in-app WebBrowser tab.
-        await Linking.openURL(webUrl);
+        await Linking.openURL(targetUrl);
       }
     } catch {
       Alert.alert(
         t('common:error', { defaultValue: 'Error' }),
-        t('common:openWebError', { defaultValue: 'No se pudo abrir el navegador. Por favor ingresa manualmente a: ' }) + webUrl,
+        t('common:openWebError', { defaultValue: 'No se pudo abrir el navegador. Por favor ingresa manualmente a: ' }) + targetUrl,
       );
     } finally {
       setTimeout(() => {
-        setIsRedirecting(false);
-      }, 1500);
+        setIsDownloading(false);
+        setConsentModalVisible(false);
+      }, 1200);
     }
-  }, [t, webUrl]);
+  }, [downloadUrl, t, webUrl]);
 
   return (
     <View style={styles.card}>
@@ -70,19 +77,12 @@ export function NativeUpdateCard({ appVersion, webUrl, onOpenGuide }: NativeUpda
 
       <View style={styles.buttonsContainer}>
         <AppPressable
-          style={[styles.primaryButton, { backgroundColor: theme.primary, opacity: isRedirecting ? 0.7 : 1 }]}
-          onPress={handleGoToWeb}
-          disabled={isRedirecting}
+          style={[styles.primaryButton, { backgroundColor: theme.primary }]}
+          onPress={handleOpenConsent}
           hitSlop={6}>
-          {isRedirecting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Ionicons name="open-outline" size={18} color="#FFFFFF" />
-          )}
+          <Ionicons name="open-outline" size={18} color="#FFFFFF" />
           <ThemedText type="smallBold" style={styles.primaryButtonText}>
-            {isRedirecting
-              ? t('common:openingBrowser', { defaultValue: 'Abriendo navegador...' })
-              : t('common:updateGoToWeb', { defaultValue: 'Actualizar en la página web' })}
+            {t('common:updateGoToWeb', { defaultValue: 'Actualizar en la página web' })}
           </ThemedText>
         </AppPressable>
 
@@ -96,6 +96,13 @@ export function NativeUpdateCard({ appVersion, webUrl, onOpenGuide }: NativeUpda
           </ThemedText>
         </AppPressable>
       </View>
+
+      <ApkDownloadConsentModal
+        visible={consentModalVisible}
+        isDownloading={isDownloading}
+        onClose={() => setConsentModalVisible(false)}
+        onConfirm={handleConfirmDownload}
+      />
     </View>
   );
 }

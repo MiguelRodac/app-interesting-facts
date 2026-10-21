@@ -12,6 +12,9 @@ import { InstallGuideModal } from './components/InstallGuideModal';
 
 const APP_VERSION = process.env.EXPO_PUBLIC_APP_VERSION ?? '1.0.0';
 const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? 'https://app-interesting-facts.vercel.app/landing';
+const APK_DOWNLOAD_URL =
+  process.env.EXPO_PUBLIC_APK_DOWNLOAD_URL ??
+  'https://github.com/MiguelRodac/app-interesting-facts/raw/main/public/app-interesting-facts.apk';
 
 /**
  * Root gate checking application version:
@@ -38,6 +41,7 @@ export function AppUpdateGate() {
         <>
           <NativeUpdateCard
             appVersion={APP_VERSION}
+            downloadUrl={APK_DOWNLOAD_URL}
             webUrl={WEB_URL}
             onOpenGuide={() => setGuideModalVisible(true)}
           />
